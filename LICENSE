@@ -1,0 +1,50 @@
+# Licensing Agreement — DRAKHART
+
+This repository contains two distinct categories of work, licensed under terms that allow for public sharing, modifying, and playing, but explicitly prohibit commercial use.
+
+---
+
+## 1. Software Code License
+All source code in this repository (TypeScript, HTML, CSS, configurations, scripts) is licensed under the **PolyForm Noncommercial License 1.0.0**.
+
+### PolyForm Noncommercial License 1.0.0
+Version 1.0.0
+
+#### Acceptance
+By using the software, you agree to these terms. If you do not agree, you have no right to use the software.
+
+#### Copyright License
+The licensor grants you a non-exclusive, royalty-free, worldwide, non-transferable license to do everything with the software that would otherwise infringe the licensor's copyrights in it, **except for commercial purposes**.
+
+#### Patent License
+The licensor grants you a non-exclusive, royalty-free, worldwide, non-transferable license to make, have made, use, sell, offer for sale, import, and otherwise run the software, under any patent claims the licensor can license that are read on the software as distributed by the licensor, **except for commercial purposes**.
+
+#### Commercial Purposes
+**You may not use this software for commercial purposes.** 
+
+Commercial purposes include, but are not limited to:
+- Selling or renting the software, or any product/service containing it.
+- Using the software to provide paid support, consulting, or hosting.
+- Using the software in connection with advertisements, sponsorships, or paid promotions.
+- Any use by a commercial entity, unless it is purely for non-commercial personal testing or educational purposes.
+
+#### Notices
+You must include the copyright notice and this license text in all copies of the software or substantial portions of it.
+
+#### No Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## 2. Game Assets and Artwork License
+All visual assets (illustrations, background parallax graphics, vector layouts, sprites) and audio files in this repository are licensed under the **Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
+
+### Under these terms, you are free to:
+- **Share**: Copy and redistribute the material in any medium or format.
+- **Adapt**: Remix, transform, and build upon the material.
+
+### Under the following conditions:
+- **Attribution**: You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+- **NonCommercial**: You may not use the material for commercial purposes.
+
+To view a full copy of this license, visit: [creativecommons.org/licenses/by-nc/4.0/](https://creativecommons.org/licenses/by-nc/4.0/)
