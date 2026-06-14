@@ -60,8 +60,8 @@ export const BOSS_DAMAGE = 20;
 export const BOSS_ATTACK_COOLDOWN = 1500;
 export const BOSS_FIRE_COOLDOWN = 2800;
 
-export const LEVEL_WIDTH = 3200;
-export const LEVEL_HEIGHT = 800;
+export const LEVEL_WIDTH = 5000;
+export const LEVEL_HEIGHT = 1000;
 
 export const CAMERA_LERP = 0.1;
 export const CAMERA_ZOOM_HUMAN = 2.0;

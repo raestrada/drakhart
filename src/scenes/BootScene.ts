@@ -183,6 +183,7 @@ export class BootScene extends Phaser.Scene {
     this.drawBoss();
     this.drawTiles();
     this.drawDragonCore();
+    this.drawSkyCore();
     this.drawBarricade();
     this.drawFireBullet();
     this.drawSwordSlash();
@@ -1213,6 +1214,19 @@ export class BootScene extends Phaser.Scene {
     this.circ(g, 8, 6, 0.6, 0xffcc00);
     this.tri(g, 6, 0, 10, 0, 8, -2, 0x5a6a7a);
     this.tex(g, 'dragon-core', 16, 16);
+  }
+
+  // ═══ SKY CORE 16×16 ═══
+  private drawSkyCore(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    this.rect(g, 3, 0, 10, 14, 2, 0x334455);
+    this.rect(g, 4, 1, 8, 12, 2, 0x446688);
+    this.rect(g, 5, 2, 6, 10, 1, 0x050a15);
+    this.circ(g, 8, 6, 2.5, 0x4488ff);
+    this.circ(g, 8, 6, 1.5, 0x88ccff);
+    this.circ(g, 8, 6, 0.6, 0xffffff);
+    this.tri(g, 6, 0, 10, 0, 8, -2, 0x557799);
+    this.tex(g, 'sky-core', 16, 16);
   }
 
   // ═══ BARRICADE 32×64 ═══

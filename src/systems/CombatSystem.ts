@@ -50,6 +50,43 @@ export class CombatSystem {
     }
   }
 
+  fireBreathAuto(facingRight: boolean): void {
+    if (this.fireCooldown) return;
+    if (!this.player.formMachine.energy.canShoot()) return;
+
+    this.fireCooldown = true;
+    this.player.formMachine.energy.consumeShoot();
+
+    const dir = facingRight ? 1 : -1;
+    const bullet = this.fireBullets.get(
+      this.player.x + dir * 44,
+      this.player.y - 4,
+      'bullet-fire'
+    ) as Phaser.Physics.Arcade.Sprite;
+
+    if (!bullet) {
+      this.fireCooldown = false;
+      return;
+    }
+
+    bullet.setActive(true);
+    bullet.setVisible(true);
+    bullet.setVelocityX(FIRE_SPEED * dir);
+    bullet.setFlipX(!facingRight);
+    bullet.setBlendMode(Phaser.BlendModes.ADD);
+
+    this.scene.time.delayedCall(FIRE_LIFETIME, () => {
+      if (bullet.active) {
+        bullet.setActive(false);
+        bullet.setVisible(false);
+      }
+    });
+
+    this.scene.time.delayedCall(FIRE_COOLDOWN, () => {
+      this.fireCooldown = false;
+    });
+  }
+
   private swordAttack(facingRight: boolean): void {
     if (this.swordCooldown || this.swordActive) return;
 
@@ -125,10 +162,13 @@ export class CombatSystem {
 
   private mechaSwordAttack(facingRight: boolean): void {
     if (this.swordCooldown || this.swordActive) return;
+    if (!this.player.formMachine.heat.canAct) return;
 
     this.swordActive = true;
     this.swordCooldown = true;
     this.activeDamage = MECHA_SWORD_DAMAGE;
+
+    this.player.formMachine.heat.addHeat(15);
 
     // Trigger heavy mecha slide
     const dir = facingRight ? 1 : -1;

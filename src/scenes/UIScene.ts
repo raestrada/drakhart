@@ -1,13 +1,17 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { FormState } from '../systems/FormStateMachine';
+import { TarotSystem } from '../systems/TarotSystem';
 import { t } from '../i18n';
 
 export class UIScene extends Phaser.Scene {
   private player!: Player;
+  private tarotSystem!: TarotSystem;
   private healthFill!: Phaser.GameObjects.Rectangle;
   private energyFill!: Phaser.GameObjects.Rectangle;
+  private heatFill!: Phaser.GameObjects.Rectangle;
   private transformLabel!: Phaser.GameObjects.Text;
+  private tarotDisplay!: Phaser.GameObjects.Text;
   private coreIndicator!: Phaser.GameObjects.Rectangle;
   private hint!: Phaser.GameObjects.Text;
 
@@ -24,8 +28,9 @@ export class UIScene extends Phaser.Scene {
     super({ key: 'UIScene' });
   }
 
-  init(data: { player: Player }): void {
+  init(data: { player: Player; tarotSystem: TarotSystem }): void {
     this.player = data.player;
+    this.tarotSystem = data.tarotSystem;
   }
 
   create(): void {
@@ -36,12 +41,14 @@ export class UIScene extends Phaser.Scene {
     this.panelX = 4 * this.scaleFactor;
     this.panelY = 4 * this.scaleFactor;
     this.panelW = this.barW + this.pad * 2;
-    this.panelH = 80 * this.scaleFactor;
+    this.panelH = 105 * this.scaleFactor;
 
     this.drawPanelBackground();
     this.drawHealthBar();
     this.drawEnergyBar();
+    this.drawHeatBar();
     this.drawTransformIndicator();
+    this.drawTarotDisplay();
     this.drawControls();
     this.drawCoreHint();
   }
@@ -133,9 +140,38 @@ export class UIScene extends Phaser.Scene {
       .setScrollFactor(0);
   }
 
+  private drawHeatBar(): void {
+    const x = this.pad + this.panelX;
+    const y = this.pad + this.panelY + 68 * this.scaleFactor;
+
+    this.add
+      .text(x, y - 2 * this.scaleFactor, 'HEAT', {
+        fontSize: `${Math.round(9 * this.scaleFactor)}px`,
+        fontFamily: 'monospace',
+        color: '#aa4411',
+      })
+      .setScrollFactor(0);
+
+    this.add
+      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x1a0a05)
+      .setOrigin(0, 0)
+      .setScrollFactor(0);
+
+    this.add
+      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x443322)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(-1);
+
+    this.heatFill = this.add
+      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0xff4400)
+      .setOrigin(0, 0)
+      .setScrollFactor(0);
+  }
+
   private drawTransformIndicator(): void {
     const x = this.pad + this.panelX;
-    const y = this.pad + this.panelY + 65 * this.scaleFactor;
+    const y = this.pad + this.panelY + 92 * this.scaleFactor;
 
     this.coreIndicator = this.add
       .rectangle(x + 2 * this.scaleFactor, y, 6 * this.scaleFactor, 6 * this.scaleFactor, 0x332211)
@@ -149,6 +185,20 @@ export class UIScene extends Phaser.Scene {
         color: '#665544',
       })
       .setScrollFactor(0);
+  }
+
+  private drawTarotDisplay(): void {
+    const x = this.scale.width - 100 * this.scaleFactor;
+    const y = 8 * this.scaleFactor;
+
+    this.tarotDisplay = this.add
+      .text(x, y, 'CARDS: 0/5', {
+        fontSize: `${Math.round(9 * this.scaleFactor)}px`,
+        fontFamily: 'monospace',
+        color: '#665544',
+      })
+      .setScrollFactor(0)
+      .setDepth(200);
   }
 
   private drawControls(): void {
@@ -199,21 +249,41 @@ export class UIScene extends Phaser.Scene {
     const energyRatio = this.player.formMachine.energy.ratio;
     this.energyFill.width = this.barW * energyRatio;
 
+    const heatRatio = this.player.formMachine.heat.ratio;
+    const heatLevel = this.player.formMachine.heat.level;
+    this.heatFill.width = this.barW * heatRatio;
+    if (heatLevel === 'warning') {
+      this.heatFill.setFillStyle(0xff8800);
+    } else if (heatLevel === 'danger') {
+      this.heatFill.setFillStyle(0xff2200);
+    } else {
+      this.heatFill.setFillStyle(0xff4400);
+    }
+
     const { state } = this.player.formMachine;
-    const isUnlocked = this.player.formMachine.hasTransform();
+    const hasMecha = this.player.formMachine.hasTransform();
+    const hasDragon = this.player.formMachine.hasDragon();
 
     if (state === FormState.DRAGON) {
-      this.coreIndicator.setFillStyle(0xff0066); // pink/magenta Energist core
+      this.coreIndicator.setFillStyle(0xff0066);
       this.transformLabel.setText(t('ui.dragonActive'));
       this.transformLabel.setColor('#ff0066');
     } else if (state === FormState.MECHA) {
-      this.coreIndicator.setFillStyle(0xff5ea2); // lighter pink Energist core
-      this.transformLabel.setText(t('ui.mechaActive'));
+      this.coreIndicator.setFillStyle(0xff5ea2);
+      if (hasDragon) {
+        this.transformLabel.setText('C: DRAGON');
+      } else {
+        this.transformLabel.setText(t('ui.mechaActive'));
+      }
       this.transformLabel.setColor('#ff5ea2');
     } else if (state === FormState.HUMAN) {
-      if (isUnlocked) {
-        this.coreIndicator.setFillStyle(0xffcc00); // gold/yellow ready
-        this.transformLabel.setText(t('ui.transformReady'));
+      if (hasDragon && hasMecha) {
+        this.coreIndicator.setFillStyle(0xffcc00);
+        this.transformLabel.setText('C: MECHA');
+        this.transformLabel.setColor('#ffcc00');
+      } else if (hasMecha) {
+        this.coreIndicator.setFillStyle(0xffcc00);
+        this.transformLabel.setText('C: MECHA');
         this.transformLabel.setColor('#ffcc00');
       } else {
         this.coreIndicator.setFillStyle(0x332211);
@@ -229,31 +299,67 @@ export class UIScene extends Phaser.Scene {
       this.transformLabel.setColor('#ff0066');
     }
 
-    this.updateCoreHint(isUnlocked);
+    this.updateCoreHint();
+    this.updateTarotDisplay();
   }
 
-  private updateCoreHint(isUnlocked: boolean): void {
-    if (isUnlocked) {
+  private updateTarotDisplay(): void {
+    if (!this.tarotSystem) return;
+    const count = this.tarotSystem.count;
+    const color = count > 0 ? '#ccaa66' : '#665544';
+    this.tarotDisplay.setText(`CARDS: ${count}/5`);
+    this.tarotDisplay.setColor(color);
+  }
+
+  private updateCoreHint(): void {
+    const hasMecha = this.player.formMachine.hasTransform();
+    const hasDragon = this.player.formMachine.hasDragon();
+
+    if (hasMecha && hasDragon) {
       this.hint.setAlpha(0);
       return;
     }
 
-    const dist = Math.abs(this.player.x - 1320);
+    // Stage 1: find Dragon Core
+    if (!hasMecha) {
+      const dist = Math.abs(this.player.x - 1300);
 
-    if (dist < 60) {
-      this.hint.setText('PICK IT UP !');
-      this.hint.setAlpha(0.9);
-      this.hint.setColor('#ff6600');
-    } else if (dist < 400) {
-      this.hint.setText('> > >  DRAGON CORE  > > >');
-      this.hint.setAlpha(0.7 + Math.sin(Date.now() * 0.004) * 0.3);
-      this.hint.setColor('#ff8800');
-    } else if (dist < 800) {
-      this.hint.setText('>>  Seek the ruins to the right  >>');
-      this.hint.setAlpha(0.5 + Math.sin(Date.now() * 0.003) * 0.2);
-      this.hint.setColor('#886644');
-    } else {
-      this.hint.setAlpha(0);
+      if (dist < 60) {
+        this.hint.setText('PICK IT UP !');
+        this.hint.setAlpha(0.9);
+        this.hint.setColor('#ff6600');
+      } else if (dist < 400) {
+        this.hint.setText('> > >  DRAGON CORE  > > >');
+        this.hint.setAlpha(0.7 + Math.sin(Date.now() * 0.004) * 0.3);
+        this.hint.setColor('#ff8800');
+      } else if (dist < 800) {
+        this.hint.setText('>>  Seek the altar to the right  >>');
+        this.hint.setAlpha(0.5 + Math.sin(Date.now() * 0.003) * 0.2);
+        this.hint.setColor('#886644');
+      } else {
+        this.hint.setAlpha(0);
+      }
+      return;
+    }
+
+    // Stage 2: find Sky Core (Dragon unlock)
+    if (hasMecha && !hasDragon) {
+      const dist = Math.abs(this.player.x - 2100);
+
+      if (dist < 60) {
+        this.hint.setText('PICK IT UP !');
+        this.hint.setAlpha(0.9);
+        this.hint.setColor('#44aaff');
+      } else if (dist < 500) {
+        this.hint.setText('> > >  SKY CORE  > > >');
+        this.hint.setAlpha(0.7 + Math.sin(Date.now() * 0.004) * 0.3);
+        this.hint.setColor('#66bbff');
+      } else {
+        this.hint.setText('>>  Enter the Bastion as MECHA  >>');
+        this.hint.setAlpha(0.5 + Math.sin(Date.now() * 0.003) * 0.2);
+        this.hint.setColor('#8899bb');
+      }
+      return;
     }
   }
 }

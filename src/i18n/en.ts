@@ -14,6 +14,7 @@ export const en = {
     intro1: 'The old world is ash.',
     intro2: 'Only the Dragon Core remains.',
     coreFound: 'The heart awakens...',
+    skyCoreFound: 'The sky remembers...',
     destinyEcho: 'Echo of Destiny',
     controls: 'ARROWS/WASD: Move | UP/W: Jump (Hold to Hover in Mecha) | X: Attack | C: Cycle Form',
   },

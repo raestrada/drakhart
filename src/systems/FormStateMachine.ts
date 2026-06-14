@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { EnergySystem } from './EnergySystem';
 import { FlightSystem } from './FlightSystem';
+import { HeatSystem } from './HeatSystem';
 import {
   TRANSFORM_DURATION,
   TRANSFORM_COOLDOWN_DURATION,
@@ -24,7 +25,9 @@ export class FormStateMachine {
   private player: Player;
   private energySystem: EnergySystem;
   private flightSystem: FlightSystem;
+  private heatSystem: HeatSystem;
   private transformUnlocked = false;
+  private dragonUnlocked = false;
   private canTransform = true;
   private scene: Phaser.Scene;
 
@@ -33,6 +36,7 @@ export class FormStateMachine {
     this.scene = scene;
     this.energySystem = new EnergySystem();
     this.flightSystem = new FlightSystem(player);
+    this.heatSystem = new HeatSystem();
   }
 
   get state(): FormState {
@@ -47,21 +51,32 @@ export class FormStateMachine {
     return this.flightSystem;
   }
 
+  get heat(): HeatSystem {
+    return this.heatSystem;
+  }
+
   unlockTransform(): void {
     this.transformUnlocked = true;
+  }
+
+  unlockDragon(): void {
+    this.dragonUnlocked = true;
   }
 
   hasTransform(): boolean {
     return this.transformUnlocked;
   }
 
+  hasDragon(): boolean {
+    return this.dragonUnlocked;
+  }
+
   requestTransform(): void {
-    if (!this.transformUnlocked) return;
     if (!this.canTransform) return;
 
-    if (this.currentState === FormState.HUMAN) {
+    if (this.currentState === FormState.HUMAN && this.transformUnlocked) {
       this.beginTransformToMecha();
-    } else if (this.currentState === FormState.MECHA) {
+    } else if (this.currentState === FormState.MECHA && this.dragonUnlocked) {
       this.beginTransformToDragon();
     } else if (this.currentState === FormState.DRAGON) {
       this.startRevert();
@@ -161,6 +176,13 @@ export class FormStateMachine {
       this.flightSystem.isFlyingUp(),
       onGround
     );
+
+    if (this.currentState === FormState.MECHA) {
+      const isMoving = body ? Math.abs(body.velocity.x) > 10 : false;
+      this.heatSystem.update(delta, isMoving);
+    } else if (this.currentState === FormState.HUMAN || this.currentState === FormState.EXHAUSTED) {
+      this.heatSystem.update(delta, false);
+    }
 
     if (
       (this.currentState === FormState.DRAGON || this.currentState === FormState.MECHA) &&

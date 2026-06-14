@@ -15,6 +15,7 @@ import {
   PLAYER_MAX_HEALTH,
   INVINCIBILITY_DURATION,
 } from '../utils/constants';
+import { TarotSystem } from '../systems/TarotSystem';
 
 const WALK_FRAME_MS = 140;
 const IDLE_FRAME_MS = 180;
@@ -28,6 +29,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public alive = true;
   public isInvincible = false;
   public isAnimatingAttack = false;
+  public tarotSystem: TarotSystem | null = null;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyW!: Phaser.Input.Keyboard.Key;
@@ -47,6 +49,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private hoverTimer = 0;
   private hoverActive = false;
   private hasJumpedThisCycle = false;
+  private hasDoubleJumped = false;
 
   // Phaser effects state
   private auraTimer = 0;
@@ -161,6 +164,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (onGround) {
       this.timeSinceGrounded = 0;
       this.hasJumpedThisCycle = false;
+      this.hasDoubleJumped = false;
     } else {
       this.timeSinceGrounded += delta;
     }
@@ -210,6 +214,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.triggerJumpJuice();
     }
 
+    // Double jump (requires The Magician tarot card)
+    if (
+      jump &&
+      !onGround &&
+      !canCoyoteJump &&
+      this.hasJumpedThisCycle &&
+      !this.hasDoubleJumped &&
+      this.tarotSystem?.hasDoubleJump()
+    ) {
+      body.setVelocityY(PLAYER_HUMAN_JUMP * 0.8);
+      this.hasDoubleJumped = true;
+      this.scene.tweens.add({
+        targets: this,
+        scaleY: 1.1,
+        scaleX: 0.9,
+        duration: 120,
+        yoyo: true,
+        ease: 'Power2',
+      });
+    }
+
     // Variable jump height
     if (!jump && body.velocity.y < 0) {
       body.setVelocityY(body.velocity.y * 0.85);
@@ -227,12 +252,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const isMoving = left || right;
 
     // Horizontal movement (Heavy inertia)
+    const heatMult = this.formMachine.heat.speedMultiplier;
+    const tarotMult = this.tarotSystem?.hasChariot() ? 1.3 : 1.0;
+    const maxSpeed = PLAYER_MECHA_SPEED * heatMult * tarotMult;
     if (left) {
-      body.setVelocityX(Math.max(-PLAYER_MECHA_SPEED, body.velocity.x - PLAYER_MECHA_ACCEL * dt));
+      body.setVelocityX(Math.max(-maxSpeed, body.velocity.x - PLAYER_MECHA_ACCEL * dt));
       this.facingRight = false;
       this.setFlipX(true);
     } else if (right) {
-      body.setVelocityX(Math.min(PLAYER_MECHA_SPEED, body.velocity.x + PLAYER_MECHA_ACCEL * dt));
+      body.setVelocityX(Math.min(maxSpeed, body.velocity.x + PLAYER_MECHA_ACCEL * dt));
       this.facingRight = true;
       this.setFlipX(false);
     } else {
@@ -246,6 +274,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.hoverActive = false;
       this.hasJumpedThisCycle = false;
       body.allowGravity = true;
+
+      // Heat visual feedback
+      this.updateHeatVisuals();
 
       if (isMoving) {
         this.animState = 'walk';
@@ -269,6 +300,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         body.allowGravity = false;
         body.setVelocityY(40); // slow mechanical glide
         this.hoverTimer += delta;
+
+        this.formMachine.heat.addHeat(10 * (delta / 1000));
 
         this.spawnHoverParticles();
       } else {
@@ -643,6 +676,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setVelocityX(kbX);
     body.setVelocityY(kbY);
 
+    if (isMecha) {
+      this.formMachine.heat.addHeat(8);
+    }
+
     this.scene.cameras.main.shake(120, isMecha ? 0.002 : 0.004);
 
     this.setTint(0xff0000);
@@ -698,6 +735,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.health <= 0) {
       this.die();
+    }
+  }
+
+  private updateHeatVisuals(): void {
+    if (this.formMachine.state !== FormState.MECHA) return;
+
+    const heat = this.formMachine.heat;
+
+    if (heat.isShutdown) {
+      this.setTint(0x442222);
+      return;
+    }
+
+    const level = heat.level;
+    if (level === 'danger') {
+      this.setTint(0xff4422);
+    } else if (level === 'warning') {
+      this.setTint(0xffaa44);
+    } else {
+      this.clearTint();
     }
   }
 

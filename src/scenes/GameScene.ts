@@ -1,11 +1,16 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { DragonCore } from '../entities/DragonCore';
+import { SkyCore } from '../entities/SkyCore';
+import { TarotCard } from '../entities/TarotCard';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { Boss } from '../entities/enemies/Boss';
 import { Barricade } from '../entities/Barricade';
 import { FlyingEnemy } from '../entities/enemies/FlyingEnemy';
 import { FormState } from '../systems/FormStateMachine';
+import { ShmupSystem } from '../systems/ShmupSystem';
+import { TarotSystem } from '../systems/TarotSystem';
+import { saveGame, loadGame } from '../systems/SaveSystem';
 import {
   spawnHitParticles,
   spawnDeathExplosion,
@@ -31,14 +36,19 @@ export class GameScene extends Phaser.Scene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private barricades!: Phaser.Physics.Arcade.StaticGroup;
   private dragonCore!: DragonCore;
+  private skyCore!: SkyCore;
   private boss!: Boss;
   private bossTriggered = false;
+  private shmupSystem!: ShmupSystem;
+  private tarotSystem!: TarotSystem;
 
   private bgMountains!: Phaser.GameObjects.TileSprite;
   private bgForest!: Phaser.GameObjects.TileSprite;
   private bgRuins!: Phaser.GameObjects.TileSprite;
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
+
+  private shmupZoneActive = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -49,17 +59,34 @@ export class GameScene extends Phaser.Scene {
 
     this.createParallax();
     this.createLevel();
+    this.tarotSystem = new TarotSystem();
+
+    const saveData = loadGame();
+    if (saveData) {
+      this.restoreSave(saveData);
+    }
+
     this.createPlayer();
+    this.player.tarotSystem = this.tarotSystem;
+    this.player.setPosition(this.pendingSpawnX, this.pendingSpawnY);
+    if (this.pendingMechaUnlock) this.player.formMachine.unlockTransform();
+    if (this.pendingDragonUnlock) this.player.formMachine.unlockDragon();
     this.createEnemies();
     this.createDragonCore();
+    this.createSkyCore();
     this.createBarricades();
     this.createBoss();
+    this.createShmup();
+    this.createTarotCards();
     this.setupCamera();
     this.setupCollisions();
     this.showIntroText();
     this.createVignette();
 
-    this.scene.launch('UIScene', { player: this.player });
+    this.scene.launch('UIScene', {
+      player: this.player,
+      tarotSystem: this.tarotSystem,
+    });
   }
 
   private createParallax(): void {
@@ -125,40 +152,48 @@ export class GameScene extends Phaser.Scene {
     this.platforms = this.physics.add.staticGroup();
 
     const platforms: PlatformDef[] = [
-      // --- PART 1: Warrior Zone (0 - 1300) ---
-      // Starting ground
-      { x: 0, y: LEVEL_HEIGHT - 32, width: 850, height: 64 },
-      
-      // Agility Passage ceiling blocks: ceiling bottom at y: 700, ground surface at y: 768 (clearance 68px)
-      // The Mecha (height 76px) cannot pass, forcing player to stay as agile Human
+      // --- PART 1: Ashen Woods (0 - 1400) ---
+      { x: 0, y: LEVEL_HEIGHT - 32, width: 1400, height: 64 },
+
+      // Agility Passage: low ceiling blocks Mecha
       { x: 800, y: 560, width: 250, height: 140 },
-      
-      // Tunnel ground continues
-      { x: 850, y: LEVEL_HEIGHT - 32, width: 300, height: 64 },
-      
-      // Platforms to climb to the altar
+
+      // Platforms to climb to Dragon Core altar
       { x: 1050, y: 690, width: 80, height: 16 },
       { x: 1150, y: 620, width: 90, height: 16 },
       { x: 1240, y: 550, width: 120, height: 16 },
 
-      // --- PART 2: Mecha Zone (1300 - 2100) ---
-      // Ground continues under the bastion
-      { x: 1300, y: LEVEL_HEIGHT - 32, width: 850, height: 64 },
-      
-      // Platforms inside the ruins
-      { x: 1420, y: 680, width: 120, height: 16 },
-      { x: 1560, y: 600, width: 100, height: 16 },
-      { x: 1680, y: 680, width: 120, height: 16 },
-      { x: 1820, y: 620, width: 100, height: 16 },
+      // --- PART 2: Iron Bastion (1400 - 2200) ---
+      { x: 1400, y: LEVEL_HEIGHT - 32, width: 800, height: 64 },
 
-      // --- PART 3: Dragon Shmup Zone (2100 - 3200) ---
-      // Ground stops at x: 2150 and resumes at x: 2850 (open sky gorge)
-      { x: 2850, y: LEVEL_HEIGHT - 32, width: 350, height: 64 },
-      
-      // Floating ruins for landing/refueling
+      // Ruins platforms
+      { x: 1520, y: 680, width: 120, height: 16 },
+      { x: 1660, y: 600, width: 100, height: 16 },
+      { x: 1800, y: 680, width: 120, height: 16 },
+      { x: 1950, y: 620, width: 100, height: 16 },
+
+      // Sky Core platform
+      { x: 2050, y: 520, width: 160, height: 16 },
+
+      // --- PART 3: Flight Training (2200 - 2900) ---
+      { x: 2200, y: LEVEL_HEIGHT - 32, width: 700, height: 64 },
       { x: 2250, y: 440, width: 80, height: 16 },
-      { x: 2420, y: 360, width: 90, height: 16 },
+      { x: 2420, y: 360, width: 80, height: 16 },
       { x: 2600, y: 440, width: 80, height: 16 },
+      { x: 2750, y: 500, width: 100, height: 16 },
+
+      // --- PART 4: Storm Canyon / Shmup zone (2900 - 4500) ---
+      // Ground drops away — bottomless chasm
+      // Floating islands for rest points
+      { x: 3400, y: 400, width: 120, height: 16 },
+      { x: 3600, y: 350, width: 120, height: 16 },
+      { x: 3900, y: 420, width: 100, height: 16 },
+      { x: 4100, y: 370, width: 100, height: 16 },
+
+      // --- Boss area (4500 - 5000) ---
+      { x: 4500, y: LEVEL_HEIGHT - 32, width: 500, height: 64 },
+      { x: 4600, y: 600, width: 100, height: 16 },
+      { x: 4750, y: 550, width: 100, height: 16 },
     ];
 
     platforms.forEach((p) => {
@@ -181,45 +216,110 @@ export class GameScene extends Phaser.Scene {
   private createEnemies(): void {
     this.enemies = this.physics.add.group();
 
-    // Warrior Zone sentinels
-    const e1 = new BaseEnemy(this, 250, 700, 'enemy-sentry', this.player);
-    const e2 = new BaseEnemy(this, 580, 700, 'enemy-sentry', this.player);
+    // Ashen Woods — tutorial enemies
+    const e1 = new BaseEnemy(this, 300, 700, 'enemy-sentry', this.player);
+    const e2 = new BaseEnemy(this, 550, 700, 'enemy-sentry', this.player);
+    const e3 = new BaseEnemy(this, 700, 500, 'enemy-sentry', this.player);
 
-    // Mecha Zone Elite sentinels (high health, high damage)
-    const e3 = new BaseEnemy(this, 1550, 700, 'enemy-sentry', this.player, { health: 80, damage: 18, speed: 50 });
-    const e4 = new BaseEnemy(this, 1750, 700, 'enemy-sentry', this.player, { health: 80, damage: 18, speed: 50 });
+    // Iron Bastion — heavy enemies
+    const e4 = new BaseEnemy(this, 1550, 700, 'enemy-sentry', this.player,
+      { health: 80, damage: 18, speed: 50 });
+    const e5 = new BaseEnemy(this, 1800, 700, 'enemy-sentry', this.player,
+      { health: 80, damage: 18, speed: 50 });
+    const e6 = new BaseEnemy(this, 2000, 650, 'enemy-sentry', this.player,
+      { health: 80, damage: 18, speed: 50 });
 
-    this.enemies.add(e1);
-    this.enemies.add(e2);
-    this.enemies.add(e3);
-    this.enemies.add(e4);
+    // Flight training zone — flying enemies
+    const fe1 = new FlyingEnemy(this, 2300, 300, this.player);
+    const fe2 = new FlyingEnemy(this, 2500, 250, this.player);
+    const fe3 = new FlyingEnemy(this, 2700, 350, this.player);
 
-    // Dragon Zone Flying enemies (shmup style)
-    const fe1 = new FlyingEnemy(this, 2200, 250, this.player);
-    const fe2 = new FlyingEnemy(this, 2380, 300, this.player);
-    const fe3 = new FlyingEnemy(this, 2550, 200, this.player);
-    const fe4 = new FlyingEnemy(this, 2700, 280, this.player);
-
-    this.enemies.add(fe1);
-    this.enemies.add(fe2);
-    this.enemies.add(fe3);
-    this.enemies.add(fe4);
+    this.enemies.addMultiple([e1, e2, e3, e4, e5, e6, fe1, fe2, fe3]);
   }
 
   private createDragonCore(): void {
     this.dragonCore = new DragonCore(this, 1300, 500);
   }
 
+  private createSkyCore(): void {
+    this.skyCore = new SkyCore(this, 2100, 480);
+  }
+
+  private createShmup(): void {
+    this.shmupSystem = new ShmupSystem(this, this.player);
+  }
+
+  private restoreSave(data: ReturnType<typeof loadGame>): void {
+    if (!data) return;
+    data.cardsCollected.forEach((cardId) => {
+      this.tarotSystem.collect(cardId, null as any);
+    });
+    if (data.mechaUnlocked) {
+      // Will be applied after player creation
+      this.pendingMechaUnlock = true;
+    }
+    if (data.dragonUnlocked) {
+      this.pendingDragonUnlock = true;
+    }
+    this.pendingSpawnX = data.playerX;
+    this.pendingSpawnY = data.playerY;
+  }
+
+  private pendingMechaUnlock = false;
+  private pendingDragonUnlock = false;
+  private pendingSpawnX = 100;
+  private pendingSpawnY = 650;
+
+  private requestSave(): void {
+    saveGame({
+      cardsCollected: this.tarotSystem.collectedCards,
+      mechaUnlocked: this.player.formMachine.hasTransform(),
+      dragonUnlocked: this.player.formMachine.hasDragon(),
+      playerX: this.player.x,
+      playerY: this.player.y,
+    });
+  }
+
+  private createTarotCards(): void {
+    // The Magician — hidden alcove in Ashen Woods, behind breakable wall (requires Mecha backtrack)
+    const magicianCard = new TarotCard(this, 680, 720, 'magician');
+    magicianCard.setDepth(1);
+
+    this.physics.add.overlap(this.player, magicianCard, () => {
+      magicianCard.collect(this.player);
+      this.tarotSystem.collect('magician', this.player);
+      this.requestSave();
+    });
+
+    // Barricade blocking access to the secret alcove
+    const secretWall = new Barricade(this, 650, 736);
+    this.barricades.add(secretWall);
+
+    // The Chariot — Iron Bastion, behind barricade gauntlet
+    const chariotCard = new TarotCard(this, 1950, 700, 'chariot');
+    chariotCard.setDepth(1);
+
+    this.physics.add.overlap(this.player, chariotCard, () => {
+      chariotCard.collect(this.player);
+      this.tarotSystem.collect('chariot', this.player);
+      this.requestSave();
+    });
+  }
+
   private createBarricades(): void {
     this.barricades = this.physics.add.staticGroup();
-    const b1 = new Barricade(this, 1450, 736);
-    const b2 = new Barricade(this, 1850, 736);
-    this.barricades.add(b1);
-    this.barricades.add(b2);
+
+    // Iron Bastion barricades — must use Mecha to break
+    const b1 = new Barricade(this, 1480, 736);
+    const b2 = new Barricade(this, 1720, 736);
+    const b3 = new Barricade(this, 1900, 736);
+    const b4 = new Barricade(this, 2050, 736);
+
+    this.barricades.addMultiple([b1, b2, b3, b4]);
   }
 
   private createBoss(): void {
-    this.boss = new Boss(this, 2950, 550, this.player);
+    this.boss = new Boss(this, 4800, 480, this.player);
   }
 
   private setupCollisions(): void {
@@ -235,6 +335,16 @@ export class GameScene extends Phaser.Scene {
       this.dragonCore,
       (_player, core) => {
         (core as DragonCore).collect(_player as Player);
+        this.requestSave();
+      }
+    );
+
+    this.physics.add.overlap(
+      this.player,
+      this.skyCore,
+      (_player, core) => {
+        (core as SkyCore).collect(_player as Player);
+        this.requestSave();
       }
     );
 
@@ -348,18 +458,43 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  update(_time: number, delta: number): void {
+  update(time: number, delta: number): void {
     this.updateParallax();
     this.updateShadows();
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
     this.updateBossTrigger();
+    this.updateShmupZone(delta, time);
 
-    // Check if player fell into the bottomless sky gorge chasm
     if (this.player.active && this.player.y > LEVEL_HEIGHT + 60) {
       this.player.takeDamage(100, 0);
     }
+  }
+
+  private updateShmupZone(delta: number, time: number): void {
+    const inShmupZone = this.player.x > 2900 && this.player.x < 4500;
+    const isDragon = this.player.formMachine.state === FormState.DRAGON;
+
+    if (inShmupZone && isDragon && !this.shmupZoneActive) {
+      this.shmupZoneActive = true;
+      this.shmupSystem.activate(2900, 4500);
+    } else if ((!inShmupZone || !isDragon) && this.shmupZoneActive) {
+      this.shmupZoneActive = false;
+      this.shmupSystem.deactivate();
+    }
+
+    if (this.shmupZoneActive) {
+      this.shmupSystem.update(delta);
+      this.shmupSystem.updateShmupEnemies(time, delta);
+    }
+  }
+
+  resumeNormalCamera(): void {
+    this.cameras.main.stopFollow();
+    this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
+    this.cameras.main.setDeadzone(50, 50);
+    this.cameras.main.zoomTo(CAMERA_ZOOM_HUMAN, 500);
   }
 
   private updateShadows(): void {
@@ -388,7 +523,7 @@ export class GameScene extends Phaser.Scene {
   private updateBossTrigger(): void {
     if (this.bossTriggered) return;
 
-    const dist = Math.abs(this.player.x - 2950);
+    const dist = Math.abs(this.player.x - 4700);
     if (dist < 400 && this.player.formMachine.hasTransform()) {
       this.bossTriggered = true;
       this.boss.activate();
