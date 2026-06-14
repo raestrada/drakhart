@@ -15,7 +15,7 @@ export const es: typeof en = {
   story: {
     intro1: 'El viejo mundo es ceniza.',
     intro2: 'Solo queda el Núcleo de Dragón.',
-    coreFound: 'El corazón despierta...',
+    coreFound: 'El Núcleo despierta...',
     skyCoreFound: 'El cielo recuerda...',
     destinyEcho: 'Eco del Destino',
     controls: 'FLECHAS/WASD: Mover | ARRIBA/W: Saltar (Mantener para Flotar en Mecha) | X: Atacar | C: Cambiar Forma',
