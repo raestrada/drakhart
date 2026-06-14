@@ -313,53 +313,28 @@ export class UIScene extends Phaser.Scene {
 
   private updateCoreHint(): void {
     const hasMecha = this.player.formMachine.hasTransform();
-    const hasDragon = this.player.formMachine.hasDragon();
 
-    if (hasMecha && hasDragon) {
+    if (hasMecha) {
       this.hint.setAlpha(0);
       return;
     }
 
-    // Stage 1: find Dragon Core
-    if (!hasMecha) {
-      const dist = Math.abs(this.player.x - 1300);
+    const dist = Math.abs(this.player.x - 7478);
 
-      if (dist < 60) {
-        this.hint.setText('PICK IT UP !');
-        this.hint.setAlpha(0.9);
-        this.hint.setColor('#ff6600');
-      } else if (dist < 400) {
-        this.hint.setText('> > >  DRAGON CORE  > > >');
-        this.hint.setAlpha(0.7 + Math.sin(Date.now() * 0.004) * 0.3);
-        this.hint.setColor('#ff8800');
-      } else if (dist < 800) {
-        this.hint.setText('>>  Seek the altar to the right  >>');
-        this.hint.setAlpha(0.5 + Math.sin(Date.now() * 0.003) * 0.2);
-        this.hint.setColor('#886644');
-      } else {
-        this.hint.setAlpha(0);
-      }
-      return;
-    }
-
-    // Stage 2: find Sky Core (Dragon unlock)
-    if (hasMecha && !hasDragon) {
-      const dist = Math.abs(this.player.x - 2100);
-
-      if (dist < 60) {
-        this.hint.setText('PICK IT UP !');
-        this.hint.setAlpha(0.9);
-        this.hint.setColor('#44aaff');
-      } else if (dist < 500) {
-        this.hint.setText('> > >  SKY CORE  > > >');
-        this.hint.setAlpha(0.7 + Math.sin(Date.now() * 0.004) * 0.3);
-        this.hint.setColor('#66bbff');
-      } else {
-        this.hint.setText('>>  Enter the Bastion as MECHA  >>');
-        this.hint.setAlpha(0.5 + Math.sin(Date.now() * 0.003) * 0.2);
-        this.hint.setColor('#8899bb');
-      }
-      return;
+    if (dist < 60) {
+      this.hint.setText(t('story.hintPickUp'));
+      this.hint.setAlpha(0.9);
+      this.hint.setColor('#ff6600');
+    } else if (dist < 400) {
+      this.hint.setText(t('story.hintDragonCore'));
+      this.hint.setAlpha(0.7 + Math.sin(Date.now() * 0.004) * 0.3);
+      this.hint.setColor('#ff8800');
+    } else if (dist < 1000) {
+      this.hint.setText(t('story.hintSeekAltar'));
+      this.hint.setAlpha(0.5 + Math.sin(Date.now() * 0.003) * 0.2);
+      this.hint.setColor('#886644');
+    } else {
+      this.hint.setAlpha(0);
     }
   }
 }

@@ -76,9 +76,7 @@ export class FormStateMachine {
 
     if (this.currentState === FormState.HUMAN && this.transformUnlocked) {
       this.beginTransformToMecha();
-    } else if (this.currentState === FormState.MECHA && this.dragonUnlocked) {
-      this.beginTransformToDragon();
-    } else if (this.currentState === FormState.DRAGON) {
+    } else if (this.currentState === FormState.MECHA) {
       this.startRevert();
     }
   }
@@ -86,6 +84,7 @@ export class FormStateMachine {
   private beginTransformToMecha(): void {
     this.currentState = FormState.TRANSFORMING;
     this.player.setVelocity(0, 0);
+    (this.scene as any).gameAudio?.playTransform();
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
@@ -115,6 +114,7 @@ export class FormStateMachine {
   private beginTransformToDragon(): void {
     this.currentState = FormState.TRANSFORMING;
     this.player.setVelocity(0, 0);
+    (this.scene as any).gameAudio?.playTransform();
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
@@ -145,6 +145,7 @@ export class FormStateMachine {
   private startRevert(): void {
     this.currentState = FormState.EXHAUSTED;
     this.player.setTexture('player-human');
+    (this.scene as any).gameAudio?.playRevert();
     this.player.setScale(0.8);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = true;

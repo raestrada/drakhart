@@ -34,6 +34,7 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
   }
 
   private spawnImmuneEffects(): void {
+    (this.scene as any).gameAudio?.playEnemyHit();
     // Floating text
     const txt = this.scene.add.text(this.x, this.y - 32, 'IMMUNE', {
       fontSize: '10px',
@@ -73,6 +74,7 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
   }
 
   private shatter(): void {
+    (this.scene as any).gameAudio?.playDestruction();
     this.alive = false;
 
     // Destructive camera shake

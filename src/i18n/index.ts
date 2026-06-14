@@ -14,11 +14,19 @@ function detectLanguage(): Lang {
 }
 
 export function initI18n(): void {
-  currentLang = detectLanguage();
+  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('drakhart_lang') : null;
+  if (saved === 'en' || saved === 'es') {
+    currentLang = saved;
+  } else {
+    currentLang = detectLanguage();
+  }
 }
 
 export function setLanguage(lang: Lang): void {
   currentLang = lang;
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('drakhart_lang', lang);
+  }
 }
 
 export function getLanguage(): Lang {

@@ -1,12 +1,35 @@
 import Phaser from 'phaser';
-import { t } from '../i18n';
+import { t, setLanguage, getLanguage } from '../i18n';
+import { TitleAudio } from '../systems/TitleAudio';
+import { clearSave } from '../systems/SaveSystem';
 
 export class BootScene extends Phaser.Scene {
+  private titleAudio!: TitleAudio;
+
   constructor() { super({ key: 'BootScene' }); }
+
+  preload(): void {
+    // Force reload assets using a query string timestamp to bypass browser cache
+    const v = 'v=' + Date.now();
+    this.load.image('bg-moon-raw', `assets/bg-moon-raw.png?${v}`);
+    this.load.image('bg-castle-raw', `assets/bg-castle-raw.png?${v}`);
+    this.load.image('title-splash', `marketing/drakhart_splash.png`);
+    this.load.image('cinematic-gem-1', `assets/cinematic_gem_1.png`);
+    this.load.image('cinematic-gem-2', `assets/cinematic_gem_2.png`);
+    this.load.image('cinematic-gem-3', `assets/cinematic_gem_3.png`);
+  }
 
   create(): void {
     const { width, height } = this.cameras.main;
-    this.cameras.main.setBackgroundColor('#06040c');
+    this.cameras.main.setBackgroundColor('#050308');
+
+    // 1. Splash image background cover
+    const splash = this.add.image(width / 2, height / 2, 'title-splash');
+    splash.setDisplaySize(width, height);
+    splash.setAlpha(0.25);
+
+    // Initialize Title Audio system
+    this.titleAudio = new TitleAudio();
 
     // Generate all procedural game textures
     this.generateTextures();
@@ -17,103 +40,318 @@ export class BootScene extends Phaser.Scene {
     const scale = width / 800;
 
     // Title text: Hollow Knight style fade-in scaled dynamically
-    const title = this.add.text(width / 2, height / 2 - 50 * scale, 'D R A K H A R T', {
-      fontSize: `${Math.round(42 * scale)}px`,
+    const title = this.add.text(width / 2, height * 0.22, 'D R A K H A R T', {
+      fontSize: `${Math.round(48 * scale)}px`,
       fontFamily: 'Georgia, serif',
       color: '#a31515',
       shadow: { offsetX: 0, offsetY: 0, color: '#000000', blur: Math.round(12 * scale), fill: true }
     }).setOrigin(0.5).setAlpha(0);
 
-    // Subtitle
-    const subtitle = this.add.text(width / 2, height / 2 + 10 * scale, t('story.destinyEcho').toUpperCase(), {
+    const subtitle = this.add.text(width / 2, height * 0.30, t('story.coreFound').toUpperCase(), {
       fontSize: `${Math.round(11 * scale)}px`,
       fontFamily: 'monospace',
-      color: '#554a3c'
+      color: '#8c7864',
+      stroke: '#000000',
+      strokeThickness: 3
     }).setOrigin(0.5).setAlpha(0);
 
-    // Press Enter prompt
+    // Fade in title & subtitle sequentially
+    this.tweens.add({
+      targets: title,
+      alpha: 0.9,
+      duration: 1200,
+      ease: 'Power2'
+    });
+    this.tweens.add({
+      targets: subtitle,
+      alpha: 0.6,
+      duration: 1200,
+      delay: 300,
+      ease: 'Power2'
+    });
+
+    // 2. Menu containers
+    const menuContainer = this.add.container(0, 0);
+    const settingsContainer = this.add.container(0, 0).setVisible(false);
+
+    // Check if save exists
+    const hasSave = typeof localStorage !== 'undefined' && localStorage.getItem('drakhart_save') !== null;
+
+    // Main menu buttons
+    const btnNewGame = this.add.text(width / 2, height * 0.52, t('ui.newGame'), {
+      fontSize: `${Math.round(15 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    const btnContinue = this.add.text(width / 2, height * 0.60, t('ui.continue'), {
+      fontSize: `${Math.round(15 * scale)}px`,
+      fontFamily: 'monospace',
+      color: hasSave ? '#aa8855' : '#444444'
+    }).setOrigin(0.5);
+
+    if (hasSave) {
+      btnContinue.setInteractive({ useHandCursor: true });
+    }
+
+    const btnSettings = this.add.text(width / 2, height * 0.68, t('ui.settings'), {
+      fontSize: `${Math.round(15 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    menuContainer.add([btnNewGame, btnContinue, btnSettings]);
+
+    // Volume variables loading
+    let bgmVol = 1.0;
+    let sfxVol = 1.0;
+    if (typeof localStorage !== 'undefined') {
+      const savedBgm = localStorage.getItem('drakhart_bgm');
+      if (savedBgm !== null) bgmVol = parseFloat(savedBgm);
+      const savedSfx = localStorage.getItem('drakhart_sfx');
+      if (savedSfx !== null) sfxVol = parseFloat(savedSfx);
+    }
+
+    // Settings menu buttons/labels
+    const langLabel = this.add.text(width / 2, height * 0.48, `${t('ui.language')}: ${getLanguage().toUpperCase()}`, {
+      fontSize: `${Math.round(14 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    const bgmLabel = this.add.text(width / 2, height * 0.56, `${t('ui.bgmVolume')}: ${Math.round(bgmVol * 100)}%`, {
+      fontSize: `${Math.round(14 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    const sfxLabel = this.add.text(width / 2, height * 0.64, `${t('ui.sfxVolume')}: ${Math.round(sfxVol * 100)}%`, {
+      fontSize: `${Math.round(14 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    const btnBack = this.add.text(width / 2, height * 0.74, t('ui.back'), {
+      fontSize: `${Math.round(14 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    settingsContainer.add([langLabel, bgmLabel, sfxLabel, btnBack]);
+
+    // Binds interactive behaviors to buttons
+    const makeButtonGlow = (btn: Phaser.GameObjects.Text, originalTextKey: string) => {
+      btn.on('pointerover', () => {
+        btn.setColor('#ffcc66');
+        btn.setScale(1.06);
+        btn.setText(`> ${t(originalTextKey)} <`);
+      });
+      btn.on('pointerout', () => {
+        btn.setColor('#aa8855');
+        btn.setScale(1.0);
+        btn.setText(t(originalTextKey));
+      });
+    };
+
+    makeButtonGlow(btnNewGame, 'ui.newGame');
+    if (hasSave) makeButtonGlow(btnContinue, 'ui.continue');
+    makeButtonGlow(btnSettings, 'ui.settings');
+    makeButtonGlow(btnBack, 'ui.back');
+
+    // Language and volume hover behaviors
+    const setupHoverColorOnly = (btn: Phaser.GameObjects.Text) => {
+      btn.on('pointerover', () => {
+        btn.setColor('#ffcc66');
+        btn.setScale(1.04);
+      });
+      btn.on('pointerout', () => {
+        btn.setColor('#aa8855');
+        btn.setScale(1.0);
+      });
+    };
+    setupHoverColorOnly(langLabel);
+    setupHoverColorOnly(bgmLabel);
+    setupHoverColorOnly(sfxLabel);
+
+    // Update text labels helper
+    const updateMenuLabels = () => {
+      subtitle.setText(t('story.coreFound').toUpperCase());
+      btnNewGame.setText(menuContainer.visible ? t('ui.newGame') : `> ${t('ui.newGame')} <`);
+      btnContinue.setText(t('ui.continue'));
+      btnSettings.setText(menuContainer.visible ? t('ui.settings') : `> ${t('ui.settings')} <`);
+      btnBack.setText(t('ui.back'));
+      langLabel.setText(`${t('ui.language')}: ${getLanguage().toUpperCase()}`);
+      bgmLabel.setText(`${t('ui.bgmVolume')}: ${Math.round(bgmVol * 100)}%`);
+      sfxLabel.setText(`${t('ui.sfxVolume')}: ${Math.round(sfxVol * 100)}%`);
+      prompt.setText(`[ ${t('ui.pressStart')} ]`);
+    };
+
+    // Click behaviors
+    btnSettings.on('pointerdown', () => {
+      menuContainer.setVisible(false);
+      settingsContainer.setVisible(true);
+      updateMenuLabels();
+    });
+
+    btnBack.on('pointerdown', () => {
+      settingsContainer.setVisible(false);
+      menuContainer.setVisible(true);
+      updateMenuLabels();
+    });
+
+    // Toggle language
+    langLabel.on('pointerdown', () => {
+      const nextLang = getLanguage() === 'en' ? 'es' : 'en';
+      setLanguage(nextLang);
+      updateMenuLabels();
+    });
+
+    // Cycle BGM Volume
+    bgmLabel.on('pointerdown', () => {
+      bgmVol = bgmVol + 0.25 > 1.05 ? 0 : bgmVol + 0.25;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('drakhart_bgm', bgmVol.toString());
+      }
+      this.titleAudio.setVolume(bgmVol);
+      updateMenuLabels();
+    });
+
+    // Cycle SFX Volume
+    sfxLabel.on('pointerdown', () => {
+      sfxVol = sfxVol + 0.25 > 1.05 ? 0 : sfxVol + 0.25;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('drakhart_sfx', sfxVol.toString());
+      }
+      updateMenuLabels();
+    });
+
+    // Cinematic widescreen letterbox bars (rendered on top)
+    const letterboxTop = this.add.rectangle(0, -80, width, 80, 0x000000).setOrigin(0, 0).setDepth(200);
+    const letterboxBottom = this.add.rectangle(0, height, width, 80, 0x000000).setOrigin(0, 0).setDepth(200);
+
+    // Blinking prompt for enter to start
     const prompt = this.add.text(width / 2, height / 2 + 80 * scale, `[ ${t('ui.pressStart')} ]`, {
       fontSize: `${Math.round(10 * scale)}px`,
       fontFamily: 'monospace',
       color: '#aa8855'
     }).setOrigin(0.5).setAlpha(0);
 
-    // Tweens to fade in elements sequentially
-    this.tweens.add({
-      targets: title,
-      alpha: 0.9,
-      duration: 1600,
-      ease: 'Power2'
-    });
-
-    this.tweens.add({
-      targets: subtitle,
-      alpha: 0.6,
-      duration: 1600,
-      delay: 600,
-      ease: 'Power2'
-    });
-
-    this.tweens.add({
-      targets: prompt,
-      alpha: 0.75,
-      duration: 1200,
-      delay: 1400,
-      ease: 'Power2',
-      onComplete: () => {
-        // Once visible, make the prompt pulse gently
-        this.tweens.add({
-          targets: prompt,
-          alpha: 0.2,
-          duration: 1000,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut'
-        });
-      }
-    });
-
-    // Keyboard trigger to start GameScene
-    const enterKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     let transitioning = false;
 
-    enterKey.once('down', () => {
-      if (transitioning) return;
-      transitioning = true;
+    // Start Cinematic Title Screen sequence
+    const startCinematicTitle = () => {
+      // 1. Hide main menu UI
+      menuContainer.setVisible(false);
 
-      // Hollow Knight style transition juice
-      this.cameras.main.shake(300, 0.005);
-      this.cameras.main.flash(350, 160, 20, 20); // crimson flash
-
-      // Fade out title screen elements
+      // Fade out the splash art completely to pitch black
       this.tweens.add({
-        targets: [title, subtitle, prompt],
+        targets: splash,
         alpha: 0,
+        duration: 600,
+        ease: 'Power2'
+      });
+
+      // Reset camera background to deep black
+      this.cameras.main.setBackgroundColor('#06040c');
+
+      // 2. Initialize and play BGM (Unlocks AudioContext on user click gesture!)
+      this.titleAudio.init();
+      this.titleAudio.play();
+
+      // 3. Fade in blinking enter prompt
+      this.tweens.add({
+        targets: prompt,
+        alpha: 0.75,
         duration: 800,
         ease: 'Power2',
         onComplete: () => {
-          this.scene.start('GameScene');
+          this.tweens.add({
+            targets: prompt,
+            alpha: 0.2,
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
         }
       });
+
+      // 4. Enable ENTER key listener
+      const enterKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+      enterKey.once('down', () => {
+        if (transitioning) return;
+        transitioning = true;
+
+        // Cinematic filter sweep and bass drop
+        this.titleAudio.triggerFilterSweep();
+
+        // Slide bars
+        this.tweens.add({
+          targets: letterboxTop,
+          y: 0,
+          duration: 1000,
+          ease: 'Cubic.easeOut'
+        });
+        this.tweens.add({
+          targets: letterboxBottom,
+          y: height - 80,
+          duration: 1000,
+          ease: 'Cubic.easeOut'
+        });
+
+        // Widescreen zoom & rumble
+        this.cameras.main.shake(1200, 0.008);
+        this.cameras.main.zoomTo(1.35, 1200, 'Cubic.easeInOut');
+
+        // Fade out texts
+        this.tweens.add({
+          targets: [title, subtitle, prompt],
+          alpha: 0,
+          duration: 600,
+          ease: 'Power2'
+        });
+
+        // Fade out to black and start game
+        this.time.delayedCall(900, () => {
+          this.cameras.main.fadeOut(300, 0, 0, 0);
+        });
+
+        this.time.delayedCall(1200, () => {
+          this.titleAudio.stop();
+          this.scene.start('GameScene');
+        });
+      });
+    };
+
+    btnNewGame.on('pointerdown', () => {
+      clearSave();
+      startCinematicTitle();
     });
+
+    if (hasSave) {
+      btnContinue.on('pointerdown', () => {
+        startCinematicTitle();
+      });
+    }
   }
 
   private startEmberRain(width: number, height: number): void {
-    // Continuously spawn background embers floating upwards
+    // Continuously spawn background embers floating upwards and drifting left
     this.time.addEvent({
-      delay: 140,
+      delay: 65, // Doubled density (half the delay)
       callback: () => {
-        const x = Phaser.Math.Between(0, width);
+        const x = Phaser.Math.Between(50, width + 150); // Start slightly to the right to account for leftward drift
         const y = height + 10;
-        const size = Phaser.Math.Between(2, 4);
-        const color = Phaser.Math.Between(0, 1) ? 0xcc3300 : 0xffaa00;
+        const size = Phaser.Math.Between(3, 8); // Increased size
+        const colors = [0xff0055, 0xcc3300, 0xffaa00, 0xff5500]; // Added crimson-pink tone
+        const color = Phaser.Utils.Array.GetRandom(colors);
 
-        const ember = this.add.rectangle(x, y, size, size, color, 0.4);
+        const ember = this.add.rectangle(x, y, size, size, color, 0.75); // Increased opacity
         ember.setBlendMode(Phaser.BlendModes.ADD);
 
         this.tweens.add({
           targets: ember,
-          x: x + Phaser.Math.Between(-100, 100),
+          x: x - Phaser.Math.Between(150, 300), // Leftward drift wind effect
           y: -10,
           alpha: 0,
           scale: 0.1,
@@ -179,9 +417,39 @@ export class BootScene extends Phaser.Scene {
     this.genWarriorFrames();
     this.genMechaFrames();
     this.genDragonFrames();
-    this.drawSentinel();
+    this.drawShadowWraith();
+    this.drawShieldEnemy();
+    this.drawSpitterEnemy();
+    this.drawLeaperEnemy();
     this.drawBoss();
-    this.drawTiles();
+    this.drawTerrainTextures();
+
+    // Bush small (procedural only)
+    this.drawBush();
+
+    // Bush large (procedural only)
+    this.drawLargeBush();
+
+    // Rock destructible (procedural only)
+    this.drawDestructibleRock();
+
+    // Rock large (procedural only)
+    this.drawLargeRockProcedural();
+
+    // Red moon
+    if (this.textures.exists('bg-moon-raw')) {
+      this.keyOutBlackAndScale('bg-moon-raw', 'bg-moon', 160, 160);
+    } else {
+      this.drawRedMoon();
+    }
+
+    // Castle silhouette
+    if (this.textures.exists('bg-castle-raw')) {
+      this.keyOutBlackAndScale('bg-castle-raw', 'bg-castle', 384, 384);
+    } else {
+      this.drawCastleSilhouette();
+    }
+
     this.drawDragonCore();
     this.drawSkyCore();
     this.drawBarricade();
@@ -190,6 +458,9 @@ export class BootScene extends Phaser.Scene {
     this.drawSwordSlashHeavy();
     this.drawDestinyCard();
     this.drawShadow();
+    this.drawTwinkleStar();
+    this.drawMoonGlow();
+    this.drawForegroundElements();
     this.drawBackgrounds();
     this.drawParticles();
   }
@@ -217,6 +488,93 @@ export class BootScene extends Phaser.Scene {
     this.drawWarrior('h-attack-2', 0, 0, 0, 3, 'none');
 
     this.drawWarrior('player-human', 0, 0, 0, 0, 'none');
+    this.drawWarriorKneeling('h-kneeling');
+  }
+
+  private drawWarriorKneeling(key: string): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const P = this.P;
+    const dx = 24;
+    const dy = 24 + 10;
+
+    g.fillStyle(P.wCa1);
+    g.beginPath();
+    g.moveTo(10 + dx, 22 + dy);
+    g.lineTo(2 + dx, 60 + dy);
+    g.lineTo(0 + dx, 66 + dy);
+    g.lineTo(16 + dx, 60 + dy);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(P.wCa2);
+    g.beginPath();
+    g.moveTo(11 + dx, 24 + dy);
+    g.lineTo(4 + dx, 58 + dy);
+    g.lineTo(2 + dx, 63 + dy);
+    g.lineTo(16 + dx, 57 + dy);
+    g.closePath(); g.fillPath();
+
+    g.lineStyle(5, P.wSt1);
+    g.beginPath(); g.moveTo(14 + dx, 38 + dy); g.lineTo(16 + dx, 48 + dy); g.lineTo(6 + dx, 56 + dy); g.strokePath();
+    g.lineStyle(4, P.wSt2);
+    g.beginPath(); g.moveTo(6 + dx, 56 + dy); g.lineTo(0 + dx, 56 + dy); g.strokePath();
+
+    g.lineStyle(5, P.wSt2);
+    g.beginPath(); g.moveTo(18 + dx, 38 + dy); g.lineTo(22 + dx, 48 + dy); g.lineTo(10 + dx, 56 + dy); g.strokePath();
+    g.lineStyle(4, P.wSt3);
+    g.beginPath(); g.moveTo(10 + dx, 56 + dy); g.lineTo(4 + dx, 56 + dy); g.strokePath();
+
+    const torsoX = 12 + dx;
+    const torsoY = 22 + dy;
+    const torsoW = 16;
+    const torsoH = 18;
+
+    g.fillStyle(P.wSt1);
+    g.beginPath();
+    g.moveTo(torsoX - 1, torsoY);
+    g.lineTo(torsoX + torsoW - 3, torsoY + 4);
+    g.lineTo(torsoX + torsoW + 1, torsoY + 9);
+    g.lineTo(torsoX + torsoW - 3, torsoY + torsoH + 1);
+    g.lineTo(torsoX - 1, torsoY + torsoH - 1);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(P.wSt2);
+    g.beginPath();
+    g.moveTo(torsoX, torsoY + 1);
+    g.lineTo(torsoX + torsoW - 4, torsoY + 5);
+    g.lineTo(torsoX + torsoW, torsoY + 9);
+    g.lineTo(torsoX + torsoW - 4, torsoY + torsoH);
+    g.lineTo(torsoX, torsoY + torsoH - 1);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(P.wSt3);
+    g.beginPath();
+    g.moveTo(torsoX + 3, torsoY + 3);
+    g.lineTo(torsoX + torsoW - 6, torsoY + 6);
+    g.lineTo(torsoX + torsoW - 4, torsoY + 9);
+    g.lineTo(torsoX + torsoW - 6, torsoY + torsoH - 2);
+    g.lineTo(torsoX + 3, torsoY + torsoH - 3);
+    g.closePath(); g.fillPath();
+
+    const headX = 24 + dx;
+    const headY = 16 + dy;
+
+    g.fillStyle(P.wH3);
+    g.beginPath(); g.moveTo(headX - 6, headY - 4); g.lineTo(headX - 14, headY - 8); g.lineTo(headX - 8, headY - 2); g.closePath(); g.fillPath();
+    g.fillStyle(P.wH1);
+    g.beginPath(); g.moveTo(headX - 5, headY - 5); g.lineTo(headX - 11, headY - 8); g.lineTo(headX - 7, headY - 3); g.closePath(); g.fillPath();
+
+    this.circ(g, headX, headY, 6, P.wSt1);
+    this.circ(g, headX, headY, 5, P.wSt2);
+
+    g.fillStyle(P.wBr2);
+    g.beginPath(); g.moveTo(headX + 2, headY); g.lineTo(headX + 5, headY + 2); g.lineTo(headX + 3, headY + 4); g.closePath(); g.fillPath();
+
+    g.lineStyle(4, P.wSt1);
+    g.beginPath(); g.moveTo(18 + dx, 24 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(22 + dx, 48 + dy); g.strokePath();
+    g.lineStyle(3, P.wSt3);
+    g.beginPath(); g.moveTo(18 + dx, 24 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(22 + dx, 46 + dy); g.strokePath();
+
+    this.tex(g, key, 96, 96);
   }
 
   private drawWarrior(
@@ -482,31 +840,41 @@ export class BootScene extends Phaser.Scene {
 
     // ── 10. Greatsword ──
     if (swPhase === 1) {
-      g.fillStyle(P.wLe1); g.fillRoundedRect(armX - 2, armY - 4, 4, 5, 1);
-      g.fillStyle(P.wGo); g.fillRect(armX - 5, armY - 1, 10, 2.5);
-      g.fillStyle(P.wBl1); g.fillRect(armX - 1, armY - 20, 4, 16);
-      g.fillStyle(P.wBl2); g.fillRect(armX, armY - 18, 2, 14);
-      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 0.5, armY - 16, 1, 10);
-    } else if (swPhase === 2) {
-      g.fillStyle(P.wLe1); g.fillRoundedRect(armX + 5, armY, 5, 4, 1);
-      g.fillStyle(P.wGo); g.fillRect(armX + 4, armY - 3, 3, 12);
-      g.fillStyle(P.wBl1); g.fillRect(armX + 7, armY, 24, 4);
-      g.fillStyle(P.wBl2); g.fillRect(armX + 9, armY + 1, 20, 2);
-      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 10, armY + 1.5, 16, 1);
+      // Overhead windup (longer blade: 36px)
+      g.fillStyle(P.wLe1); g.fillRoundedRect(armX - 2, armY - 4, 4, 6, 1); // hilt
+      g.fillStyle(P.wGo); g.fillRect(armX - 7, armY - 1, 14, 3);          // guard
+      g.fillStyle(P.wBl1); g.fillRect(armX - 2, armY - 37, 6, 36);         // blade base
+      g.fillStyle(P.wBl2); g.fillRect(armX - 1, armY - 35, 4, 34);         // inner blade
+      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 0.25, armY - 31, 1.5, 26); // blood runes
       g.fillStyle(P.wBl3);
-      g.beginPath(); g.moveTo(armX + 31, armY); g.lineTo(armX + 35, armY + 2); g.lineTo(armX + 31, armY + 4); g.closePath(); g.fillPath();
+      g.beginPath(); g.moveTo(armX - 2, armY - 37); g.lineTo(armX + 1, armY - 42); g.lineTo(armX + 4, armY - 37); g.closePath(); g.fillPath(); // blade tip
+    } else if (swPhase === 2) {
+      // Heavy forward slash (longer blade: 36px)
+      g.fillStyle(P.wLe1); g.fillRoundedRect(armX + 3, armY, 6, 4, 1);    // hilt
+      g.fillStyle(P.wGo); g.fillRect(armX + 9, armY - 5, 3, 14);          // guard
+      g.fillStyle(P.wBl1); g.fillRect(armX + 12, armY - 1, 36, 6);         // blade base
+      g.fillStyle(P.wBl2); g.fillRect(armX + 14, armY, 34, 4);            // inner blade
+      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 18, armY + 1.25, 26, 1.5); // blood runes
+      g.fillStyle(P.wBl3);
+      g.beginPath(); g.moveTo(armX + 48, armY - 1); g.lineTo(armX + 53, armY + 2); g.lineTo(armX + 48, armY + 5); g.closePath(); g.fillPath(); // blade tip
     } else if (swPhase === 3) {
-      g.fillStyle(P.wLe1); g.fillRoundedRect(armX + 3, armY + 6, 4, 5, 1);
-      g.fillStyle(P.wGo); g.fillRect(armX, armY + 5, 10, 2.5);
-      g.fillStyle(P.wBl1); g.fillRect(armX + 4, armY + 9, 4, 18);
-      g.fillStyle(P.wBl2); g.fillRect(armX + 5, armY + 11, 2, 14);
-      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 5.5, armY + 12, 1, 10);
+      // Recovery blade down (longer blade: 36px)
+      g.fillStyle(P.wLe1); g.fillRoundedRect(armX + 3, armY + 4, 4, 6, 1); // hilt
+      g.fillStyle(P.wGo); g.fillRect(armX - 2, armY + 10, 14, 3);         // guard
+      g.fillStyle(P.wBl1); g.fillRect(armX + 2, armY + 13, 6, 36);         // blade base
+      g.fillStyle(P.wBl2); g.fillRect(armX + 3, armY + 15, 4, 34);         // inner blade
+      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 4.25, armY + 19, 1.5, 26); // blood runes
+      g.fillStyle(P.wBl3);
+      g.beginPath(); g.moveTo(armX + 2, armY + 49); g.lineTo(armX + 5, armY + 54); g.lineTo(armX + 8, armY + 49); g.closePath(); g.fillPath(); // blade tip
     } else {
-      g.fillStyle(P.wLe1); g.fillRoundedRect(armX + 2, armY - 2, 4, 5, 1);
-      g.fillStyle(P.wGo); g.fillRect(armX - 1, armY - 4, 10, 2.5);
-      g.fillStyle(P.wBl1); g.fillRect(armX + 3, armY - 22, 4, 18);
-      g.fillStyle(P.wBl2); g.fillRect(armX + 4, armY - 20, 2, 16);
-      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 4.5, armY - 18, 1, 12);
+      // Idle / Default stance (longer blade: 36px)
+      g.fillStyle(P.wLe1); g.fillRoundedRect(armX + 2, armY - 2, 4, 6, 1); // hilt
+      g.fillStyle(P.wGo); g.fillRect(armX - 3, armY - 5, 14, 3);          // wide guard
+      g.fillStyle(P.wBl1); g.fillRect(armX + 2, armY - 41, 6, 36);         // blade base (width 6, height 36)
+      g.fillStyle(P.wBl2); g.fillRect(armX + 3, armY - 39, 4, 34);         // inner blade
+      g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 4.25, armY - 35, 1.5, 26); // blood runes
+      g.fillStyle(P.wBl3);
+      g.beginPath(); g.moveTo(armX + 2, armY - 41); g.lineTo(armX + 5, armY - 46); g.lineTo(armX + 8, armY - 41); g.closePath(); g.fillPath(); // blade tip
     }
 
     this.tex(g, key, 96, 96);
@@ -534,6 +902,80 @@ export class BootScene extends Phaser.Scene {
     this.drawMecha('m-attack-2', 2, 1, 3, 'none');
 
     this.drawMecha('player-mecha', 0, 0, 0, 'none');
+    this.drawMechaKneeling('m-kneeling');
+  }
+
+  private drawMechaKneeling(key: string): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const P = this.P;
+    const dx = 24;
+    const dy = 24 + 12;
+
+    g.fillStyle(P.mRd1);
+    g.beginPath();
+    g.moveTo(10 + dx, 20 + dy);
+    g.lineTo(0 + dx, 62 + dy);
+    g.lineTo(16 + dx, 58 + dy);
+    g.closePath(); g.fillPath();
+
+    g.lineStyle(6, P.mJo);
+    g.beginPath(); g.moveTo(14 + dx, 38 + dy); g.lineTo(16 + dx, 48 + dy); g.lineTo(6 + dx, 54 + dy); g.strokePath();
+    g.lineStyle(5, P.mPl3);
+    g.beginPath(); g.moveTo(6 + dx, 54 + dy); g.lineTo(0 + dx, 54 + dy); g.strokePath();
+
+    g.lineStyle(6, P.mJo2);
+    g.beginPath(); g.moveTo(18 + dx, 38 + dy); g.lineTo(22 + dx, 48 + dy); g.lineTo(10 + dx, 54 + dy); g.strokePath();
+    g.lineStyle(5, P.mPl1);
+    g.beginPath(); g.moveTo(10 + dx, 54 + dy); g.lineTo(4 + dx, 54 + dy); g.strokePath();
+
+    const torsoX = 10 + dx;
+    const torsoY = 20 + dy;
+    const torsoW = 20;
+    const torsoH = 20;
+
+    g.fillStyle(P.mJo);
+    g.beginPath();
+    g.moveTo(torsoX - 1, torsoY);
+    g.lineTo(torsoX + torsoW + 1, torsoY + 4);
+    g.lineTo(torsoX + torsoW - 1, torsoY + torsoH + 1);
+    g.lineTo(torsoX - 1, torsoY + torsoH - 1);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(P.mPl1);
+    g.beginPath();
+    g.moveTo(torsoX, torsoY + 1);
+    g.lineTo(torsoX + torsoW, torsoY + 5);
+    g.lineTo(torsoX + torsoW - 2, torsoY + torsoH);
+    g.lineTo(torsoX, torsoY + torsoH - 1);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(P.mGo);
+    g.beginPath();
+    g.moveTo(torsoX + 3, torsoY + 3);
+    g.lineTo(torsoX + torsoW - 3, torsoY + 6);
+    g.lineTo(torsoX + torsoW - 5, torsoY + torsoH - 2);
+    g.lineTo(torsoX + 3, torsoY + torsoH - 3);
+    g.closePath(); g.fillPath();
+
+    this.circ(g, torsoX + 10, torsoY + 10, 4.5, P.mRd1);
+    g.lineStyle(1.5, 0x111111);
+    g.beginPath(); g.moveTo(torsoX + 7, torsoY + 10); g.lineTo(torsoX + 13, torsoY + 11); g.strokePath();
+
+    const headX = 22 + dx;
+    const headY = 14 + dy;
+
+    this.circ(g, headX, headY, 7, P.mJo);
+    this.circ(g, headX, headY, 6, P.mPl1);
+
+    g.fillStyle(0x0e4428);
+    g.beginPath(); g.moveTo(headX + 2, headY - 1); g.lineTo(headX + 6, headY + 1); g.lineTo(headX + 3, headY + 3); g.closePath(); g.fillPath();
+
+    g.lineStyle(5, P.mJo);
+    g.beginPath(); g.moveTo(16 + dx, 22 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(20 + dx, 48 + dy); g.strokePath();
+    g.lineStyle(4, P.mPl1);
+    g.beginPath(); g.moveTo(16 + dx, 22 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(20 + dx, 46 + dy); g.strokePath();
+
+    this.tex(g, key, 96, 96);
   }
 
   private drawMecha(
@@ -1116,20 +1558,273 @@ export class BootScene extends Phaser.Scene {
   }
 
   // ═══ SENTINEL 32×32 ═══
-  private drawSentinel(): void {
+  private drawShadowWraith(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    g.fillStyle(0x220044);
-    g.beginPath(); g.moveTo(16, 0); g.lineTo(28, 10); g.lineTo(30, 20);
-    g.lineTo(26, 30); g.lineTo(16, 32); g.lineTo(6, 30);
-    g.lineTo(2, 20); g.lineTo(4, 10); g.closePath(); g.fillPath();
-    g.fillStyle(0x441166);
-    g.beginPath(); g.moveTo(16, 8); g.lineTo(22, 16); g.lineTo(16, 24); g.lineTo(10, 16);
-    g.closePath(); g.fillPath();
-    g.fillStyle(0x110022); g.fillCircle(16, 16, 4);
-    g.fillStyle(0xcc44ff); g.fillCircle(16, 16, 2.5);
-    g.fillStyle(0xff88ff); g.fillCircle(16, 16, 1.2);
-    g.fillStyle(0xffffff); g.fillCircle(16, 15, 0.5);
+
+    // Dark amorphous body — wraith form
+    g.fillStyle(0x0a0a12, 0.9);
+    g.beginPath();
+    g.moveTo(16, 2);
+    g.lineTo(28, 8);
+    g.lineTo(30, 16);
+    g.lineTo(28, 24);
+    g.lineTo(22, 30);
+    g.lineTo(16, 32);
+    g.lineTo(10, 30);
+    g.lineTo(4, 24);
+    g.lineTo(2, 16);
+    g.lineTo(4, 8);
+    g.closePath();
+    g.fillPath();
+
+    // Inner dark glow
+    g.fillStyle(0x15152a, 0.7);
+    g.beginPath();
+    g.moveTo(16, 6);
+    g.lineTo(24, 10);
+    g.lineTo(26, 16);
+    g.lineTo(24, 22);
+    g.lineTo(19, 28);
+    g.lineTo(16, 29);
+    g.lineTo(13, 28);
+    g.lineTo(8, 22);
+    g.lineTo(6, 16);
+    g.lineTo(8, 10);
+    g.closePath();
+    g.fillPath();
+
+    // Twin glowing red eyes — Draconus style
+    g.fillStyle(0x000000);
+    g.fillCircle(11, 16, 3);
+    g.fillCircle(21, 16, 3);
+    g.fillStyle(0xff2200);
+    g.fillCircle(11, 16, 2);
+    g.fillCircle(21, 16, 2);
+    g.fillStyle(0xff6600);
+    g.fillCircle(11, 16, 1);
+    g.fillCircle(21, 16, 1);
+    g.fillStyle(0xffffff);
+    g.fillCircle(12, 15, 0.4);
+    g.fillCircle(22, 15, 0.4);
+
+    // Wispy tendrils at bottom
+    g.fillStyle(0x0a0a12, 0.5);
+    g.fillRect(8, 30, 3, 6);
+    g.fillRect(14, 31, 4, 5);
+    g.fillRect(21, 30, 3, 6);
+
     this.tex(g, 'enemy-sentry', 32, 32);
+  }
+
+  private drawShieldEnemy(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // Dark amorphous body (dark steel plate color for heavy sentry)
+    g.fillStyle(0x121220, 0.95);
+    g.beginPath();
+    g.moveTo(16, 2);
+    g.lineTo(28, 8);
+    g.lineTo(30, 16);
+    g.lineTo(28, 24);
+    g.lineTo(22, 30);
+    g.lineTo(16, 32);
+    g.lineTo(10, 30);
+    g.lineTo(4, 24);
+    g.lineTo(2, 16);
+    g.lineTo(4, 8);
+    g.closePath();
+    g.fillPath();
+
+    // Inner glow - steel blue
+    g.fillStyle(0x223355, 0.7);
+    g.beginPath();
+    g.moveTo(16, 6);
+    g.lineTo(24, 10);
+    g.lineTo(26, 16);
+    g.lineTo(24, 22);
+    g.lineTo(19, 28);
+    g.lineTo(16, 29);
+    g.lineTo(13, 28);
+    g.lineTo(8, 22);
+    g.lineTo(6, 16);
+    g.lineTo(8, 10);
+    g.closePath();
+    g.fillPath();
+
+    // Twin glowing steel blue/white eyes
+    g.fillStyle(0x000000);
+    g.fillCircle(11, 16, 3);
+    g.fillCircle(21, 16, 3);
+    g.fillStyle(0x33aaff);
+    g.fillCircle(11, 16, 2);
+    g.fillCircle(21, 16, 2);
+    g.fillStyle(0xffffff);
+    g.fillCircle(11, 16, 1);
+    g.fillCircle(21, 16, 1);
+
+    // Wispy tendrils at bottom
+    g.fillStyle(0x121220, 0.5);
+    g.fillRect(8, 30, 3, 6);
+    g.fillRect(14, 31, 4, 5);
+    g.fillRect(21, 30, 3, 6);
+
+    // DRAW THE HEAVY METAL SHIELD ON THE FRONT (assuming facing right, i.e. x-coords 23 to 30)
+    g.fillStyle(0x556677); // Metallic dark steel
+    g.beginPath();
+    g.moveTo(24, 4);
+    g.lineTo(30, 6);
+    g.lineTo(31, 16);
+    g.lineTo(30, 26);
+    g.lineTo(24, 28);
+    g.lineTo(26, 16);
+    g.closePath();
+    g.fillPath();
+
+    // Shield edge highlight
+    g.lineStyle(1.5, 0x8899aa);
+    g.beginPath();
+    g.moveTo(24, 4);
+    g.lineTo(30, 6);
+    g.lineTo(31, 16);
+    g.lineTo(30, 26);
+    g.lineTo(24, 28);
+    g.lineTo(26, 16);
+    g.closePath();
+    g.strokePath();
+
+    // Glowing energy core/rune on the shield
+    g.fillStyle(0x33aaff);
+    g.fillRect(27, 12, 3, 8);
+    g.fillStyle(0xffffff);
+    g.fillRect(28, 14, 1, 4);
+
+    this.tex(g, 'enemy-shield', 32, 32);
+  }
+
+  private drawSpitterEnemy(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // Deep purple body
+    g.fillStyle(0x1a0a24, 0.95);
+    g.beginPath();
+    g.moveTo(16, 2);
+    g.lineTo(28, 8);
+    g.lineTo(30, 16);
+    g.lineTo(28, 24);
+    g.lineTo(22, 30);
+    g.lineTo(16, 32);
+    g.lineTo(10, 30);
+    g.lineTo(4, 24);
+    g.lineTo(2, 16);
+    g.lineTo(4, 8);
+    g.closePath();
+    g.fillPath();
+
+    // Inner glow - toxic violet
+    g.fillStyle(0x380b4d, 0.7);
+    g.beginPath();
+    g.moveTo(16, 6);
+    g.lineTo(24, 10);
+    g.lineTo(26, 16);
+    g.lineTo(24, 22);
+    g.lineTo(19, 28);
+    g.lineTo(16, 29);
+    g.lineTo(13, 28);
+    g.lineTo(8, 22);
+    g.lineTo(6, 16);
+    g.lineTo(8, 10);
+    g.closePath();
+    g.fillPath();
+
+    // Acidic green glowing eyes
+    g.fillStyle(0x000000);
+    g.fillCircle(11, 14, 3);
+    g.fillCircle(21, 14, 3);
+    g.fillStyle(0x00ff88);
+    g.fillCircle(11, 14, 2);
+    g.fillCircle(21, 14, 2);
+    g.fillStyle(0xffffff);
+    g.fillCircle(11, 14, 0.8);
+    g.fillCircle(21, 14, 0.8);
+
+    // Glowing toxic throat/mouth opening (front-center of the body)
+    g.fillStyle(0x00ff66);
+    g.fillCircle(16, 22, 4);
+    g.fillStyle(0x000000);
+    g.fillCircle(16, 22, 2.5);
+    g.fillStyle(0xaaffd4);
+    g.fillCircle(16, 22, 1.2);
+
+    // Wispy purple tendrils
+    g.fillStyle(0x1a0a24, 0.5);
+    g.fillRect(8, 30, 3, 6);
+    g.fillRect(14, 31, 4, 5);
+    g.fillRect(21, 30, 3, 6);
+
+    this.tex(g, 'enemy-spitter', 32, 32);
+  }
+
+  private drawLeaperEnemy(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // Crimson/dark orange body
+    g.fillStyle(0x2d0a05, 0.95);
+    g.beginPath();
+    g.moveTo(16, 2);
+    g.lineTo(28, 8);
+    g.lineTo(30, 16);
+    g.lineTo(28, 24);
+    g.lineTo(22, 30);
+    g.lineTo(16, 32);
+    g.lineTo(10, 30);
+    g.lineTo(4, 24);
+    g.lineTo(2, 16);
+    g.lineTo(4, 8);
+    g.closePath();
+    g.fillPath();
+
+    // Inner glow - fire orange
+    g.fillStyle(0x5a1805, 0.7);
+    g.beginPath();
+    g.moveTo(16, 6);
+    g.lineTo(24, 10);
+    g.lineTo(26, 16);
+    g.lineTo(24, 22);
+    g.lineTo(19, 28);
+    g.lineTo(16, 29);
+    g.lineTo(13, 28);
+    g.lineTo(8, 22);
+    g.lineTo(6, 16);
+    g.lineTo(8, 10);
+    g.closePath();
+    g.fillPath();
+
+    // Fiery orange/yellow glowing eyes
+    g.fillStyle(0x000000);
+    g.fillCircle(11, 15, 3);
+    g.fillCircle(21, 15, 3);
+    g.fillStyle(0xff8800);
+    g.fillCircle(11, 15, 2);
+    g.fillCircle(21, 15, 2);
+    g.fillStyle(0xffff00);
+    g.fillCircle(11, 15, 1);
+    g.fillCircle(21, 15, 1);
+
+    // Spiky/spring-like coils at the bottom
+    g.lineStyle(1.5, 0xff5500);
+    g.beginPath();
+    g.moveTo(10, 26);
+    g.lineTo(8, 32);
+    g.lineTo(12, 30);
+    g.moveTo(16, 26);
+    g.lineTo(16, 33);
+    g.lineTo(18, 30);
+    g.moveTo(22, 26);
+    g.lineTo(24, 32);
+    g.lineTo(20, 30);
+    g.strokePath();
+
+    this.tex(g, 'enemy-leaper', 32, 32);
   }
 
   // ═══ BOSS 128×128 ═══
@@ -1187,20 +1882,384 @@ export class BootScene extends Phaser.Scene {
     this.tex(g, 'boss', 128, 128);
   }
 
-  // ═══ TILES ═══
-  private drawTiles(): void {
+  // ═══ TERRAIN TEXTURES ═══
+  private drawTerrainTextures(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    g.fillStyle(0x151210); g.fillRect(0, 0, 32, 32);
-    g.fillStyle(0x1c1715); g.fillRect(0, 0, 32, 3);
-    g.fillStyle(0x0e0c0a); g.fillRect(0, 28, 32, 4);
-    g.fillStyle(0x0a0907, 0.5); g.fillRect(8, 6, 4, 3);
-    g.fillStyle(0x182420, 0.6); g.fillCircle(16, 4, 2);
+
+    // Ground — dark earth with roots
+    g.fillStyle(0x14100c);
+    g.fillRect(0, 0, 32, 32);
+    g.fillStyle(0x1a1510);
+    g.fillRect(0, 0, 32, 4);
+    g.fillStyle(0x0d0a08);
+    g.fillRect(0, 28, 32, 4);
+    // Surface detail: small rocks
+    g.fillStyle(0x1c1612);
+    g.fillCircle(6, 6, 2);
+    g.fillCircle(18, 7, 1.5);
+    g.fillCircle(28, 5, 1.8);
+    // Root
+    g.fillStyle(0x1a120c, 0.7);
+    g.fillRect(14, 2, 2, 4);
+    g.fillRect(16, 2, 1, 3);
+    // Crack
+    g.fillStyle(0x0a0705, 0.6);
+    g.fillRect(22, 10, 2, 4);
     this.tex(g, 'tile-ground', 32, 32);
 
-    g.fillStyle(0x1c1812); g.fillRect(0, 0, 32, 16);
-    g.fillStyle(0x2a241a); g.fillRect(0, 0, 32, 2);
-    g.fillStyle(0x110e08); g.fillRect(0, 14, 32, 2);
+    // Rock platform — natural stone
+    g.fillStyle(0x1c1814);
+    g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x26201a);
+    g.fillRect(0, 0, 32, 3);
+    g.fillStyle(0x120e0a);
+    g.fillRect(0, 14, 32, 2);
+    // Rock texture spots
+    g.fillStyle(0x201a15, 0.5);
+    g.fillCircle(8, 7, 2);
+    g.fillCircle(22, 6, 2.5);
+    g.fillStyle(0x16120e, 0.4);
+    g.fillCircle(14, 9, 1.5);
+    // Moss
+    g.fillStyle(0x1a2818, 0.3);
+    g.fillCircle(28, 4, 2);
+    g.fillCircle(30, 5, 1);
     this.tex(g, 'tile-platform', 32, 16);
+
+    // Grass-topped earth platform
+    g.fillStyle(0x181a14);
+    g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x1a2014);
+    g.fillRect(0, 0, 32, 4);
+    g.fillStyle(0x0e100a);
+    g.fillRect(0, 14, 32, 2);
+    // Grass blades
+    g.fillStyle(0x1a3018, 0.5);
+    g.fillRect(4, 1, 1, 3);
+    g.fillRect(10, 0, 1, 2);
+    g.fillRect(16, 1, 1, 4);
+    g.fillRect(22, 0, 1, 2);
+    g.fillRect(28, 1, 1, 3);
+    // Earth spots
+    g.fillStyle(0x141610, 0.4);
+    g.fillCircle(8, 8, 2);
+    this.tex(g, 'tile-grass', 32, 16);
+
+    // Stone ruins block — ancient carved stone
+    g.fillStyle(0x201c18);
+    g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x2a241e);
+    g.fillRect(0, 0, 32, 2);
+    g.fillStyle(0x15120e);
+    g.fillRect(0, 14, 32, 2);
+    // Carved line
+    g.fillStyle(0x252018, 0.3);
+    g.fillRect(4, 5, 24, 1);
+    // Weathering
+    g.fillStyle(0x1a1612, 0.5);
+    g.fillCircle(10, 8, 1.5);
+    g.fillCircle(26, 7, 1);
+    this.tex(g, 'tile-ruins', 32, 16);
+
+    // Tree stump platform
+    g.fillStyle(0x1a120c);
+    g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x221810);
+    g.fillRect(0, 0, 32, 3);
+    g.fillStyle(0x0e0a06);
+    g.fillRect(0, 14, 32, 2);
+    // Rings
+    g.fillStyle(0x1c140e, 0.4);
+    g.fillEllipse(16, 6, 20, 8);
+    g.fillStyle(0x1a120c, 0.3);
+    g.fillEllipse(16, 5, 14, 5);
+    g.fillStyle(0x181008, 0.3);
+    g.fillEllipse(16, 4, 8, 3);
+    this.tex(g, 'tile-stump', 32, 16);
+
+    this.drawCrumblingTile();
+    this.drawMossyTile();
+    this.drawAltarTile();
+    this.drawCaveGround();
+    this.drawThornsTile();
+  }
+
+  // ═══ THORNS TILE 32×32 ═══
+  private drawThornsTile(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x0a050d); g.fillRect(0, 0, 32, 32);
+    g.lineStyle(2, 0x1f0d2b);
+    g.beginPath();
+    g.moveTo(0, 32); g.lineTo(32, 0);
+    g.moveTo(32, 32); g.lineTo(0, 0);
+    g.moveTo(16, 32); g.lineTo(16, 0);
+    g.moveTo(0, 16); g.lineTo(32, 16);
+    g.strokePath();
+
+    g.fillStyle(0xcc2222);
+    g.fillTriangle(4, 16, 12, 12, 12, 20);
+    g.fillStyle(0xff5533);
+    g.fillTriangle(6, 16, 11, 14, 11, 18);
+
+    g.fillStyle(0xcc2222);
+    g.fillTriangle(28, 16, 20, 12, 20, 20);
+    g.fillStyle(0xff5533);
+    g.fillTriangle(26, 16, 21, 14, 21, 18);
+
+    g.fillStyle(0xcc2222);
+    g.fillTriangle(16, 4, 12, 12, 20, 12);
+    g.fillStyle(0xff5533);
+    g.fillTriangle(16, 6, 14, 11, 18, 11);
+
+    g.fillStyle(0xcc2222);
+    g.fillTriangle(16, 28, 12, 20, 20, 20);
+    g.fillStyle(0xff5533);
+    g.fillTriangle(16, 26, 14, 21, 18, 21);
+
+    this.tex(g, 'tile-thorns', 32, 32);
+  }
+
+  // ═══ CRUMBLING TILE 32×16 ═══
+  private drawCrumblingTile(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x1a1510); g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x221c16); g.fillRect(0, 0, 32, 2);
+    g.fillStyle(0x0c0806); g.fillRect(0, 14, 32, 2);
+    // Cracks
+    g.fillStyle(0x0a0604); g.fillRect(6, 4, 2, 8);
+    g.fillStyle(0x0a0604); g.fillRect(18, 3, 3, 4);
+    g.fillStyle(0x0a0604); g.fillRect(25, 6, 2, 6);
+    this.tex(g, 'tile-crumbling', 32, 16);
+  }
+
+  // ═══ MOSSY TILE 32×16 ═══
+  private drawMossyTile(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x181a14); g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x22281a); g.fillRect(0, 0, 32, 2);
+    g.fillStyle(0x0e1008); g.fillRect(0, 14, 32, 2);
+    g.fillStyle(0x1a3018, 0.5); g.fillRect(10, 4, 6, 3);
+    g.fillStyle(0x1a3018, 0.4); g.fillRect(20, 6, 4, 2);
+    this.tex(g, 'tile-mossy', 32, 16);
+  }
+
+  // ═══ ALTAR TILE 32×16 ═══
+  private drawAltarTile(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x221c18); g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x332a22); g.fillRect(0, 0, 32, 2);
+    g.fillStyle(0x15100c); g.fillRect(0, 14, 32, 2);
+    g.fillStyle(0x887744, 0.3); g.fillRect(12, 4, 8, 2);
+    this.tex(g, 'tile-altar', 32, 16);
+  }
+
+  // ═══ CAVE GROUND 32×32 ═══
+  private drawCaveGround(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x121420); g.fillRect(0, 0, 32, 32);
+    g.fillStyle(0x181c28); g.fillRect(0, 0, 32, 3);
+    g.fillStyle(0x0a0c14); g.fillRect(0, 28, 32, 4);
+    g.fillStyle(0x0c0e18, 0.6); g.fillRect(10, 8, 3, 2);
+    this.tex(g, 'ground-cave', 32, 32);
+  }
+
+  // ═══ DESTRUCTIBLE BUSH 24×20 ═══
+  private drawBush(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Shadow base
+    g.fillStyle(0x080c06, 0.85);
+    g.fillEllipse(12, 12, 22, 16);
+
+    // Deep foliage layers (dark stylized green-brown forest colors)
+    g.fillStyle(0x1b2812);
+    g.fillCircle(6, 12, 6);
+    g.fillCircle(18, 12, 6);
+    g.fillCircle(12, 8, 8);
+
+    // Midground foliage (olive/emerald green)
+    g.fillStyle(0x283e1b);
+    g.fillCircle(8, 11, 4);
+    g.fillCircle(16, 11, 4);
+    g.fillCircle(12, 9, 6);
+
+    // Glowing magma/ash berries (glowing embers on leaves)
+    g.fillStyle(0xff4400);
+    g.fillCircle(7, 8, 1.5);
+    g.fillCircle(17, 10, 1.5);
+    g.fillCircle(12, 5, 1.5);
+
+    // Stems (dark charcoal brown)
+    g.fillStyle(0x181008);
+    g.fillRect(10, 13, 1.5, 7);
+    g.fillRect(13, 13, 1.5, 7);
+
+    this.tex(g, 'bush', 24, 20);
+  }
+
+  // ═══ DESTRUCTIBLE LARGE BUSH 32×28 ═══
+  private drawLargeBush(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Shadow base
+    g.fillStyle(0x080c06, 0.85);
+    g.fillEllipse(16, 17, 30, 22);
+
+    // Deep foliage layers
+    g.fillStyle(0x16240f);
+    g.fillCircle(8, 18, 8);
+    g.fillCircle(24, 18, 8);
+    g.fillCircle(16, 12, 11);
+
+    // Midground foliage
+    g.fillStyle(0x233b17);
+    g.fillCircle(10, 16, 6);
+    g.fillCircle(22, 16, 6);
+    g.fillCircle(16, 13, 8);
+
+    // Leaf highlights (lighter moss green)
+    g.fillStyle(0x385c25);
+    g.fillCircle(12, 12, 4);
+    g.fillCircle(20, 12, 4);
+    g.fillCircle(16, 9, 5);
+
+    // Glowing magma berries
+    g.fillStyle(0xff3300);
+    g.fillCircle(9, 11, 1.8);
+    g.fillCircle(23, 13, 1.8);
+    g.fillCircle(16, 6, 1.8);
+    g.fillStyle(0xffaa00);
+    g.fillCircle(14, 12, 1.2);
+    g.fillCircle(20, 9, 1.2);
+
+    // Stems
+    g.fillStyle(0x181008);
+    g.fillRect(13, 18, 2, 10);
+    g.fillRect(17, 18, 2, 10);
+
+    this.tex(g, 'bush-large', 32, 28);
+  }
+
+  // ═══ DESTRUCTIBLE ROCK 24×24 ═══
+  private drawDestructibleRock(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Rock base shadow (black bevel)
+    g.fillStyle(0x0a0c10);
+    g.fillRoundedRect(0, 0, 24, 24, 3);
+    
+    // Main volcanic slate body (dark gray-blue)
+    g.fillStyle(0x20242e);
+    g.beginPath();
+    g.moveTo(2, 22);
+    g.lineTo(22, 22);
+    g.lineTo(22, 6);
+    g.lineTo(16, 2);
+    g.lineTo(6, 2);
+    g.closePath();
+    g.fillPath();
+
+    // 3D beveled highlights (top and right light metallic edges)
+    g.lineStyle(1.5, 0x4e5768);
+    g.beginPath();
+    g.moveTo(6, 2); g.lineTo(16, 2); g.lineTo(22, 6); g.lineTo(22, 22);
+    g.strokePath();
+
+    // Glowing magma veins (glowing red-orange cracks)
+    g.lineStyle(1.5, 0xff3300);
+    g.beginPath();
+    g.moveTo(6, 18); g.lineTo(12, 10); g.lineTo(18, 12);
+    g.moveTo(12, 10); g.lineTo(14, 3);
+    g.strokePath();
+
+    // Core bright hot point
+    g.fillStyle(0xffaa00);
+    g.fillCircle(12, 10, 1.5);
+    
+    this.tex(g, 'rock-destructible', 24, 24);
+  }
+
+  // ═══ RED MOON 128×128 ═══
+  private drawRedMoon(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const mx = 64, my = 64;
+    g.fillStyle(0x441111, 0.2);
+    g.fillCircle(mx, my, 60);
+    g.fillStyle(0x331111, 0.4);
+    g.fillCircle(mx, my, 52);
+    g.fillStyle(0xaa1818, 0.8);
+    g.fillCircle(mx, my, 40);
+    g.fillStyle(0xff3333, 0.9);
+    g.fillCircle(mx, my, 37);
+    g.fillStyle(0xff8866, 0.95);
+    g.fillCircle(mx, my, 34);
+    g.fillStyle(0x080610); // Matches sky background color
+    g.fillCircle(mx + 10, my + 3, 36);
+    this.tex(g, 'bg-moon', 128, 128);
+  }
+
+  // ═══ CASTLE SILHOUETTE 256×256 ═══
+  private drawCastleSilhouette(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x060812, 0.95);
+    g.fillRect(40, 160, 176, 96);
+    g.fillRect(40, 80, 32, 80);
+    g.fillTriangle(40, 80, 56, 40, 72, 80);
+    g.fillRect(184, 80, 32, 80);
+    g.fillTriangle(184, 80, 200, 40, 216, 80);
+    g.fillRect(96, 60, 64, 100);
+    g.fillTriangle(96, 60, 128, 0, 160, 60);
+    g.fillRect(72, 140, 24, 20);
+    g.fillRect(160, 140, 24, 20);
+    g.fillTriangle(72, 160, 72, 100, 96, 160);
+    g.fillTriangle(184, 160, 184, 100, 160, 160);
+    g.fillStyle(0x0e111f, 0.85);
+    g.fillCircle(128, 110, 24);
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI) / 4;
+      const tx = 128 + Math.cos(angle) * 28;
+      const ty = 110 + Math.sin(angle) * 28;
+      g.fillRect(tx - 4, ty - 4, 8, 8);
+    }
+    g.fillStyle(0x060812);
+    g.fillCircle(128, 110, 16);
+    this.tex(g, 'bg-castle', 256, 256);
+  }
+
+  // ═══ FOREGROUND ELEMENTS ═══
+  private drawForegroundElements(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // Burnt tree 32×140 (foreground)
+    g.fillStyle(0x0d0a08, 0.7);
+    g.fillRect(12, 0, 8, 140);
+    g.fillStyle(0x151210, 0.5);
+    g.fillRect(14, 0, 4, 140);
+    // Branches
+    g.fillRect(4, 30, 12, 3);
+    g.fillRect(18, 60, 10, 2);
+    g.fillRect(2, 90, 14, 2);
+    g.fillRect(20, 110, 8, 2);
+    this.tex(g, 'fg-tree', 32, 140);
+
+    // Broken column 24×100 (foreground)
+    g.fillStyle(0x181c22, 0.6);
+    g.fillRect(4, 0, 16, 100);
+    g.fillStyle(0x202830, 0.4);
+    g.fillRect(6, 0, 12, 100);
+    // Crack
+    g.fillStyle(0x0c0e12, 0.5);
+    g.fillRect(8, 40, 2, 15);
+    // Top break
+    g.fillStyle(0x141820, 0.3);
+    g.fillRect(2, 0, 20, 3);
+    this.tex(g, 'fg-column', 24, 100);
+
+    // Vine 8×120 (foreground, cave)
+    g.fillStyle(0x1a2818, 0.4);
+    g.fillRect(3, 0, 2, 120);
+    g.fillStyle(0x1a2818, 0.3);
+    for (let y = 10; y < 120; y += 20) {
+      g.fillRect(2, y, 4, 1);
+    }
+    this.tex(g, 'fg-vine', 8, 120);
   }
 
   // ═══ DRAGON CORE 16×16 ═══
@@ -1264,36 +2323,15 @@ export class BootScene extends Phaser.Scene {
     this.tex(g, 'bullet-fire', 16, 8);
   }
 
-  // ═══ SWORD SLASH 56×24 ═══
+  // ═══ SWORD SLASH 80×28 ═══
   private drawSwordSlash(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    const W = 56, H = 24;
+    const W = 80, H = 28;
     const layers = [
-      { a: 0.25, c: 0x330808, mul: 12 },
-      { a: 0.55, c: 0x882020, mul: 10 },
-      { a: 0.8, c: 0xcc3333, mul: 7 },
-      { a: 0.95, c: 0xff6644, mul: 3 },
-    ];
-    layers.forEach(l => {
-      g.fillStyle(l.c, l.a);
-      g.beginPath(); g.moveTo(2, 12);
-      for (let x = 2; x < W - 2; x++) g.lineTo(x, 12 - Math.sin((x / W) * Math.PI) * l.mul);
-      for (let x = W - 3; x >= 1; x--) g.lineTo(x, 12 + Math.sin((x / W) * Math.PI) * l.mul);
-      g.closePath(); g.fillPath();
-    });
-    g.fillStyle(0xff6644); g.fillCircle(3, 12, 1.5); g.fillCircle(53, 12, 1.5);
-    this.tex(g, 'sword-slash', W, H);
-  }
-
-  // ═══ HEAVY SWORD SLASH 96×40 ═══
-  private drawSwordSlashHeavy(): void {
-    const g = this.make.graphics({ x: 0, y: 0 });
-    const W = 96, H = 40;
-    const layers = [
-      { a: 0.25, c: 0x660022, mul: 20 },
-      { a: 0.55, c: 0xd61a1a, mul: 16 },
-      { a: 0.8, c: 0xff0066, mul: 12 },
-      { a: 0.95, c: 0xffffff, mul: 6 },
+      { a: 0.20, c: 0x440a0a, mul: 13 }, // outer faint crimson glow
+      { a: 0.50, c: 0xaa2222, mul: 11 }, // mid-layer red
+      { a: 0.75, c: 0xff4422, mul: 8 },  // bright orange-red
+      { a: 0.95, c: 0xffcc44, mul: 4 },  // hot gold/yellow core
     ];
     layers.forEach(l => {
       g.fillStyle(l.c, l.a);
@@ -1302,7 +2340,42 @@ export class BootScene extends Phaser.Scene {
       for (let x = W - 3; x >= 1; x--) g.lineTo(x, H / 2 + Math.sin((x / W) * Math.PI) * l.mul);
       g.closePath(); g.fillPath();
     });
-    g.fillStyle(0xffffff); g.fillCircle(3, H / 2, 2.5); g.fillCircle(W - 4, H / 2, 2.5);
+    // Inner white hot streak line for extreme energy feel
+    g.lineStyle(2, 0xffffff, 0.9);
+    g.beginPath();
+    g.moveTo(6, H / 2);
+    for (let x = 6; x < W - 6; x++) g.lineTo(x, H / 2 - Math.sin((x / W) * Math.PI) * 1.5);
+    g.strokePath();
+
+    g.fillStyle(0xffcc44); g.fillCircle(3, H / 2, 2.0); g.fillCircle(W - 4, H / 2, 2.0);
+    this.tex(g, 'sword-slash', W, H);
+  }
+
+  // ═══ HEAVY SWORD SLASH 128×48 ═══
+  private drawSwordSlashHeavy(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const W = 128, H = 48;
+    const layers = [
+      { a: 0.20, c: 0x660022, mul: 23 }, // dark violet/red heavy trail
+      { a: 0.50, c: 0xd61a1a, mul: 18 },
+      { a: 0.75, c: 0xff0066, mul: 13 }, // mecha pink-red glow
+      { a: 0.95, c: 0xffaa44, mul: 7 },  // gold core
+    ];
+    layers.forEach(l => {
+      g.fillStyle(l.c, l.a);
+      g.beginPath(); g.moveTo(2, H / 2);
+      for (let x = 2; x < W - 2; x++) g.lineTo(x, H / 2 - Math.sin((x / W) * Math.PI) * l.mul);
+      for (let x = W - 3; x >= 1; x--) g.lineTo(x, H / 2 + Math.sin((x / W) * Math.PI) * l.mul);
+      g.closePath(); g.fillPath();
+    });
+    // White-hot inner core
+    g.lineStyle(3.5, 0xffffff, 0.95);
+    g.beginPath();
+    g.moveTo(8, H / 2);
+    for (let x = 8; x < W - 8; x++) g.lineTo(x, H / 2 - Math.sin((x / W) * Math.PI) * 2.5);
+    g.strokePath();
+
+    g.fillStyle(0xffffff); g.fillCircle(3, H / 2, 3.0); g.fillCircle(W - 4, H / 2, 3.0);
     this.tex(g, 'sword-slash-heavy', W, H);
   }
 
@@ -1326,45 +2399,457 @@ export class BootScene extends Phaser.Scene {
     this.tex(g, 'shadow', 36, 12);
   }
 
-  // ═══ BACKGROUNDS ═══
+  // ═══ TWINKLING STAR 5×5 ═══
+  private drawTwinkleStar(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0xffffff, 1.0);
+    g.fillRect(2, 2, 1, 1); // center
+    g.fillStyle(0xffffff, 0.5);
+    g.fillRect(1, 2, 3, 1); // horizontal
+    g.fillRect(2, 1, 1, 3); // vertical
+    this.tex(g, 'star-twinkle', 5, 5);
+  }
+
+  // ═══ MOON GLOW 512×512 ═══
+  private drawMoonGlow(): void {
+    const canvasGlow = document.createElement('canvas');
+    canvasGlow.width = 512;
+    canvasGlow.height = 512;
+    const ctxGlow = canvasGlow.getContext('2d');
+    if (ctxGlow) {
+      const grad = ctxGlow.createRadialGradient(256, 256, 0, 256, 256, 256);
+      grad.addColorStop(0, 'rgba(230, 40, 50, 0.22)'); // softened crimson center glow
+      grad.addColorStop(0.2, 'rgba(210, 30, 40, 0.10)');
+      grad.addColorStop(0.5, 'rgba(160, 20, 30, 0.03)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctxGlow.fillStyle = grad;
+      ctxGlow.fillRect(0, 0, 512, 512);
+    }
+    if (this.textures.exists('moon-glow')) {
+      this.textures.remove('moon-glow');
+    }
+    this.textures.addCanvas('moon-glow', canvasGlow);
+  }
+
   private drawBackgrounds(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    for (let y = 0; y < 480; y++) {
-      const t = y / 480;
-      g.fillStyle(((Math.floor(5 + t * 5)) << 16) | ((Math.floor(3 + t * 4)) << 8) | Math.floor(12 + t * 6));
+    // Sky gradient
+    for (let y = 0; y < 1200; y++) {
+      const t = y / 1200;
+      const r = Math.floor(4 * (1 - t) + 8 * t);
+      const gr = Math.floor(3 * (1 - t) + 5 * t);
+      const bl = Math.floor(10 * (1 - t) + 16 * t);
+      g.fillStyle((r << 16) | (gr << 8) | bl);
       g.fillRect(0, y, 960, 1);
     }
-    for (let i = 0; i < 150; i++) {
-      const sx = Phaser.Math.Between(0, 959), sy = Phaser.Math.Between(0, 320);
+
+    // Draw Nebula / Milky Way core dust cloud (low alpha overlay circles)
+    const drawNebulaCloud = (cx: number, cy: number, radius: number, color: number, alpha: number) => {
+      g.fillStyle(color, alpha);
+      g.fillCircle(cx, cy, radius);
+    };
+
+    for (let j = 0; j < 60; j++) {
+      const t = j / 60;
+      // Diagonal lane from top-left-ish to bottom-right-ish
+      const lx = 150 + t * 600 + Phaser.Math.Between(-80, 80);
+      const ly = t * 1200 + Phaser.Math.Between(-100, 100);
+      
+      drawNebulaCloud(lx, ly, Phaser.Math.Between(100, 180), 0x5a186b, 0.03); // purple
+      if (Math.random() > 0.4) {
+        drawNebulaCloud(lx + Phaser.Math.Between(-30, 30), ly + Phaser.Math.Between(-30, 30), Phaser.Math.Between(80, 140), 0x821c4b, 0.025); // magenta
+      }
+      if (Math.random() > 0.4) {
+        drawNebulaCloud(lx + Phaser.Math.Between(-40, 40), ly + Phaser.Math.Between(-40, 40), Phaser.Math.Between(120, 200), 0x1d478a, 0.02); // cosmic blue
+      }
+    }
+
+    // Standard background stars
+    for (let i = 0; i < 350; i++) {
+      const sx = Phaser.Math.Between(0, 959), sy = Phaser.Math.Between(0, 1100);
       const b = Math.random();
       g.fillStyle(b > 0.85 ? 0x8899bb : b > 0.6 ? 0x556677 : b > 0.3 ? 0x445566 : 0x334455);
       g.fillCircle(sx, sy, b > 0.6 ? 0.7 : 0.4);
     }
-    this.tex(g, 'bg-sky', 960, 480);
 
-    g.fillStyle(0x05070f); g.fillRect(0, 0, 960, 140);
-    for (let x = 0; x < 960; x++) {
-      const h = 12 + Math.sin(x * 0.006 + 0.5) * 26 + Math.sin(x * 0.012 + 1) * 18 + Math.sin(x * 0.004 + 2.5) * 35;
-      g.fillStyle(0x0d1220);
-      for (let y = 140 - h; y < 140; y++) g.fillRect(x, y, 1, 1);
+    // Nebula dense star clusters
+    for (let i = 0; i < 200; i++) {
+      const t = Math.random();
+      const lx = 150 + t * 600 + Phaser.Math.Between(-100, 100);
+      const ly = t * 1200 + Phaser.Math.Between(-120, 120);
+      if (lx >= 0 && lx < 960 && ly >= 0 && ly < 1200) {
+        const b = Math.random();
+        g.fillStyle(b > 0.7 ? 0xccddee : 0x8899aa);
+        g.fillCircle(lx, ly, b > 0.8 ? 0.8 : 0.5);
+      }
     }
-    this.tex(g, 'bg-mountains', 960, 140);
 
-    g.fillStyle(0x05070f); g.fillRect(0, 0, 960, 100);
+    // Bright flare stars
+    for (let i = 0; i < 25; i++) {
+      const sx = Phaser.Math.Between(50, 910), sy = Phaser.Math.Between(30, 800);
+      g.fillStyle(0xffffff, 0.9);
+      g.fillCircle(sx, sy, 1.2);
+      g.fillStyle(0xffffff, 0.3);
+      g.fillRect(sx - 4, sy, 9, 1);
+      g.fillRect(sx, sy - 4, 1, 9);
+    }
+
+    this.tex(g, 'bg-sky', 960, 1200);
+
+    // Mountains (960x800, transparent above peaks, gradient body below peaks, glowing red ridge highlight)
+    g.fillStyle(0x0d1220);
+    for (let x = 0; x < 960; x++) {
+      const h = 15 + Math.sin(x * 0.006 + 0.5) * 30 
+                 + Math.cos(x * 0.015 + 1.2) * 18 
+                 + Math.abs(Math.sin(x * 0.04 + 0.3)) * 10 
+                 + Math.abs(Math.cos(x * 0.09 + 2.1)) * 5;
+      const peakY = 140 - Math.floor(h);
+
+      // 1. Draw glowing crimson ridge peak (2 pixels)
+      g.fillStyle(0x3e1820); // warm dark red/crimson moonlight edge
+      g.fillRect(x, peakY, 1, 2);
+
+      // 2. Draw mountain body with vertical gradient (dark indigo fading to near black)
+      const startY = peakY + 2;
+      const totalH = 800 - startY;
+      const bands = Math.ceil(totalH / 12);
+      for (let b = 0; b < bands; b++) {
+        const bandY = startY + b * 12;
+        const bandH = Math.min(12, 800 - bandY);
+        const t = b / bands;
+        const r = Math.floor(25 * (1 - t) + 12 * t);
+        const gr = Math.floor(32 * (1 - t) + 16 * t);
+        const bl = Math.floor(52 * (1 - t) + 26 * t);
+        g.fillStyle((r << 16) | (gr << 8) | bl);
+        g.fillRect(x, bandY, 1, bandH);
+      }
+    }
+    this.tex(g, 'bg-mountains', 960, 800);
+
+    // Forest (960x800, transparent above horizon/trees, gradient body below horizon)
+    const groundStartY = 100;
+    const groundTotalH = 700;
+    const groundBands = 50;
+    for (let b = 0; b < groundBands; b++) {
+      const bandY = groundStartY + Math.floor(b * (groundTotalH / groundBands));
+      const bandH = Math.ceil(groundTotalH / groundBands);
+      const t = b / groundBands;
+      const r = Math.floor(24 * (1 - t) + 10 * t);
+      const gr = Math.floor(36 * (1 - t) + 15 * t);
+      const bl = Math.floor(54 * (1 - t) + 24 * t);
+      g.fillStyle((r << 16) | (gr << 8) | bl);
+      g.fillRect(0, bandY, 960, bandH);
+    }
+
+    const drawPineTree = (tx: number, th: number, tw: number) => {
+      const layers = 3;
+      const layerH = th / layers;
+      for (let l = 0; l < layers; l++) {
+        const scale = 1 - (l * 0.25);
+        const bottomY = 100 - (l * layerH * 0.8);
+        const topY = bottomY - layerH * 1.4;
+        const w = tw * scale;
+
+        // Deep shadow on left side
+        g.fillStyle(0x060c12);
+        g.beginPath();
+        g.moveTo(tx - w / 2, bottomY);
+        g.lineTo(tx, topY);
+        g.lineTo(tx, bottomY);
+        g.closePath();
+        g.fillPath();
+
+        // Warm red moonlight highlight on right side
+        g.fillStyle(0x28191d);
+        g.beginPath();
+        g.moveTo(tx, bottomY);
+        g.lineTo(tx, topY);
+        g.lineTo(tx + w / 2, bottomY);
+        g.closePath();
+        g.fillPath();
+
+        // Outer highlight edge
+        g.fillStyle(0x402528);
+        g.beginPath();
+        g.moveTo(tx, topY);
+        g.lineTo(tx + w / 2, bottomY);
+        g.lineTo(tx + w / 2 - 1, bottomY);
+        g.lineTo(tx, topY);
+        g.closePath();
+        g.fillPath();
+      }
+      // Trunk
+      g.fillStyle(0x040608);
+      g.fillRect(tx - 2, 100, 4, 8);
+    };
     [30, 110, 190, 280, 360, 440, 530, 610, 700, 770, 850, 920].forEach(tx => {
-      const th = Phaser.Math.Between(30, 65), tw = Phaser.Math.Between(5, 12);
-      g.fillStyle(0x0e1322);
-      g.beginPath(); g.moveTo(tx - tw / 2, 100); g.lineTo(tx, 100 - th); g.lineTo(tx + tw / 2, 100); g.closePath();
-      g.fillPath();
+      const th = Phaser.Math.Between(30, 65), tw = Phaser.Math.Between(8, 16);
+      drawPineTree(tx, th, tw);
     });
-    this.tex(g, 'bg-forest', 960, 100);
+    this.tex(g, 'bg-forest', 960, 800);
 
-    g.fillStyle(0x05070f); g.fillRect(0, 0, 960, 80);
-    [40, 190, 320, 460, 590, 720, 840, 915].forEach(rx => {
-      const rh = Phaser.Math.Between(25, 60), rw = Phaser.Math.Between(8, 16);
-      g.fillStyle(0x162030); g.fillRect(rx, 80 - rh, rw, rh);
+    // Ruins (960x800, transparent above horizon/pillars, gradient body below horizon)
+    // 1. Draw ruins ground with 2D checkerboard dithering at boundaries
+    for (let y = 80; y < 800; y++) {
+      let color = 0x2b384a;
+      let nextColor = 0x2b384a;
+      let mid = 0;
+
+      if (y < 160) {
+        color = 0x2b384a;
+        nextColor = 0x1f2838;
+        mid = 160;
+      } else if (y < 280) {
+        color = 0x1f2838;
+        nextColor = 0x141b26;
+        mid = 280;
+      } else if (y < 440) {
+        color = 0x141b26;
+        nextColor = 0x0a0d14;
+        mid = 440;
+      } else {
+        color = 0x0a0d14;
+        nextColor = 0x0a0d14;
+        mid = 800;
+      }
+
+      const dist = y - (mid - 6);
+      if (mid < 800 && dist >= 0 && dist <= 12) {
+        const t = dist / 12;
+        for (let x = 0; x < 960; x++) {
+          let drawNext = false;
+          if (t < 0.25) {
+            drawNext = ((x + y) % 4 === 0);
+          } else if (t < 0.5) {
+            drawNext = ((x + y) % 2 === 0);
+          } else if (t < 0.75) {
+            drawNext = ((x + y) % 4 !== 0);
+          } else {
+            drawNext = true;
+          }
+          g.fillStyle(drawNext ? nextColor : color);
+          g.fillRect(x, y, 1, 1);
+        }
+      } else {
+        g.fillStyle(color);
+        g.fillRect(0, y, 960, 1);
+      }
+    }
+
+    // 2. Draw subterranean dungeon archways (cellars under the ruins)
+    const drawSubArch = (ax: number, ay: number, aw: number, ah: number) => {
+      // Dark chamber cavity
+      g.fillStyle(0x06090e);
+      g.fillRect(ax + 4, ay + 6, aw - 8, ah - 6);
+      g.fillRect(ax + 8, ay, aw - 16, 6);
+      g.fillRect(ax + 6, ay + 3, aw - 12, 3);
+      g.fillRect(ax + 4, ay + 6, aw - 8, 3);
+
+      // Inner wall highlights (moonlight catching inner left/top)
+      g.fillStyle(0x4a5d80);
+      g.fillRect(ax + 4, ay + 6, 1, ah - 6);
+      g.fillRect(ax + 8, ay, aw - 16, 1);
+      g.fillRect(ax + 6, ay + 3, 2, 1);
+      g.fillRect(ax + 4, ay + 6, 2, 1);
+
+      // Outer stone frame
+      g.fillStyle(0x1a2133);
+      g.fillRect(ax, ay, 4, ah);
+      g.fillRect(ax + aw - 4, ay, 4, ah);
+      g.fillRect(ax, ay - 4, aw, 4);
+      // Frame highlights
+      g.fillStyle(0x8c5064);
+      g.fillRect(ax + aw - 1, ay - 4, 1, ah + 4);
+      g.fillRect(ax, ay - 4, aw, 1);
+    };
+
+    drawSubArch(120, 110, 50, 70);
+    drawSubArch(450, 115, 60, 80);
+    drawSubArch(720, 110, 55, 75);
+
+    // 3. Draw weathered horizontal brick masonry rows
+    g.fillStyle(0x182030);
+    for (let gy = 120; gy < 600; gy += 24) {
+      for (let x = 0; x < 960; x += 32) {
+        if (Math.random() > 0.35) {
+          g.fillRect(x, gy, 20, 1);
+        }
+      }
+    }
+
+    // 4. Draw stone block debris / rubble piles at the horizon
+    g.fillStyle(0x162030);
+    [80, 130, 230, 310, 350, 430, 510, 570, 670, 760, 830, 870].forEach(rx => {
+      const w = Phaser.Math.Between(6, 12);
+      const h = Phaser.Math.Between(4, 10);
+      g.fillRect(rx, 80 - h, w, h);
+      // Highlight on right edge of rubble
+      g.fillStyle(0x4c2b36);
+      g.fillRect(rx + w - 1, 80 - h, 1, h);
+      g.fillRect(rx, 80 - h, w, 1);
+      g.fillStyle(0x162030);
     });
-    this.tex(g, 'bg-ruins', 960, 80);
+
+    const drawGothicWindowWall = (rx: number, w: number, h: number) => {
+      const topY = 80 - h;
+      
+      // Base
+      g.fillStyle(0x141b2a);
+      g.fillRect(rx, topY, 12, h);
+      g.fillRect(rx + w - 12, topY, 12, h);
+      g.fillRect(rx + 12, 80 - 20, w - 24, 6);
+      g.fillRect(rx + 12, topY, w - 24, 12);
+      g.fillRect(rx + 12, topY + 12, 4, 6);
+      g.fillRect(rx + w - 16, topY + 12, 4, 6);
+      g.fillRect(rx + 16, topY + 12, w - 32, 3);
+      g.fillRect(rx + Math.floor(w / 2) - 2, topY + 12, 4, h - 32);
+      g.fillRect(rx - 2, topY + 10, 2, h - 10);
+      g.fillRect(rx + w, topY + 10, 2, h - 10);
+      g.fillRect(rx - 1, topY - 8, 3, 8);
+      g.fillRect(rx + w - 2, topY - 8, 3, 8);
+      g.fillRect(rx, topY - 12, 1, 4);
+      g.fillRect(rx + w - 1, topY - 12, 1, 4);
+
+      // Left shadow
+      g.fillStyle(0x060912);
+      g.fillRect(rx, topY, 1, h);
+      g.fillRect(rx + 12, topY + 12, 1, h - 32);
+      g.fillRect(rx + Math.floor(w / 2) - 2, topY + 12, 1, h - 32);
+
+      // Right & Top highlight
+      g.fillStyle(0x4c2b36);
+      g.fillRect(rx + w - 1, topY, 1, h);
+      g.fillRect(rx + w - 12 - 1, topY + 12, 1, h - 32);
+      g.fillRect(rx + Math.floor(w / 2) + 1, topY + 12, 1, h - 32);
+      g.fillRect(rx, topY, w, 1);
+      g.fillRect(rx + 12, 80 - 20, w - 24, 1);
+
+      // Brick joints
+      g.fillStyle(0x090c14);
+      for (let y = topY + 14; y < 80; y += 14) {
+        g.fillRect(rx, y, 12, 1);
+        g.fillRect(rx + w - 12, y, 12, 1);
+      }
+    };
+
+    const drawGothicArch = (rx: number, w: number, h: number) => {
+      const topY = 80 - h;
+      const pillarW = 8;
+      
+      // Base
+      g.fillStyle(0x141b2a);
+      g.fillRect(rx, topY, pillarW, h);
+      g.fillRect(rx + w - pillarW, topY, pillarW, h);
+      g.fillRect(rx - 2, topY, pillarW + 4, 3);
+      g.fillRect(rx + w - pillarW - 2, topY, pillarW + 4, 3);
+      g.fillRect(rx, topY - 6, w, 6);
+      g.fillRect(rx + pillarW, topY, 4, 4);
+      g.fillRect(rx + w - pillarW - 4, topY, 4, 4);
+      g.fillRect(rx + pillarW + 4, topY - 3, w - (pillarW + 4) * 2, 3);
+      g.fillRect(rx + Math.floor(w / 2) - 3, topY - 12, 6, 6);
+      g.fillRect(rx + Math.floor(w / 2) - 1, topY - 18, 2, 6);
+
+      // Left shadow
+      g.fillStyle(0x060912);
+      g.fillRect(rx, topY, 1, h);
+      g.fillRect(rx + w - pillarW, topY, 1, h);
+
+      // Right & Top highlight
+      g.fillStyle(0x4c2b36);
+      g.fillRect(rx + pillarW - 1, topY, 1, h);
+      g.fillRect(rx + w - 1, topY, 1, h);
+      g.fillRect(rx, topY - 6, w, 1);
+      g.fillRect(rx - 2, topY, pillarW + 4, 1);
+      g.fillRect(rx + w - pillarW - 2, topY, pillarW + 4, 1);
+      g.fillRect(rx + Math.floor(w / 2) - 1, topY - 18, 1, 6);
+    };
+
+    const drawTowerPillar = (rx: number, w: number, h: number) => {
+      const topY = 80 - h;
+      const slitW = 4;
+      const slitX = rx + Math.floor(w / 2) - Math.floor(slitW / 2);
+
+      // Base
+      g.fillStyle(0x141b2a);
+      g.fillRect(rx, topY, slitX - rx, h);
+      g.fillRect(slitX + slitW, topY, rx + w - (slitX + slitW), h);
+      g.fillRect(slitX, topY, slitW, 20);
+      g.fillRect(slitX, 80 - 20, slitW, 20);
+      g.fillRect(rx - 3, topY, w + 6, 4);
+      g.fillRect(rx - 1, topY - 4, w + 2, 4);
+      g.fillRect(rx + 4, topY - 10, w - 8, 6);
+      g.fillRect(rx + Math.floor(w / 2) - 1, topY - 18, 2, 8);
+
+      // Left shadow
+      g.fillStyle(0x060912);
+      g.fillRect(rx, topY, 1, h);
+      g.fillRect(slitX + slitW, topY + 20, 1, h - 40);
+
+      // Right & Top highlight
+      g.fillStyle(0x4c2b36);
+      g.fillRect(rx + w - 1, topY, 1, h);
+      g.fillRect(slitX - 1, topY + 20, 1, h - 40);
+      g.fillRect(rx - 3, topY, w + 6, 1);
+      g.fillRect(rx + Math.floor(w / 2) - 1, topY - 18, 1, 8);
+    };
+
+    const drawBrokenColumn = (rx: number, w: number, h: number) => {
+      const topY = 80 - h;
+      const partW = Math.floor(w / 2);
+
+      // Base
+      g.fillStyle(0x141b2a);
+      g.fillRect(rx, topY, partW, h);
+      g.fillRect(rx + partW, topY + 12, w - partW, h - 12);
+      g.fillRect(rx - 2, topY, partW + 2, 3);
+      g.fillRect(rx - 6, 80 - 4, 4, 4);
+      g.fillRect(rx + w + 2, 80 - 3, 3, 3);
+
+      // Left shadow
+      g.fillStyle(0x060912);
+      g.fillRect(rx, topY, 1, h);
+      g.fillRect(rx + partW, topY + 12, 1, h - 12);
+
+      // Right & Top highlight
+      g.fillStyle(0x4c2b36);
+      g.fillRect(rx + partW - 1, topY, 1, h);
+      g.fillRect(rx + w - 1, topY + 12, 1, h - 12);
+      g.fillRect(rx - 2, topY, partW + 2, 1);
+      g.fillRect(rx + partW, topY + 12, w - partW, 1);
+    };
+
+    drawGothicArch(40, 80, 70);
+    drawTowerPillar(160, 20, 110);
+    drawGothicWindowWall(240, 60, 85);
+    drawBrokenColumn(360, 16, 50);
+    drawGothicArch(440, 90, 65);
+    drawGothicWindowWall(580, 70, 95);
+    drawTowerPillar(700, 24, 120);
+    drawGothicArch(780, 70, 75);
+    drawBrokenColumn(890, 16, 60);
+
+    this.tex(g, 'bg-ruins', 960, 800);
+
+    // Procedural Mist Texture (512x128, soft horizontal transparency waves)
+    const canvasMist = document.createElement('canvas');
+    canvasMist.width = 512;
+    canvasMist.height = 128;
+    const ctxMist = canvasMist.getContext('2d');
+    if (ctxMist) {
+      for (let x = 0; x < 512; x++) {
+        for (let y = 0; y < 128; y++) {
+          const density = (Math.sin(x * 0.02) * Math.cos(y * 0.05) + Math.sin(x * 0.05 + y * 0.1) * 0.5 + 1.5) / 3;
+          const edgeFade = Math.sin((y / 128) * Math.PI); 
+          const alpha = Math.floor(density * edgeFade * 40); 
+          ctxMist.fillStyle = `rgba(130, 45, 55, ${alpha / 255})`; 
+          ctxMist.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+    if (this.textures.exists('bg-mist')) {
+      this.textures.remove('bg-mist');
+    }
+    this.textures.addCanvas('bg-mist', canvasMist);
   }
 
   // ═══ PARTICLES ═══
@@ -1378,5 +2863,154 @@ export class BootScene extends Phaser.Scene {
     this.tex(g, 'particle-spark', 4, 4);
     this.circ(g, 2, 2, 2, 0xff5500); this.circ(g, 1.5, 1.5, 1, 0xff8800);
     this.tex(g, 'particle-ember', 4, 4);
+  }
+
+  private keyOutBlackAndScale(rawKey: string, targetKey: string, targetW: number, targetH: number): void {
+    const textureObj = this.textures.get(rawKey);
+    if (!textureObj) {
+      console.warn(`Texture ${rawKey} not found!`);
+      return;
+    }
+    const source = textureObj.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(source, 0, 0, targetW, targetH);
+
+    const imgData = ctx.getImageData(0, 0, targetW, targetH);
+    const data = imgData.data;
+
+    // Detect background color from top-left corner pixel (0, 0)
+    const bgR = data[0];
+    const bgG = data[1];
+    const bgB = data[2];
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // Distance to detected background color
+      const dist = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+      // Absolute black or absolute white check as safety fallbacks
+      const isBlack = r < 18 && g < 18 && b < 18;
+      const isWhite = r > 238 && g > 238 && b > 238;
+
+      if (dist < 45 || isBlack || isWhite) {
+        data[i + 3] = 0; // Make transparent
+      } else if (targetKey === 'bg-castle') {
+        // Brighten the castle pixels to allow bright multiplicative tints in Phaser.
+        // We map the dark silhouette colors to a bright light-gray/silver-white scale,
+        // preserving details like the clock hands and outline shading.
+        const brightness = (r + g + b) / 3;
+        const newVal = Math.round(160 + (brightness / 255) * 95);
+        data[i] = newVal;
+        data[i + 1] = newVal;
+        data[i + 2] = newVal;
+      }
+    }
+
+    // Smoothly fade out the bottom of the castle silhouette to avoid a cut-off look
+    if (targetKey === 'bg-castle') {
+      // Find the actual bottom row of the castle (the last row with any visible pixels)
+      let actualBottomY = 0;
+      for (let y = targetH - 1; y >= 0; y--) {
+        let rowHasPixels = false;
+        for (let x = 0; x < targetW; x++) {
+          const idx = (y * targetW + x) * 4;
+          if (data[idx + 3] > 0) {
+            rowHasPixels = true;
+            break;
+          }
+        }
+        if (rowHasPixels) {
+          actualBottomY = y;
+          break;
+        }
+      }
+
+      // Apply the fade-out to the bottom of the actual castle height (e.g. 70 pixels fade length)
+      const fadeLength = 70; 
+      const fadeStart = Math.max(0, actualBottomY - fadeLength);
+
+      for (let y = fadeStart; y <= actualBottomY; y++) {
+        const factor = 1 - (y - fadeStart) / (actualBottomY - fadeStart);
+        for (let x = 0; x < targetW; x++) {
+          const idx = (y * targetW + x) * 4;
+          data[idx + 3] = Math.round(data[idx + 3] * factor);
+        }
+      }
+
+      // Clear any pixels below actualBottomY just in case
+      for (let y = actualBottomY + 1; y < targetH; y++) {
+        for (let x = 0; x < targetW; x++) {
+          const idx = (y * targetW + x) * 4;
+          data[idx + 3] = 0;
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+
+    if (this.textures.exists(targetKey)) {
+      this.textures.remove(targetKey);
+    }
+    this.textures.addCanvas(targetKey, canvas);
+  }
+
+  private drawLargeRockProcedural(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Rock base shadow
+    g.fillStyle(0x0a0c10);
+    g.fillRoundedRect(0, 0, 32, 32, 4);
+
+    // Main craggy dark slate body
+    g.fillStyle(0x20242e);
+    g.beginPath();
+    g.moveTo(3, 29);
+    g.lineTo(29, 29);
+    g.lineTo(29, 8);
+    g.lineTo(22, 3);
+    g.lineTo(10, 3);
+    g.closePath();
+    g.fillPath();
+
+    // Left shadow facet (darker overlay)
+    g.fillStyle(0x131720, 0.4);
+    g.beginPath();
+    g.moveTo(3, 29);
+    g.lineTo(14, 29);
+    g.lineTo(10, 3);
+    g.closePath();
+    g.fillPath();
+
+    // Beveled highlight lines (top and right edges)
+    g.lineStyle(1.5, 0x5a667c);
+    g.beginPath();
+    g.moveTo(10, 3); g.lineTo(22, 3); g.lineTo(29, 8); g.lineTo(29, 29);
+    g.strokePath();
+
+    // Magma veins (heavy hot cracks)
+    g.lineStyle(2.0, 0xff2200);
+    g.beginPath();
+    g.moveTo(8, 24); g.lineTo(16, 14); g.lineTo(24, 18);
+    g.moveTo(16, 14); g.lineTo(18, 4);
+    g.strokePath();
+
+    // Secondary vein branch
+    g.lineStyle(1.0, 0xff6600);
+    g.beginPath();
+    g.moveTo(24, 18); g.lineTo(27, 10);
+    g.strokePath();
+
+    // Glowing core dots
+    g.fillStyle(0xffaa00);
+    g.fillCircle(16, 14, 2);
+    g.fillCircle(24, 18, 1);
+
+    this.tex(g, 'rock-large', 32, 32);
   }
 }

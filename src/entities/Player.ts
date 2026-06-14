@@ -30,6 +30,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public isInvincible = false;
   public isAnimatingAttack = false;
   public tarotSystem: TarotSystem | null = null;
+  public inputEnabled = true;
+  private savedAllowGravity = true;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyW!: Phaser.Input.Keyboard.Key;
@@ -119,9 +121,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  public setInputEnabled(enabled: boolean): void {
+    this.inputEnabled = enabled;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (!body) return;
+
+    if (!enabled) {
+      this.savedAllowGravity = body.allowGravity;
+      body.allowGravity = false;
+      body.setVelocity(0, 0);
+    } else {
+      body.allowGravity = this.savedAllowGravity;
+    }
+  }
+
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     if (!this.alive) return;
+
+    if (!this.inputEnabled) {
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      if (body) {
+        body.setVelocity(0, 0);
+      }
+      this.animState = 'idle';
+      this.updateAnimation(delta);
+      this.updateJuice(delta);
+      this.updateVisorGlowPosition();
+      return;
+    }
 
     const { state } = this.formMachine;
 
@@ -225,6 +253,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     ) {
       body.setVelocityY(PLAYER_HUMAN_JUMP * 0.8);
       this.hasDoubleJumped = true;
+      (this.scene as any).gameAudio?.playJump();
       this.scene.tweens.add({
         targets: this,
         scaleY: 1.1,
@@ -536,6 +565,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private triggerJumpJuice(): void {
+    (this.scene as any).gameAudio?.playJump();
     this.scene.tweens.add({
       targets: this,
       scaleY: 1.25,
@@ -547,6 +577,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private triggerLandingJuice(): void {
+    (this.scene as any).gameAudio?.playLand();
     this.scene.tweens.add({
       targets: this,
       scaleY: 0.78,
@@ -667,6 +698,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.isInvincible || !this.alive) return;
 
     this.health -= amount;
+    (this.scene as any).gameAudio?.playDamage();
     this.isInvincible = true;
 
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -761,13 +793,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private die(): void {
     this.alive = false;
     this.health = 0;
-    this.setTint(0x333333);
-    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.enable = false;
+    body.allowGravity = false;
+    body.setVelocity(0, 0);
 
-    // Auto-restart level after 2 seconds
-    this.scene.time.delayedCall(2000, () => {
-      this.scene.scene.restart();
-    });
+    // Delegate dramatic death sequence to the GameScene
+    if (typeof (this.scene as any).triggerDramaticDeath === 'function') {
+      (this.scene as any).triggerDramaticDeath(this);
+    } else {
+      this.setTint(0x333333);
+      this.scene.time.delayedCall(2000, () => {
+        this.scene.scene.restart();
+      });
+    }
   }
 
   destroy(fromScene?: boolean): void {

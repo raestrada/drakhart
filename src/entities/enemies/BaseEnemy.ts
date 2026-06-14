@@ -10,10 +10,14 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   protected moveSpeed: number;
   protected detectRange: number;
   protected attackRange: number;
-  protected attackDamage: number;
+  public attackDamage: number;
   protected attackCooldown: number;
   protected lastAttackTime = 0;
-  protected isActive = true;
+  public isActive = true;
+
+  protected patrolMinX?: number;
+  protected patrolMaxX?: number;
+  protected patrolDir = 1;
 
   constructor(
     scene: Phaser.Scene,
@@ -28,6 +32,8 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
       attackRange?: number;
       damage?: number;
       attackCooldown?: number;
+      patrolMinX?: number;
+      patrolMaxX?: number;
     }
   ) {
     super(scene, x, y, texture);
@@ -42,6 +48,8 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.attackRange = config?.attackRange ?? 50;
     this.attackDamage = config?.damage ?? 10;
     this.attackCooldown = config?.attackCooldown ?? 900;
+    this.patrolMinX = config?.patrolMinX;
+    this.patrolMaxX = config?.patrolMaxX;
 
     this.setCollideWorldBounds(true);
   }
@@ -55,18 +63,39 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     const dist = distanceBetween(this.x, this.y, this.player.x, this.player.y);
     const dir = this.player.x < this.x ? -1 : 1;
 
-    this.setFlipX(dir < 0);
+    const isPlayerInSight = dist <= this.detectRange && Math.abs(this.player.y - this.y) < 180;
 
     if (dist <= this.attackRange) {
       body.setVelocityX(0);
+      this.setFlipX(dir < 0);
       if (time - this.lastAttackTime > this.attackCooldown) {
         this.lastAttackTime = time;
         this.doAttack();
       }
-    } else if (dist <= this.detectRange) {
+    } else if (isPlayerInSight) {
       body.setVelocityX(dir * this.moveSpeed);
+      this.setFlipX(dir < 0);
     } else {
-      body.setVelocityX(0);
+      // Patrol logic
+      if (this.patrolMinX !== undefined && this.patrolMaxX !== undefined) {
+        if (this.patrolDir === 1) {
+          body.setVelocityX(this.moveSpeed * 0.75);
+          this.setFlipX(false);
+          if (this.x >= this.patrolMaxX) {
+            this.patrolDir = -1;
+            this.x = this.patrolMaxX;
+          }
+        } else {
+          body.setVelocityX(-this.moveSpeed * 0.75);
+          this.setFlipX(true);
+          if (this.x <= this.patrolMinX) {
+            this.patrolDir = 1;
+            this.x = this.patrolMinX;
+          }
+        }
+      } else {
+        body.setVelocityX(0);
+      }
     }
   }
 
@@ -89,10 +118,13 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.health <= 0) {
       this.die();
+    } else {
+      (this.scene as any).gameAudio?.playEnemyHit();
     }
   }
 
   protected die(): void {
+    (this.scene as any).gameAudio?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x333333);

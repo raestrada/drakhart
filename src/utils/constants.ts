@@ -27,12 +27,12 @@ export const ENERGY_REGEN_HUMAN = 7;
 export const ENERGY_REGEN_GROUNDED = 14;
 
 export const SWORD_DAMAGE = 25;
-export const SWORD_RANGE = 56;
+export const SWORD_RANGE = 80;
 export const SWORD_DURATION = 200;
 export const SWORD_COOLDOWN = 320;
 
 export const MECHA_SWORD_DAMAGE = 75;
-export const MECHA_SWORD_RANGE = 88;
+export const MECHA_SWORD_RANGE = 125;
 export const MECHA_SWORD_DURATION = 350;
 export const MECHA_SWORD_COOLDOWN = 650;
 
@@ -60,8 +60,8 @@ export const BOSS_DAMAGE = 20;
 export const BOSS_ATTACK_COOLDOWN = 1500;
 export const BOSS_FIRE_COOLDOWN = 2800;
 
-export const LEVEL_WIDTH = 5000;
-export const LEVEL_HEIGHT = 1000;
+export const LEVEL_WIDTH = 8000;
+export const LEVEL_HEIGHT = 800;
 
 export const CAMERA_LERP = 0.1;
 export const CAMERA_ZOOM_HUMAN = 2.0;

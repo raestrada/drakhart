@@ -56,6 +56,7 @@ export class CombatSystem {
 
     this.fireCooldown = true;
     this.player.formMachine.energy.consumeShoot();
+    (this.scene as any).gameAudio?.playFireball();
 
     const dir = facingRight ? 1 : -1;
     const bullet = this.fireBullets.get(
@@ -93,6 +94,7 @@ export class CombatSystem {
     this.swordActive = true;
     this.swordCooldown = true;
     this.activeDamage = SWORD_DAMAGE;
+    (this.scene as any).gameAudio?.playAttack();
 
     // Trigger slide tween
     const dir = facingRight ? 1 : -1;
@@ -167,6 +169,7 @@ export class CombatSystem {
     this.swordActive = true;
     this.swordCooldown = true;
     this.activeDamage = MECHA_SWORD_DAMAGE;
+    (this.scene as any).gameAudio?.playHeavyAttack();
 
     this.player.formMachine.heat.addHeat(15);
 
@@ -260,6 +263,7 @@ export class CombatSystem {
 
     this.fireCooldown = true;
     this.player.formMachine.energy.consumeShoot();
+    (this.scene as any).gameAudio?.playFireball();
 
     const dir = facingRight ? 1 : -1;
     const spawnX = this.player.x + dir * 44;
