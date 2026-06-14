@@ -6,9 +6,9 @@ DRAKHART is a dark fantasy action-platformer built with Phaser 3 + TypeScript + 
 It fuses **Draconus (Atari, 70%)** with **Escaflowne (anime, 30%)**.
 
 - **Draconus DNA**: side-scrolling exploration, dark atmosphere, earned transformation, dual-form gameplay, sword combat, grim fantasy
-- **Escaflowne DNA**: the dragon form is a biomechanical guymelef (mecha-dragon of bone & metal), destiny/tarot themes as collectibles, epic aerial boss fights
+- **Escaflowne DNA**: the dragon form is a biomechanical draconel (mecha-dragon of bone & metal), destiny/tarot themes as collectibles, epic aerial boss fights
 
-The core mechanic: human form (Warrior) for agile platforming, humanoid mecha (Guymelef) for heavy combat/barricade smashing, and dragon-mech form for shmup-style flying. Transformation is earned (find the Dragon Core), not given.
+The core mechanic: human form (Warrior) for agile platforming, humanoid mecha (Draconel) for heavy combat/barricade smashing, and dragon-mech form for shmup-style flying. Transformation is earned (find the Dragon Core), not given.
 
 Currently in **Level 1 prototype phase** — a continuous zone divided into three fluid sections:
 1. **Warrior Zone (0 - 1300)**: Classic platforming through a low-clearance tunnel (too small for Mecha) to reach the Dragon Core.
@@ -55,7 +55,7 @@ src/
 │   └── enemies/
 │       ├── BaseEnemy.ts       # Patrol, detect, chase, attack, die (includes ground/elite config)
 │       ├── FlyingEnemy.ts     # Fly-by chase and project-shooting sentinel (shmup phase)
-│       └── Boss.ts            # Multi-phase guymelef boss with UI
+│       └── Boss.ts            # Multi-phase draconel boss with UI
 ├── systems/
 │   ├── FormStateMachine.ts    # States: HUMAN | TRANSFORMING | DRAGON | EXHAUSTED
 │   ├── FlightSystem.ts        # Free-flight physics (accel, damping, input)

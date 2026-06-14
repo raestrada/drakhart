@@ -4,7 +4,7 @@ export const en = {
     energy: 'ENERGY',
     transform: 'TRANSFORM',
     transformReady: 'CORE ACTIVE',
-    mechaActive: 'GUYMELEF ACTIVE',
+    mechaActive: 'DRACONEL ACTIVE',
     dragonActive: 'DRAGON ACTIVE',
     pressStart: 'PRESS ENTER TO START',
     prototypeComplete: 'PROTOTYPE COMPLETE',
@@ -19,8 +19,8 @@ export const en = {
     controls: 'ARROWS/WASD: Move | UP/W: Jump (Hold to Hover in Mecha) | X: Attack | C: Cycle Form',
   },
   boss: {
-    name: 'CORRUPTED GUYMELEF',
+    name: 'CORRUPTED DRACONEL',
     phase2: 'ARMOR DESTROYED — CORE EXPOSED',
-    defeated: 'GUYMELEF DEFEATED',
+    defeated: 'DRACONEL DEFEATED',
   },
 };

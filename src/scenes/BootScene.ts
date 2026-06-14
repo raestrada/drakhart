@@ -513,7 +513,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════
-  //  MECHA FRAMES — 64×80 (Guymelef Gothic Knight)
+  //  MECHA FRAMES — 64×80 (Draconel Gothic Knight)
   // ═══════════════════════════════════════
 
   private genMechaFrames(): void {
@@ -766,7 +766,7 @@ export class BootScene extends Phaser.Scene {
     g.beginPath(); g.moveTo(torsoX + 7, torsoY + 2); g.lineTo(neckX + 3, neckY + 3); g.strokePath();
     this.circ(g, neckX + 2, neckY + 3, 1.2, P.mGo);
 
-    // ── 7. Guymelef Helmet (White yelmo, swept-back gold crest, green visor) ──
+    // ── 7. Draconel Helmet (White yelmo, swept-back gold crest, green visor) ──
     const headX = 20 + dx + tiltX;
     const headY = 4 + dy + b + tiltY;
 

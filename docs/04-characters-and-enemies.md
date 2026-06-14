@@ -120,7 +120,7 @@
 
 ### Storm Eagle
 - **Zone**: Sky Temple
-- **Appearance**: Large bird-like Guymelef, 64×48 pixels, metallic feathers, glowing eyes
+- **Appearance**: Large bird-like Draconel, 64×48 pixels, metallic feathers, glowing eyes
 - **Behavior**: Circles overhead, dives at player, swoops back up
 - **Attack**: Dive slash, 25 dmg. Wind gust (push player off platform).
 - **HP**: 60
@@ -152,7 +152,7 @@
 
 ## Bosses
 
-### Boss 1: Corrupted Guymelef
+### Boss 1: Corrupted Draconel
 - **Zone**: Storm Gorge (x: 16,000–17,000)
 - **Appearance**: Ancient dragon-mecha, 128×128 pixels, twisted metal, exposed corrupted core
 - **Phases**: 2 (Armored → Exposed Core)
@@ -186,7 +186,7 @@
 
 ### Boss 3: Sky Empress
 - **Zone**: Sky Temple (y: -800)
-- **Appearance**: Imperial royal Guymelef, 160×160 pixels, ornate gold and dark steel, cape of energy
+- **Appearance**: Imperial royal Draconel, 160×160 pixels, ornate gold and dark steel, cape of energy
 - **Phases**: 3
 - **Phase 1 — Aerial**:
   - Flight-based. Dragon form needed to engage.
@@ -206,7 +206,7 @@
 
 ### Final Boss: The Iron Heart
 - **Zone**: The Core (x: 34,000)
-- **Appearance**: Colossal Guymelef, 256×256 pixels. Dozens of corrupted Cores visible through translucent armor. Industrial nightmare.
+- **Appearance**: Colossal Draconel, 256×256 pixels. Dozens of corrupted Cores visible through translucent armor. Industrial nightmare.
 - **Phases**: 3 (one per form)
 - **Phase 1 — Conduits (Human)**:
   - Giant boss in background, attacks via conduits in the arena

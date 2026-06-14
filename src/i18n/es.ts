@@ -6,7 +6,7 @@ export const es: typeof en = {
     energy: 'ENERGÍA',
     transform: 'TRANSFORMAR',
     transformReady: 'NÚCLEO ACTIVO',
-    mechaActive: 'GUYMELEF ACTIVO',
+    mechaActive: 'DRACONEL ACTIVO',
     dragonActive: 'DRAGÓN ACTIVO',
     pressStart: 'PRESIONA ENTER PARA COMENZAR',
     prototypeComplete: 'PROTOTIPO COMPLETADO',
@@ -21,8 +21,8 @@ export const es: typeof en = {
     controls: 'FLECHAS/WASD: Mover | ARRIBA/W: Saltar (Mantener para Flotar en Mecha) | X: Atacar | C: Cambiar Forma',
   },
   boss: {
-    name: 'GUYMELEF CORRUPTO',
+    name: 'DRACONEL CORRUPTO',
     phase2: 'ARMADURA DESTRUIDA — NÚCLEO EXPUESTO',
-    defeated: 'GUYMELEF DERROTADO',
+    defeated: 'DRACONEL DERROTADO',
   },
 };

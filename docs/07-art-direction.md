@@ -52,13 +52,13 @@ Each zone shifts the environmental palette slightly:
 |--------|------|--------|-------|
 | Human Warrior | 48×72 px | 4 (idle×2, walk×2) | Green armor, visor glow |
 | Mecha | TBD | TBD (planned 2 idle, 2 walk) | Larger, heavier silhouette |
-| Dragon Guymelef | 96×72 px | 3 (fly×2, neutral) | Wings animate, head on right |
+| Dragon Draconel | 96×72 px | 3 (fly×2, neutral) | Wings animate, head on right |
 | Sentinel | 32×32 px | 1 | Floating crystal |
 | Iron Guard | 48×64 px | 1 (planned 2) | Heavy mecha |
 | Sky Hunter | 24×16 px | 1 | Small drone |
-| Boss 1 | 128×128 px | 1 | Corrupted Guymelef |
+| Boss 1 | 128×128 px | 1 | Corrupted Draconel |
 | Boss 2 | 128×128 px | 1 | Crystal Golem |
-| Boss 3 | 160×160 px | 1 | Imperial Guymelef |
+| Boss 3 | 160×160 px | 1 | Imperial Draconel |
 | Final Boss | 256×256 px | 1 | The Iron Heart |
 | Dragon Core | 16×16 px | 1 | Glowing pickup |
 | Barricade | 64×128 px | 1 (planned cracked variants) | Destructible wall |
@@ -162,7 +162,7 @@ The game renders at 1920×1080 natively. On smaller screens, Phaser's FIT mode s
 ### Boss Health Bar (top-center, appears during boss fights)
 ```
 ┌──────────────────────────────────┐
-│     CORRUPTED GUYMELEF           │
+│     CORRUPTED DRACONEL           │
 │  ████████████████████░░░░░░░░░░  │
 └──────────────────────────────────┘
 ```
@@ -178,7 +178,7 @@ The game renders at 1920×1080 natively. On smaller screens, Phaser's FIT mode s
 - Atmospheric forest/ruin environments
 
 ### Escaflowne (anime, 1996)
-- Guymelefs: organic-mechanical fusion design
+- Draconels: organic-mechanical fusion design
 - Gold trim on dark armor
 - Glowing energy cores
 - Dramatic, theatrical visual style

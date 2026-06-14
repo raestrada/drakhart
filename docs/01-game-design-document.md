@@ -9,7 +9,7 @@ DRAKHART is a dark fantasy action-platformer that fuses **three genres into a si
 | Source | Weight | Contribution |
 |--------|--------|-------------|
 | **Draconus** (Atari 8-bit, 1988) | 70% | Earned transformation, dark atmosphere, dual-form gameplay, sword combat, grim loneliness |
-| **Escaflowne** (anime, 1996) | 30% | Dragon = biomechanical guymelef (bone & metal mecha), tarot/destiny themes, epic aerial duels, steampunk-fantasy fusion |
+| **Escaflowne** (anime, 1996) | 30% | Dragon = biomechanical draconel (bone & metal mecha), tarot/destiny themes, epic aerial duels, steampunk-fantasy fusion |
 | **R-Type** (arcade, 1987) | Shmup sections | Forced horizontal scroll, bullet patterns, charge shot, wave-based enemy formations |
 | **MechWarrior 2** (PC, 1995) | Mecha heat system | Heat management, shutdown risk, weapon-heat tradeoffs |
 

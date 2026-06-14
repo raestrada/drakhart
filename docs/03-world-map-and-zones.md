@@ -275,7 +275,7 @@ Secret: S17 (accessible after collecting all tarot cards)
 
 ### M6 — The Foundry (5,000 px)
 
-**Theme**: Industrial hellscape. Rivers of molten metal, massive pistons, conveyor belts. The Empire's production line for Guymelef parts.
+**Theme**: Industrial hellscape. Rivers of molten metal, massive pistons, conveyor belts. The Empire's production line for Draconel parts.
 
 **Gameplay**: Heat management test. Lava hazards, heavy combat.
 - Lava pools (contact damage: Human 8/s, Mecha 2/s, Dragon flies over)
@@ -314,13 +314,13 @@ Secret: S17 (accessible after collecting all tarot cards)
 | 26,000 | Entrance from The Foundry |
 | 27,000 | Crystal cavern (beautiful, safe zone) |
 | 28,000 | **Secret**: Justice card (requires Human to navigate narrow crystal passage) |
-| 29,000 | **Mid-boss: Crystal Warden** — corrupted mining Guymelef |
+| 29,000 | **Mid-boss: Crystal Warden** — corrupted mining Draconel |
 | 29,500 | Mine cart hub (connects to H3, M8, D9) |
 | 30,000 | Deep shaft to D9 (Storm Canyon entrance) |
 | 30,500 | Exit to War Arsenal (M8) |
 
 **Enemies**: Crystal Shards, Mine Drones, Fossil Sentinels
-**Mid-boss**: Crystal Warden — Mining Guymelef. Crystal beam attack, summon Shards.
+**Mid-boss**: Crystal Warden — Mining Draconel. Crystal beam attack, summon Shards.
 **Secrets**: Justice (sword range +20%)
 **Checkpoints**: 4 (hub has extra)
 
@@ -328,7 +328,7 @@ Secret: S17 (accessible after collecting all tarot cards)
 
 ### M8 — War Arsenal (5,000 px)
 
-**Theme**: The Empire's weapon factory. Assembly lines for Iron Guards, prototype Guymelef parts, ammunition stockpiles. Industrial, loud, dangerous.
+**Theme**: The Empire's weapon factory. Assembly lines for Iron Guards, prototype Draconel parts, ammunition stockpiles. Industrial, loud, dangerous.
 
 **Gameplay**: Heavy Mecha combat finale.
 - Conveyor belts (push player, environmental hazard)
@@ -344,9 +344,9 @@ Secret: S17 (accessible after collecting all tarot cards)
 | 32,500 | Press corridor (timing + combat) |
 | 33,500 | Ammunition depot (explosive barrels — environmental damage) |
 | 34,000 | **Secret**: The Emperor card (break through wall with charged claymore) |
-| 34,500 | **Boss: Iron Warmaster** — the Empire's chief military Guymelef |
+| 34,500 | **Boss: Iron Warmaster** — the Empire's chief military Draconel |
 
-**Boss**: Iron Warmaster — Heavy artillery Guymelef. Missile barrages, flame thrower, ground slam. Tests all Mecha skills: hover dodging, charged attacks, heat management. Drops The Emperor card (Mecha armor -30%).
+**Boss**: Iron Warmaster — Heavy artillery Draconel. Missile barrages, flame thrower, ground slam. Tests all Mecha skills: hover dodging, charged attacks, heat management. Drops The Emperor card (Mecha armor -30%).
 
 **Enemies**: Elite Iron Guards, Artillery Drones, Press Drones
 **Secrets**: The Emperor (boss drop)
@@ -548,7 +548,7 @@ Secret: S17 (accessible after collecting all tarot cards)
 
 ### F16 — Iron Throne (3,000 px arena)
 
-**Theme**: The throne room of the Iron Empire. The Iron Chancellor's seat of power. The largest Guymelef ever built — The Iron Heart — stands guard. The room is a cathedral of industry: pipes like organ pipes, furnaces like altars, the Core like a god.
+**Theme**: The throne room of the Iron Empire. The Iron Chancellor's seat of power. The largest Draconel ever built — The Iron Heart — stands guard. The room is a cathedral of industry: pipes like organ pipes, furnaces like altars, the Core like a god.
 
 **Gameplay**: Final boss fight. No exploration — pure combat.
 - Three phases, one per form

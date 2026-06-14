@@ -2,7 +2,7 @@
 
 ![Drakhart Marketing Splash Art](public/marketing/drakhart_splash.png)
 
-> *"Humanity forged the hearts of dragons into biomechanical gods of war. The Dragon War burned the skies, leaving the continent in ash. Now, the Iron Empire seeks the final Cores to complete their army of Corrupted Guymelefs... and the last beating heart lives inside your chest."*
+> *"Humanity forged the hearts of dragons into biomechanical gods of war. The Dragon War burned the skies, leaving the continent in ash. Now, the Iron Empire seeks the final Cores to complete their army of Corrupted Draconels... and the last beating heart lives inside your chest."*
 
 **DRAKHART** is a grimdark fantasy action-platformer that fuses **three distinct genres into a single, continuous, genre-bending adventure**. Blending the earned transformations of Atari’s *Draconus (1988)*, the biomechanical clockwork mecha designs of *Vision of Escaflowne (1996)*, and the tactical arcade scrolling of *R-Type*, DRAKHART casts you as **The Warden**—a silent knight bonded with a living mechanical dragon core, fighting to protect the Shattered Continent from the *Final Forging*.
 
@@ -12,9 +12,9 @@
 
 Seamlessly shift between three radically different forms at the press of a key `[C]`. Every transformation triggers a cinematic transition: a burst of screen particles, operatic music swells, camera shakes, and shifts in camera zoom.
 
-| 🟢 Human Form: The Warden | ⚪ Mecha Form: The Guymelef | 🔵 Dragon Form: The Sky Graver |
+| 🟢 Human Form: The Warden | ⚪ Mecha Form: The Draconel | 🔵 Dragon Form: The Sky Graver |
 | :---: | :---: | :---: |
-| ![Warden Profile](public/marketing/warrior_card.png) | ![Mecha Profile](public/marketing/mecha_card.png) | ![Dragon Profile](public/marketing/dragon_card.png) |
+| ![Warden Profile](public/marketing/warrior_card.png) | ![Mecha Profile](public/marketing/draconel_card.png) | ![Dragon Profile](public/marketing/dragon_card.png) |
 | **Precision Platformer** | **Heavy Mecha Combat** | **Horizontal Shmup** |
 | Agile, swift, and classic. Explore tight caverns, dodge traps, and strike fast with your short sword. Human form is essential for accessing narrow passages. | A titanic, white-and-gold biomechanical knight mecha. Smash through heavy stone gates and obliterate guards with your massive Claymore. | A flying mecha-dragon. Take to the skies in horizontal forced-scrolling shmup sections, dogfight aerial drones, and breathe fire. |
 
@@ -40,7 +40,7 @@ Discover **10 Major Arcana Tarot Cards** hidden throughout the world. Each card 
 - **The World (XXI)**: Fully maps the Shattered Continent and unlocks warp checkpoints.
 
 ### 🌡️ 4. Tactical Heat Management
-The Guymelef Mecha is a powerful engine of destruction, but it runs *hot*. Striking with your 66px Claymore or firing weapons increases your **Heat Level**. Fail to manage your vents and your mecha will trigger an **Emergency Shutdown**—leaving you frozen and vulnerable to the Iron Guard.
+The Draconel Mecha is a powerful engine of destruction, but it runs *hot*. Striking with your 66px Claymore or firing weapons increases your **Heat Level**. Fail to manage your vents and your mecha will trigger an **Emergency Shutdown**—leaving you frozen and vulnerable to the Iron Guard.
 
 ### 💾 5. Save & Memory Restoration
 Interact with ancient dragon shrines to save your progress, restore your health, and back up your tarot deck to local storage, keeping your adventure preserved.
@@ -49,7 +49,7 @@ Interact with ancient dragon shrines to save your progress, restore your health,
 
 ## 📖 Lore & Atmosphere: The Shattered Continent
 
-The continent is a landscape of decaying beauty. Once, dragons ruled, their hearts beating as elemental furnaces. Humanity learned to harvest these cores, building the **Guymelefs**—biomechanical combinations of bone, steel, and dragon-fire. The Dragon War left the world in ruins, and now the **Iron Empire** scours the land to corrupt the remaining cores.
+The continent is a landscape of decaying beauty. Once, dragons ruled, their hearts beating as elemental furnaces. Humanity learned to harvest these cores, building the **Draconels**—biomechanical combinations of bone, steel, and dragon-fire. The Dragon War left the world in ruins, and now the **Iron Empire** scours the land to corrupt the remaining cores.
 
 You wear the green scale armor of the **Wardens**—a dead order sworn to protect the cores. When you touched a beating core, it fused into your chest, whispering memories of skies you never saw and battles you never fought. You are silent, because there is no one left to speak to.
 
@@ -95,4 +95,4 @@ npm run build
 
 ---
 
-*DRAKHART is currently in its Level 1 prototype phase, showcasing a single continuous level running through the Warrior Tunnel, the Mecha Ruins, and the Dragon Gorge, culminating in an epic Boss battle against a Corrupted Guymelef.*
+*DRAKHART is currently in its Level 1 prototype phase, showcasing a single continuous level running through the Warrior Tunnel, the Mecha Ruins, and the Dragon Gorge, culminating in an epic Boss battle against a Corrupted Draconel.*
