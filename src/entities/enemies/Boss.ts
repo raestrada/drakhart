@@ -72,6 +72,11 @@ export class Boss extends BaseEnemy {
       .rectangle(uiX, uiY + 20, 200, 10, 0x333333)
       .setScrollFactor(0);
 
+    const barBorder = this.scene.add
+      .rectangle(uiX, uiY + 20, 202, 12)
+      .setScrollFactor(0)
+      .setStrokeStyle(1, 0x886644);
+
     this.healthBarFill = this.scene.add
       .rectangle(uiX - 100, uiY + 20, 200, 10, 0xcc3333)
       .setOrigin(0, 0.5)

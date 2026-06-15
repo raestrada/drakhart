@@ -227,7 +227,7 @@ export class UIScene extends Phaser.Scene {
       .text(
         cx,
         y,
-        '  ARROWS/WASD : Move    UP/W : Jump (Hold to Hover in Mecha)    X : Attack    C : Cycle Form  ',
+        '  ARROWS/WASD : Move    UP/W : Jump (Hold to Hover in Mecha)    X : Attack    C : Cycle Form    T : Tarot    ESC : Pause  ',
         {
           fontSize: `${Math.round(8 * this.scaleFactor)}px`,
           fontFamily: 'monospace',
