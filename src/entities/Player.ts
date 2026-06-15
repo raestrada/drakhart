@@ -16,6 +16,7 @@ import {
   INVINCIBILITY_DURATION,
 } from '../utils/constants';
 import { TarotSystem } from '../systems/TarotSystem';
+import { GamepadSystem } from '../systems/GamepadSystem';
 import { spawnLandingDust, spawnHoverThrust, spawnDragonExhaust, spawnHitParticles } from '../effects/Particles';
 import { spawnDamageNumber } from '../effects/DamageNumbers';
 
@@ -31,6 +32,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public isAnimatingAttack = false;
   public tarotSystem: TarotSystem | null = null;
   public inputEnabled = true;
+  private gamepadSystem: GamepadSystem;
   private savedAllowGravity = true;
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -72,6 +74,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.formMachine = new FormStateMachine(this, scene);
     this.combatSystem = new CombatSystem(scene, this);
+    this.gamepadSystem = new GamepadSystem(scene);
 
     this.setupInput(scene);
     this.createVisorGlow(scene);
@@ -143,6 +146,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     super.preUpdate(time, delta);
     if (!this.alive) return;
 
+    this.gamepadSystem.update();
+
+    // Gamepad attack and transform triggers
+    if (this.gamepadSystem.attackJustDown && this.inputEnabled) {
+      this.combatSystem.attack(this.formMachine.state, this.facingRight);
+    }
+    if (this.gamepadSystem.transformJustDown && this.inputEnabled) {
+      this.formMachine.requestTransform();
+    }
+    if (this.gamepadSystem.jumpJustDown) {
+      this.jumpBufferTimer = 120;
+    }
+
     if (!this.inputEnabled) {
       const body = this.body as Phaser.Physics.Arcade.Body;
       if (body) {
@@ -188,9 +204,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const dt = delta / 1000;
 
-    const left = this.cursors.left?.isDown || this.keyA.isDown;
-    const right = this.cursors.right?.isDown || this.keyD.isDown;
-    const jump = this.cursors.up?.isDown || this.keyW.isDown;
+    const left = this.cursors.left?.isDown || this.keyA.isDown || this.gamepadSystem.left;
+    const right = this.cursors.right?.isDown || this.keyD.isDown || this.gamepadSystem.right;
+    const jump = this.cursors.up?.isDown || this.keyW.isDown || this.gamepadSystem.jumpPressed;
     const onGround = body.blocked.down || body.touching.down;
     const isMoving = left || right;
 
@@ -281,9 +297,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const dt = delta / 1000;
 
-    const left = this.cursors.left?.isDown || this.keyA.isDown;
-    const right = this.cursors.right?.isDown || this.keyD.isDown;
-    const jump = this.cursors.up?.isDown || this.keyW.isDown;
+    const left = this.cursors.left?.isDown || this.keyA.isDown || this.gamepadSystem.left;
+    const right = this.cursors.right?.isDown || this.keyD.isDown || this.gamepadSystem.right;
+    const jump = this.cursors.up?.isDown || this.keyW.isDown || this.gamepadSystem.jumpPressed;
     const onGround = body.blocked.down || body.touching.down;
     const isMoving = left || right;
 
@@ -395,10 +411,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       let vy = body.velocity.y;
 
       if (vx === 0 && vy === 0) {
-        const left = this.cursors.left?.isDown || this.keyA?.isDown;
-        const right = this.cursors.right?.isDown || this.keyD?.isDown;
-        const up = this.cursors.up?.isDown || this.keyW?.isDown;
-        const down = this.cursors.down?.isDown || this.keyS?.isDown;
+        const left = this.cursors.left?.isDown || this.keyA?.isDown || this.gamepadSystem.left;
+        const right = this.cursors.right?.isDown || this.keyD?.isDown || this.gamepadSystem.right;
+        const up = this.cursors.up?.isDown || this.keyW?.isDown || this.gamepadSystem.up;
+        const down = this.cursors.down?.isDown || this.keyS?.isDown || this.gamepadSystem.down;
 
         const speed = 260;
         if (left) vx = -speed;

@@ -128,4 +128,18 @@ export class BaseLevelScene extends Phaser.Scene {
   shutdown(): void {
     this.parallaxLayers = [];
   }
+
+  protected checkCombatIntensity(playerX: number, playerY: number, enemies: Phaser.Physics.Arcade.Group): void {
+    if (!this.gameAudio?.setCombatActive) return;
+
+    let inCombat = false;
+    enemies.getChildren().forEach((e) => {
+      const enemy = e as Phaser.Physics.Arcade.Sprite;
+      if (!enemy.active) return;
+      const dist = Phaser.Math.Distance.Between(playerX, playerY, enemy.x, enemy.y);
+      if (dist < 500) inCombat = true;
+    });
+
+    this.gameAudio.setCombatActive(inCombat);
+  }
 }

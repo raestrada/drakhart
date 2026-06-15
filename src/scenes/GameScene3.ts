@@ -153,6 +153,13 @@ export class GameScene3 extends Phaser.Scene {
       this.scene.launch('PauseScene', { gameScene: 'GameScene3' });
     });
 
+    this.input.keyboard?.on('keydown-T', () => {
+      if (this.scene.isPaused()) return;
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('TarotCollectionScene', { tarotSystem: this.tarotSystem });
+    });
+
     // Initialize groups & arrays before creating levels
     this.enemies = this.physics.add.group();
     this.laserBeams = this.physics.add.staticGroup();
@@ -721,6 +728,10 @@ export class GameScene3 extends Phaser.Scene {
 
     if (this.player && this.player.active) {
       this.gameAudio?.update(this.player.x);
+      this.gameAudio?.setCombatActive?.(this.enemies.getChildren().some((e) => {
+        const enemy = e as Phaser.Physics.Arcade.Sprite;
+        return enemy.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 500;
+      }));
     }
 
     if (!this.shmupStarted) {
