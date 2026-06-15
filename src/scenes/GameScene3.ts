@@ -52,6 +52,7 @@ export class GameScene3 extends Phaser.Scene {
   private bgGorgeSky!: Phaser.GameObjects.TileSprite;
   private bgGorgeWalls!: Phaser.GameObjects.TileSprite;
   private bgGorgeStructures!: Phaser.GameObjects.TileSprite;
+  private bgReactor!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
 
@@ -157,26 +158,36 @@ export class GameScene3 extends Phaser.Scene {
   private createParallax(): void {
     this.cameras.main.setBackgroundColor('#08040a');
 
-    // 1. Gorge Sky Background (deep space nebula)
-    this.bgGorgeSky = this.add.tileSprite(0, 0, LEVEL_WIDTH, 1200, 'bg-gorge-sky')
+    // 1. Gorge Sky Background (reuse procedural cosmic nebula sky texture)
+    this.bgGorgeSky = this.add.tileSprite(0, 0, LEVEL_WIDTH, 1200, 'bg-sky')
       .setOrigin(0, 0)
       .setScrollFactor(0.01, 0)
       .setDepth(-30);
-    this.bgGorgeSky.setTint(0x995588, 0x995588, 0x331133, 0x331133);
+    this.bgGorgeSky.setTint(0x884488, 0x884488, 0x331133, 0x331133);
 
-    // 2. Obsidian Gorge Walls (slow parallax scrolling)
+    // 1.1 Volcanic Reactor Core (Unique background support image, slow horizontal scroll)
+    if (this.textures.exists('bg-gorge-reactor')) {
+      this.bgReactor = this.add.image(0, 0, 'bg-gorge-reactor')
+        .setOrigin(0.5, 0.5)
+        .setScrollFactor(0)
+        .setDepth(-25)
+        .setAlpha(0.65);
+      this.bgReactor.setTint(0xff5522, 0xff8844, 0x331122, 0x551122);
+    }
+
+    // 2. Obsidian Gorge Walls (procedural craggy top/bottom ceiling & floor, slow scroll)
     this.bgGorgeWalls = this.add.tileSprite(0, 180, this.scale.width * 1.5, 800, 'bg-gorge-walls')
       .setOrigin(0, 0)
       .setScrollFactor(0.06, 0)
       .setDepth(-20);
-    this.bgGorgeWalls.setTint(0xff88aa, 0xff55bb, 0x441133, 0x662244);
+    this.bgGorgeWalls.setTint(0xff5500, 0xff2200, 0x1a0512, 0x2d0b1a);
 
-    // 3. Gorge Industrial Structures (medium parallax scrolling)
+    // 3. Gorge Industrial Structures (procedural girders, pipes, cables, medium scroll)
     this.bgGorgeStructures = this.add.tileSprite(0, 240, this.scale.width * 1.5, 800, 'bg-gorge-structures')
       .setOrigin(0, 0)
       .setScrollFactor(0.18, 0)
       .setDepth(-10);
-    this.bgGorgeStructures.setTint(0xaa7799, 0xcc99aa, 0x221122, 0x221122);
+    this.bgGorgeStructures.setTint(0x777788, 0x9999aa, 0x111122, 0x111122);
   }
 
   private createLevel(): void {
@@ -541,6 +552,15 @@ export class GameScene3 extends Phaser.Scene {
       this.bgGorgeSky.height = desiredHeight;
       this.bgGorgeSky.setScale(1.0 / cam.zoom);
       this.bgGorgeSky.y = (0 - cam.centerY) / cam.zoom + cam.centerY;
+    }
+
+    // Scroll the unique Reactor backdrop extremely slowly horizontally
+    if (this.bgReactor) {
+      const targetScreenX = w * 0.65 - camX * 0.03;
+      const targetScreenY = h * 0.45;
+      this.bgReactor.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      this.bgReactor.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      this.bgReactor.setScale(1.15 / cam.zoom);
     }
 
     if (this.bgGorgeWalls) {

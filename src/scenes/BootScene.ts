@@ -19,6 +19,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-gorge-sky-raw', `assets/bg_gorge_sky.png?${v}`);
     this.load.image('bg-gorge-walls-raw', `assets/bg_gorge_walls.png?${v}`);
     this.load.image('bg-gorge-structures-raw', `assets/bg_gorge_structures.png?${v}`);
+    this.load.image('bg-gorge-reactor-raw', `assets/bg_gorge_reactor.png?${v}`);
     this.load.image('title-splash', `marketing/drakhart_splash.png`);
     this.load.image('cinematic-gem-1', `assets/cinematic_gem_1.png`);
     this.load.image('cinematic-gem-2', `assets/cinematic_gem_2.png`);
@@ -486,14 +487,13 @@ export class BootScene extends Phaser.Scene {
       this.drawBackgrounds();
     }
 
-    if (this.textures.exists('bg-gorge-sky-raw')) {
-      this.keyOutBlackAndScale('bg-gorge-sky-raw', 'bg-gorge-sky', 240, 240);
-    }
-    if (this.textures.exists('bg-gorge-walls-raw')) {
-      this.keyOutBlackAndScale('bg-gorge-walls-raw', 'bg-gorge-walls', 384, 384);
-    }
-    if (this.textures.exists('bg-gorge-structures-raw')) {
-      this.keyOutBlackAndScale('bg-gorge-structures-raw', 'bg-gorge-structures', 384, 384);
+    // Level 3 Gorge background layers (rendered procedurally)
+    this.drawGorgeWalls();
+    this.drawGorgeStructures();
+
+    // Level 3 single reactor core backdrop support image
+    if (this.textures.exists('bg-gorge-reactor-raw')) {
+      this.keyOutBlackAndScale('bg-gorge-reactor-raw', 'bg-gorge-reactor', 384, 384);
     }
 
     this.drawDragonCore();
@@ -3230,5 +3230,150 @@ export class BootScene extends Phaser.Scene {
     this.rect(g, 0, 7, 2, 2, 0, 0x00d2d3);
     this.rect(g, 14, 7, 2, 2, 0, 0x00d2d3);
     this.tex(g, 'energy-pickup', 16, 16);
+  }
+
+  private drawGorgeWalls(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const w = 960;
+    const h = 800;
+
+    // Dual-silhouette: ceiling (top) and floor (bottom)
+    // Seamlessly tileable over x = 960 using integer period sine waves
+    for (let x = 0; x < w; x++) {
+      const angle = x * (2 * Math.PI / w);
+      
+      // 1. Ceiling rocks (y = 0 down to hTop)
+      const hTop = 130 + Math.sin(angle) * 35 
+                       + Math.cos(angle * 2) * 20 
+                       + Math.sin(angle * 5) * 8 
+                       + Math.cos(angle * 12) * 4;
+      const topPeak = Math.floor(hTop);
+
+      // Gradient body for ceiling (from very dark purple-gray to dark navy)
+      for (let y = 0; y < topPeak - 2; y++) {
+        const t = y / topPeak;
+        const r = Math.floor(8 * (1 - t) + 20 * t);
+        const gr = Math.floor(6 * (1 - t) + 14 * t);
+        const bl = Math.floor(14 * (1 - t) + 30 * t);
+        g.fillStyle((r << 16) | (gr << 8) | bl);
+        g.fillRect(x, y, 1, 1);
+      }
+      
+      // Magma glow edge at the bottom of the ceiling rock
+      g.fillStyle(0xd35400); // orange-red magma
+      g.fillRect(x, topPeak - 2, 1, 1);
+      g.fillStyle(0xff8833); // brighter yellow-orange edge
+      g.fillRect(x, topPeak - 1, 1, 1);
+
+      // 2. Floor rocks (y = 800 - hBot up to 800)
+      const hBot = 150 + Math.cos(angle) * 45 
+                       + Math.sin(angle * 2) * 25 
+                       + Math.cos(angle * 4) * 12 
+                       + Math.sin(angle * 14) * 5;
+      const botPeak = Math.floor(hBot);
+      const startY = h - botPeak;
+
+      // Magma glow edge at the top of the floor rock
+      g.fillStyle(0xff8833); // brighter yellow-orange edge
+      g.fillRect(x, startY, 1, 1);
+      g.fillStyle(0xd35400); // orange-red magma
+      g.fillRect(x, startY + 1, 1, 1);
+
+      // Gradient body for floor (from dark navy to very dark purple-gray)
+      for (let y = startY + 2; y < h; y++) {
+        const t = (y - startY) / botPeak;
+        const r = Math.floor(20 * (1 - t) + 8 * t);
+        const gr = Math.floor(14 * (1 - t) + 6 * t);
+        const bl = Math.floor(30 * (1 - t) + 14 * t);
+        g.fillStyle((r << 16) | (gr << 8) | bl);
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+
+    this.tex(g, 'bg-gorge-walls', w, h);
+  }
+
+  private drawGorgeStructures(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const tw = 480;
+    const th = 480;
+
+    // Draw industrial girders and pipes that tile seamlessly
+    // 1. Horizontal heavy pipe at y = 140 (height 28)
+    const pipeY = 140;
+    const pipeH = 28;
+    for (let py = 0; py < pipeH; py++) {
+      const t = py / pipeH;
+      let col = 0x111622; // dark steel
+      if (t < 0.2) col = 0x556270; // highlight top
+      else if (t < 0.5) col = 0x222d3d; // medium
+      else if (t > 0.8) col = 0x0a0f16; // shadow bottom
+      g.fillStyle(col);
+      g.fillRect(0, pipeY + py, tw, 1);
+    }
+    
+    // Pipe rivets/joints every 120 pixels
+    for (let rx = 0; rx < tw; rx += 120) {
+      g.fillStyle(0x0a0f16);
+      g.fillRect(rx, pipeY - 2, 6, pipeH + 4);
+      g.fillStyle(0x7f8c8d);
+      g.fillRect(rx + 2, pipeY, 2, 4);
+      g.fillRect(rx + 2, pipeY + pipeH - 4, 2, 4);
+    }
+
+    // 2. Vertical girders (posts) of width 20 at x = 90 and x = 370
+    const girderWidth = 20;
+    const girderXLocations = [90, 370];
+    
+    girderXLocations.forEach((gx) => {
+      // Draw vertical beam
+      g.fillStyle(0x0a0e14); // deep slate/black girder body
+      g.fillRect(gx, 0, girderWidth, th);
+
+      g.fillStyle(0x1b2330); // vertical highlight strip
+      g.fillRect(gx + 4, 0, 4, th);
+
+      g.fillStyle(0x05070a); // shadow side
+      g.fillRect(gx + 12, 0, 8, th);
+
+      // Truss patterns: Draw diagonal crossbars at 60px height intervals
+      for (let ty = 0; ty < th; ty += 120) {
+        g.lineStyle(2, 0x1b2330);
+        // diagonal truss line
+        g.beginPath();
+        g.moveTo(gx + girderWidth, ty);
+        g.lineTo(gx - 40, ty + 60);
+        g.moveTo(gx - 40, ty);
+        g.lineTo(gx + girderWidth, ty + 60);
+        g.strokePath();
+
+        // horizontal truss line
+        g.beginPath();
+        g.moveTo(gx, ty + 60);
+        g.lineTo(gx - 40, ty + 60);
+        g.strokePath();
+      }
+    });
+
+    // 3. Glowing biomechanical power cables weaving through the structures
+    g.lineStyle(2, 0xa30045, 0.7); // purple-pink glow
+    g.beginPath();
+    for (let cx = 0; cx < tw; cx++) {
+      const cy = 240 + Math.sin(cx * (2 * Math.PI / tw) * 2) * 50;
+      if (cx === 0) g.moveTo(cx, cy);
+      else g.lineTo(cx, cy);
+    }
+    g.strokePath();
+
+    g.lineStyle(1.2, 0xff88ee, 0.9); // inner cable light core
+    g.beginPath();
+    for (let cx = 0; cx < tw; cx++) {
+      const cy = 240 + Math.sin(cx * (2 * Math.PI / tw) * 2) * 50;
+      if (cx === 0) g.moveTo(cx, cy);
+      else g.lineTo(cx, cy);
+    }
+    g.strokePath();
+
+    this.tex(g, 'bg-gorge-structures', tw, th);
   }
 }
