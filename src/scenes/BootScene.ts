@@ -3170,105 +3170,179 @@ export class BootScene extends Phaser.Scene {
     // Dimensions: 48 wide x 36 tall — horizontal tank-mech chassis
     const W = 48, H = 36;
 
-    // === Main body — heavy armored chassis (dark gunmetal) ===
-    g.fillStyle(0x1c2330);
-    g.fillRect(4, 10, 40, 20);
+    // === Dark mechanical joints/frame backing (shadow layer) ===
+    g.fillStyle(0x0f121a);
+    g.fillRect(10, 10, 28, 16); // core block
+    
+    // Hip joint sockets
+    g.fillCircle(12, 22, 3.5);
+    g.fillCircle(36, 22, 3.5);
 
-    // Upper hull ridge — thick top plate
-    g.fillStyle(0x2a3545);
-    g.fillRect(6, 6, 36, 10);
+    // === 1. Background Leg (Left - reverse-jointed) ===
+    // Thigh
+    g.fillStyle(0x19212e);
+    g.beginPath();
+    g.moveTo(12, 22);
+    g.lineTo(5, 27);
+    g.lineTo(8, 29);
+    g.lineTo(15, 24);
+    g.closePath();
+    g.fillPath();
+    // Knee joint
+    g.fillStyle(0x0a0d14);
+    g.fillCircle(6, 28, 2.5);
+    // Shin plate
+    g.fillStyle(0x232e40);
+    g.beginPath();
+    g.moveTo(6, 28);
+    g.lineTo(10, 35);
+    g.lineTo(14, 35);
+    g.lineTo(10, 28);
+    g.closePath();
+    g.fillPath();
+    // Heavy claw foot
+    g.fillStyle(0x131922);
+    g.fillRect(6, 34, 9, 2);
+    g.fillStyle(0x8a7015);
+    g.fillRect(7, 34, 2, 1); // gold toe claw
 
-    // Chest highlight stripe
-    g.fillStyle(0x3a4a5e);
-    g.fillRect(8, 8, 32, 4);
+    // === 2. Background Leg (Right - reverse-jointed) ===
+    // Thigh
+    g.fillStyle(0x19212e);
+    g.beginPath();
+    g.moveTo(36, 22);
+    g.lineTo(43, 27);
+    g.lineTo(40, 29);
+    g.lineTo(33, 24);
+    g.closePath();
+    g.fillPath();
+    // Knee joint
+    g.fillStyle(0x0a0d14);
+    g.fillCircle(42, 28, 2.5);
+    // Shin plate
+    g.fillStyle(0x232e40);
+    g.beginPath();
+    g.moveTo(42, 28);
+    g.lineTo(38, 35);
+    g.lineTo(34, 35);
+    g.lineTo(38, 28);
+    g.closePath();
+    g.fillPath();
+    // Heavy claw foot
+    g.fillStyle(0x131922);
+    g.fillRect(33, 34, 9, 2);
+    g.fillStyle(0x8a7015);
+    g.fillRect(39, 34, 2, 1); // gold toe claw
 
-    // Battle damage scratches
-    g.fillStyle(0x111820);
-    g.fillRect(12, 9, 6, 1);
-    g.fillRect(24, 11, 10, 1);
+    // === 3. Chassis / Torso Armor (Angled & heavy plates) ===
+    // Main plate (dark gunmetal)
+    g.fillStyle(0x18202b);
+    g.beginPath();
+    g.moveTo(11, 10);
+    g.lineTo(37, 10);
+    g.lineTo(35, 25);
+    g.lineTo(13, 25);
+    g.closePath();
+    g.fillPath();
 
-    // === Glowing RED visor band (intimidating eye strip) ===
-    g.fillStyle(0x8b0000);
-    g.fillRect(6, 14, 36, 6);
-    g.fillStyle(0xdd1111);
-    g.fillRect(8, 15, 32, 4);
-    g.fillStyle(0xff3333);
-    g.fillRect(10, 16, 28, 2);
-    // Glint highlights
-    g.fillStyle(0xff8888);
-    g.fillRect(11, 16, 3, 1);
-    g.fillStyle(0xffffff);
-    g.fillRect(13, 16, 1, 1);
+    // Secondary angled flank plates
+    g.fillStyle(0x141b24);
+    g.beginPath(); g.moveTo(8, 12); g.lineTo(11, 10); g.lineTo(13, 25); g.lineTo(9, 21); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(40, 12); g.lineTo(37, 10); g.lineTo(35, 25); g.lineTo(39, 21); g.closePath(); g.fillPath();
 
-    // === Left shoulder cannon ===
-    g.fillStyle(0x141b26);
-    g.fillRect(0, 8, 12, 8);
-    g.fillStyle(0x1e2a36);
-    g.fillRect(1, 9, 10, 6);
-    // Cannon barrel (pointing left)
-    g.fillStyle(0x0d1219);
-    g.fillRect(0, 11, 6, 4);
-    // Cannon muzzle flash ring
-    g.fillStyle(0xff5500);
-    g.fillRect(0, 12, 2, 2);
+    // 3D edge highlights (metallic blue-grey)
+    g.fillStyle(0x32435c);
+    g.fillRect(12, 10, 24, 2); // top edge
+    g.beginPath(); g.moveTo(11, 12); g.lineTo(13, 25); g.lineTo(14, 25); g.lineTo(12, 12); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(37, 12); g.lineTo(35, 25); g.lineTo(34, 25); g.lineTo(36, 12); g.closePath(); g.fillPath();
 
-    // === Right shoulder cannon ===
-    g.fillStyle(0x141b26);
-    g.fillRect(36, 8, 12, 8);
-    g.fillStyle(0x1e2a36);
-    g.fillRect(37, 9, 10, 6);
-    // Cannon barrel (pointing right)
-    g.fillStyle(0x0d1219);
-    g.fillRect(42, 11, 6, 4);
-    g.fillStyle(0xff5500);
-    g.fillRect(46, 12, 2, 2);
+    // Central sloped visor cowl (skull-like face shield)
+    g.fillStyle(0x0e131b);
+    g.beginPath();
+    g.moveTo(15, 11);
+    g.lineTo(33, 11);
+    g.lineTo(30, 23);
+    g.lineTo(18, 23);
+    g.closePath();
+    g.fillPath();
 
-    // === Central reactor core (glowing orange/gold) ===
-    g.fillStyle(0x0d1219);
-    g.fillCircle(24, 19, 6);
-    g.fillStyle(0xcc4400);
-    g.fillCircle(24, 19, 5);
+    // === 4. Visor - Menacing V-shaped eye visor glowing Red ===
+    g.fillStyle(0x6b0a0a); // dark red backing
+    g.beginPath();
+    g.moveTo(17, 13); g.lineTo(24, 15); g.lineTo(31, 13);
+    g.lineTo(30, 15); g.lineTo(24, 17); g.lineTo(18, 15);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(0xcc1111); // bright red
+    g.beginPath();
+    g.moveTo(18, 14); g.lineTo(24, 15.5); g.lineTo(30, 14);
+    g.lineTo(29, 15); g.lineTo(24, 16.5); g.lineTo(19, 15);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(0xffaa66); // orange/white hot points (optics sensors)
+    g.fillRect(19, 14, 2, 1);
+    g.fillRect(27, 14, 2, 1);
+
+    // === 5. Central Reactor Core (Energist stone) ===
+    this.circ(g, 24, 19, 5, 0x8a7015); // gold bezel
+    this.circ(g, 24, 19, 3.8, 0x0f121a); // socket
+    this.circ(g, 24, 19, 2.6, 0xcc2200); // glowing red core
+    this.circ(g, 24, 19, 1.5, 0xff8800); // bright orange
+    this.circ(g, 24, 19, 0.7, 0xffffff); // white point
+
+    // Vertical grill slots over core (metallic bars)
+    g.fillStyle(0x0f121a);
+    g.fillRect(22, 16, 1, 6);
+    g.fillRect(25, 16, 1, 6);
+
+    // === 6. Shoulder Weapons (Mounted on sides) ===
+    // Left shoulder: Heavy Multiple Missile Pod
+    g.fillStyle(0x131922); g.fillRect(1, 5, 9, 11);
+    g.fillStyle(0x283548); g.fillRect(2, 6, 7, 9);
+    // 2x2 Missile Tubes
+    g.fillStyle(0x07090d);
+    g.fillRect(3, 7, 2, 2);
+    g.fillRect(6, 7, 2, 2);
+    g.fillRect(3, 11, 2, 2);
+    g.fillRect(6, 11, 2, 2);
+    // Red missile tips
+    g.fillStyle(0xff3300);
+    g.fillRect(3.5, 7.5, 1, 1);
+    g.fillRect(6.5, 7.5, 1, 1);
+    g.fillRect(3.5, 11.5, 1, 1);
+    g.fillRect(6.5, 11.5, 1, 1);
+
+    // Right shoulder: Heavy Twin Auto-cannon
+    g.fillStyle(0x131922); g.fillRect(38, 5, 9, 11);
+    g.fillStyle(0x283548); g.fillRect(39, 6, 7, 9);
+    // Dual heavy barrels protruding forward
+    g.fillStyle(0x1b2430);
+    g.fillRect(44, 7, 4, 2); // upper barrel
+    g.fillRect(44, 11, 4, 2); // lower barrel
+    // Muzzle flash / tips
     g.fillStyle(0xff8800);
-    g.fillCircle(24, 19, 3);
-    g.fillStyle(0xffcc00);
-    g.fillCircle(24, 19, 1.5);
-    g.fillStyle(0xffffff);
-    g.fillCircle(24, 19, 0.8);
+    g.fillRect(47, 7, 1, 1);
+    g.fillRect(47, 12, 1, 1);
 
-    // === Armor panels with rivets ===
-    g.fillStyle(0x0d1219);
-    // Left panel rivets
-    g.fillRect(7, 21, 2, 2);
-    g.fillRect(7, 27, 2, 2);
-    // Right panel rivets
-    g.fillRect(39, 21, 2, 2);
-    g.fillRect(39, 27, 2, 2);
+    // === 7. Gothic Spikes, Rivets & Battle Damage ===
+    g.fillStyle(0x8a7015);
+    // Shoulder spikes
+    g.beginPath(); g.moveTo(1, 5); g.lineTo(0, 2); g.lineTo(3, 5); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(47, 5); g.lineTo(48, 2); g.lineTo(45, 5); g.closePath(); g.fillPath();
+    // Gold chest trim band
+    g.fillRect(14, 9, 20, 1);
 
-    // === Bottom thruster pods / legs ===
-    g.fillStyle(0x141b26);
-    g.fillRect(6, 28, 10, 8);
-    g.fillRect(32, 28, 10, 8);
-    g.fillStyle(0x1e2a36);
-    g.fillRect(8, 29, 6, 6);
-    g.fillRect(34, 29, 6, 6);
-    // Thruster exhaust glow (blue-cyan)
-    g.fillStyle(0x003366);
-    g.fillRect(9, 33, 4, 3);
-    g.fillRect(35, 33, 4, 3);
-    g.fillStyle(0x0066cc);
-    g.fillRect(10, 34, 2, 2);
-    g.fillRect(36, 34, 2, 2);
+    // Rivets
+    g.fillStyle(0x07090d);
+    g.fillRect(12, 12, 1, 1);
+    g.fillRect(35, 12, 1, 1);
+    g.fillRect(14, 23, 1, 1);
+    g.fillRect(33, 23, 1, 1);
 
-    // === Damage wear — rust streaks below reactor ===
-    g.fillStyle(0x3a1800);
-    g.fillRect(20, 24, 2, 4);
-    g.fillRect(26, 25, 1, 3);
-    g.fillRect(22, 26, 1, 2);
-
-    // === Gold trim accents (Escaflowne nod) ===
-    g.fillStyle(0x8a6800);
-    g.fillRect(6, 6, 36, 1);    // top trim
-    g.fillRect(6, 29, 36, 1);   // bottom trim
+    // Rust streaks
+    g.fillStyle(0x381a05);
+    g.fillRect(14, 24, 1, 2);
+    g.fillRect(33, 24, 1, 2);
 
     this.tex(g, 'enemy-mecha', W, H);
   }
@@ -3345,77 +3419,127 @@ export class BootScene extends Phaser.Scene {
     // 96x80 — fallen mech torso half-buried in the ground
 
     // Shadow beneath
-    g.fillStyle(0x000000, 0.4);
-    g.fillEllipse(48, 74, 80, 16);
+    g.fillStyle(0x000000, 0.45);
+    g.fillEllipse(48, 74, 84, 14);
 
-    // Main torso slab (tilted — fallen forward)
-    g.fillStyle(0x111820);
-    // Tilted hull
+    // === Giant background silhouette skeleton ===
+    g.fillStyle(0x0a0c10);
+    g.fillRect(12, 20, 72, 54);
+
+    // === Main Torso Chassis (Huge tilted gunmetal plates) ===
+    g.fillStyle(0x151c24);
+    // Tilted polygon torso shape
     g.beginPath();
-    g.moveTo(8, 30);
-    g.lineTo(88, 18);
-    g.lineTo(92, 70);
-    g.lineTo(4, 76);
+    g.moveTo(10, 24);
+    g.lineTo(86, 14);
+    g.lineTo(90, 72);
+    g.lineTo(6, 76);
     g.closePath();
     g.fillPath();
 
-    // Armor plates — darker overlay
-    g.fillStyle(0x0a1018);
+    // Armor overlay plates (detailed mechanical layers)
+    g.fillStyle(0x222c3a);
     g.beginPath();
-    g.moveTo(12, 34);
-    g.lineTo(80, 23);
-    g.lineTo(84, 66);
-    g.lineTo(8, 72);
+    g.moveTo(14, 28);
+    g.lineTo(82, 18);
+    g.lineTo(86, 68);
+    g.lineTo(10, 72);
     g.closePath();
     g.fillPath();
 
-    // Exposed ribs / structural beams (rust orange)
-    g.fillStyle(0x4a1e00);
-    g.fillRect(20, 38, 50, 4);
-    g.fillRect(22, 48, 44, 3);
-    g.fillRect(18, 56, 46, 3);
-    g.fillStyle(0x7a3500);
-    g.fillRect(20, 39, 50, 1);
+    // Lighter highlight plates (rust-stained edges)
+    g.fillStyle(0x344358);
+    g.beginPath();
+    g.moveTo(16, 30);
+    g.lineTo(80, 20);
+    g.lineTo(84, 45);
+    g.lineTo(12, 50);
+    g.closePath();
+    g.fillPath();
 
-    // Cracked-open reactor cavity (glowing dark red)
-    g.fillStyle(0x1a0000);
-    g.fillEllipse(50, 50, 28, 20);
-    g.fillStyle(0x440000);
-    g.fillEllipse(50, 50, 20, 14);
+    // === Exposed mechanical spine / ribcage structure ===
+    // Rust iron details
+    g.fillStyle(0x401802);
+    for (let i = 0; i < 5; i++) {
+      const y = 32 + i * 8;
+      const w = 48 - i * 4;
+      g.fillRect(24 + i * 2, y, w, 3);
+      g.fillStyle(0x6b2b07);
+      g.fillRect(24 + i * 2, y, w, 1); // highlights
+      g.fillStyle(0x401802);
+    }
+
+    // === Cracked central reactor room ===
+    g.fillStyle(0x090b10);
+    g.fillEllipse(48, 48, 28, 20);
+    // Faint dying reactor glow (multiple colors)
+    g.fillStyle(0x330000);
+    g.fillEllipse(48, 48, 24, 16);
     g.fillStyle(0x880000);
-    g.fillEllipse(50, 50, 12, 8);
-    g.fillStyle(0xcc2200);
-    g.fillEllipse(50, 50, 6, 4);
+    g.fillEllipse(48, 48, 16, 10);
+    g.fillStyle(0xdd3300);
+    g.fillEllipse(48, 48, 8, 5);
+    g.fillStyle(0xff8800);
+    g.fillEllipse(48, 48, 3, 2);
 
-    // Exposed wiring hanging out (dark green lines)
-    g.lineStyle(1.5, 0x004422);
-    g.beginPath(); g.moveTo(60, 52); g.lineTo(68, 68); g.lineTo(72, 75); g.strokePath();
-    g.beginPath(); g.moveTo(55, 54); g.lineTo(64, 72); g.strokePath();
+    // Exposed wires hanging out (decaying green/blue cords)
+    g.lineStyle(1.5, 0x004d2c);
+    g.beginPath(); g.moveTo(44, 50); g.lineTo(36, 68); g.lineTo(38, 75); g.strokePath();
+    g.lineStyle(1.5, 0x0a335c);
+    g.beginPath(); g.moveTo(52, 52); g.lineTo(58, 70); g.lineTo(54, 76); g.strokePath();
     g.lineStyle(1, 0x002211);
-    g.beginPath(); g.moveTo(58, 53); g.lineTo(70, 74); g.strokePath();
+    g.beginPath(); g.moveTo(48, 51); g.lineTo(46, 73); g.strokePath();
 
-    // Shoulder cannon stub (blown off) — charred end
-    g.fillStyle(0x0a1018);
-    g.fillRect(2, 26, 18, 14);
-    g.fillStyle(0x220000);
-    g.fillRect(2, 26, 4, 14); // char mark
-    g.fillStyle(0xff4400);
-    g.fillRect(2, 29, 2, 3); // ember
+    // === Smashed skull-like mecha head visor ===
+    g.fillStyle(0x111720);
+    g.fillRect(36, 10, 24, 16);
+    // White/grey forehead plate
+    g.fillStyle(0x2d3a4d);
+    g.beginPath();
+    g.moveTo(38, 11); g.lineTo(58, 11); g.lineTo(55, 20); g.lineTo(41, 20);
+    g.closePath(); g.fillPath();
+    // Cracked green visor
+    g.fillStyle(0x003311);
+    g.fillRect(40, 16, 16, 4);
+    g.fillStyle(0x00ff66);
+    g.fillRect(41, 17, 10, 2); // left side still glowing faintly
+    // Visual crack line
+    g.lineStyle(1, 0x0a0f18);
+    g.beginPath(); g.moveTo(48, 15); g.lineTo(52, 21); g.strokePath();
 
-    // Battle damage gashes
-    g.fillStyle(0x060a10);
-    g.beginPath(); g.moveTo(30, 23); g.lineTo(36, 30); g.lineTo(33, 31); g.closePath(); g.fillPath();
-    g.beginPath(); g.moveTo(62, 30); g.lineTo(70, 38); g.lineTo(66, 40); g.closePath(); g.fillPath();
+    // === Blown shoulder weapon stub ===
+    g.fillStyle(0x0a0f15);
+    g.fillRect(2, 22, 16, 12);
+    // Charred metal edge
+    g.fillStyle(0x180000);
+    g.fillRect(2, 22, 4, 12);
+    // Sparks/embers
+    g.fillStyle(0xff5500);
+    g.fillRect(2, 25, 2, 2);
+    g.fillRect(3, 29, 1, 1);
 
-    // Rust streaks
-    g.fillStyle(0x3a1200);
-    g.fillRect(40, 24, 2, 20);
-    g.fillRect(56, 28, 1, 18);
-    g.fillRect(28, 30, 1, 14);
+    // === Huge broken shoulder guard (right side pauldron) ===
+    g.fillStyle(0x1c2533);
+    g.beginPath();
+    g.moveTo(82, 14); g.lineTo(95, 22); g.lineTo(91, 44); g.lineTo(76, 32);
+    g.closePath(); g.fillPath();
+    g.fillStyle(0x384a66);
+    g.beginPath();
+    g.moveTo(84, 16); g.lineTo(93, 23); g.lineTo(89, 41); g.lineTo(78, 31);
+    g.closePath(); g.fillPath();
+    // Battle scar slash across shoulder
+    g.fillStyle(0x090b10);
+    g.beginPath(); g.moveTo(82, 26); g.lineTo(92, 34); g.lineTo(89, 36); g.closePath(); g.fillPath();
 
-    // Gold trim remnants (Escaflowne heritage)
-    g.fillStyle(0x4a3600);
-    g.fillRect(12, 34, 50, 2);
+    // Rust streaks running down chassis
+    g.fillStyle(0x3a1500);
+    g.fillRect(20, 28, 2, 22);
+    g.fillRect(72, 25, 2, 18);
+    g.fillRect(32, 29, 1, 15);
+
+    // Gold trim remnants
+    g.fillStyle(0x594610);
+    g.fillRect(14, 28, 68, 2);
 
     this.tex(g, 'deco-mecha-a', 96, 80);
   }
@@ -3425,64 +3549,93 @@ export class BootScene extends Phaser.Scene {
     // 80x64 — smashed mech leg/arm half-buried diagonally
 
     // Shadow
-    g.fillStyle(0x000000, 0.3);
-    g.fillEllipse(40, 60, 72, 12);
+    g.fillStyle(0x000000, 0.35);
+    g.fillEllipse(40, 58, 72, 12);
 
-    // Main arm/leg shaft — thick diagonal slab
-    g.fillStyle(0x111820);
+    // === Background joint gear elements ===
+    g.fillStyle(0x0a0c10);
+    g.fillCircle(64, 20, 14);
+
+    // Main heavy structural arm/leg diagonal beam
+    g.fillStyle(0x131a24);
     g.beginPath();
-    g.moveTo(0, 14);
-    g.lineTo(68, 0);
-    g.lineTo(78, 24);
-    g.lineTo(12, 40);
+    g.moveTo(2, 16);
+    g.lineTo(66, 2);
+    g.lineTo(76, 26);
+    g.lineTo(12, 42);
     g.closePath();
     g.fillPath();
 
-    // Inner darker plate
-    g.fillStyle(0x0a1018);
+    // Armour plating overlay
+    g.fillStyle(0x222c3a);
     g.beginPath();
-    g.moveTo(4, 16);
-    g.lineTo(64, 4);
-    g.lineTo(72, 22);
-    g.lineTo(14, 36);
+    g.moveTo(6, 18);
+    g.lineTo(62, 6);
+    g.lineTo(70, 24);
+    g.lineTo(14, 38);
     g.closePath();
     g.fillPath();
 
-    // Joint socket area (at the wide end)
-    g.fillStyle(0x1e2a36);
-    g.fillEllipse(68, 12, 20, 20);
-    g.fillStyle(0x0d1219);
-    g.fillEllipse(68, 12, 12, 12);
-    g.fillStyle(0x2a3545);
-    g.fillEllipse(68, 12, 6, 6);
+    // Highlights
+    g.fillStyle(0x344358);
+    g.beginPath();
+    g.moveTo(8, 20);
+    g.lineTo(60, 8);
+    g.lineTo(64, 18);
+    g.lineTo(12, 30);
+    g.closePath();
+    g.fillPath();
 
-    // Knee/elbow actuator pistons
-    g.fillStyle(0x222a35);
-    g.fillRect(52, 6, 6, 12);
-    g.fillRect(58, 8, 4, 8);
-    g.fillStyle(0x556070);
-    g.fillRect(53, 7, 2, 4); // piston highlight
+    // === Exposed mechanical gears & wrist/knee joint actuators ===
+    g.fillStyle(0x4d3608); // rusted gears
+    g.fillCircle(64, 20, 10);
+    g.fillStyle(0x131a24);
+    g.fillCircle(64, 20, 6);
+    // Gear teeth dots
+    g.fillStyle(0x4d3608);
+    g.fillRect(63, 8, 2, 2);
+    g.fillRect(63, 30, 2, 2);
+    g.fillRect(52, 19, 2, 2);
+    g.fillRect(74, 19, 2, 2);
 
-    // Rust streaks on the diagonal hull
-    g.fillStyle(0x3a1200);
-    g.fillRect(18, 14, 2, 14);
-    g.fillRect(30, 10, 1, 16);
-    g.fillRect(44, 6, 2, 16);
+    // Hydraulic cylinder piston
+    g.fillStyle(0x1f2733);
+    g.fillRect(42, 16, 12, 8);
+    g.fillStyle(0x6e7e94); // chrome piston rod
+    g.fillRect(48, 18, 10, 4);
 
-    // Scorched impact crater (blown hole)
-    g.fillStyle(0x050a0e);
-    g.fillEllipse(22, 24, 14, 10);
-    g.fillStyle(0x220000);
-    g.fillEllipse(22, 24, 8, 6);
+    // Rust markings
+    g.fillStyle(0x3a1500);
+    g.fillRect(20, 18, 2, 16);
+    g.fillRect(35, 14, 1, 18);
+
+    // === Colossal rusted sword blade/claymore lying under the arm ===
+    g.fillStyle(0x282c35); // dark steel guard
+    g.fillRect(4, 34, 6, 18);
+    g.fillStyle(0x401802); // rusted iron blade
+    g.beginPath();
+    g.moveTo(10, 40);
+    g.lineTo(54, 46);
+    g.lineTo(52, 54);
+    g.lineTo(10, 48);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0x6b2b07); // rust highlight
+    g.fillRect(10, 43, 42, 2);
+
+    // Blown impact crater hole in plating
+    g.fillStyle(0x06080c);
+    g.fillEllipse(26, 26, 12, 8);
+    g.fillStyle(0x260000);
+    g.fillEllipse(26, 26, 7, 5);
     g.fillStyle(0xff4400);
-    g.fillEllipse(22, 24, 3, 2);
+    g.fillRect(26, 26, 1, 1);
 
-    // Debris/rubble at base
-    g.fillStyle(0x111820);
-    g.fillRect(0, 36, 15, 8);
-    g.fillRect(5, 40, 10, 5);
-    g.fillStyle(0x0a1018);
-    g.fillRect(2, 38, 6, 6);
+    // Rubble debris at the base
+    g.fillStyle(0x131a24);
+    g.fillRect(0, 42, 16, 6);
+    g.fillStyle(0x07090c);
+    g.fillRect(2, 44, 8, 4);
 
     this.tex(g, 'deco-mecha-b', 80, 64);
   }
