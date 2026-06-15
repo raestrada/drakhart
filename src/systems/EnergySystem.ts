@@ -35,10 +35,18 @@ export class EnergySystem {
   }
 
   consumeShoot(): void {
+    if ((window as any).godModeActive || (window as any).infiniteEnergyActive) {
+      this.current = this.max;
+      return;
+    }
     this.current = Math.max(0, this.current - ENERGY_DRAIN_SHOOT);
   }
 
   consumeDamage(): void {
+    if ((window as any).godModeActive || (window as any).infiniteEnergyActive) {
+      this.current = this.max;
+      return;
+    }
     this.current = Math.max(0, this.current - ENERGY_DRAIN_DAMAGED);
   }
 
@@ -47,6 +55,10 @@ export class EnergySystem {
   }
 
   update(delta: number, state: FormState, isFlyingUp: boolean, onGround: boolean): void {
+    if ((window as any).godModeActive || (window as any).infiniteEnergyActive) {
+      this.current = this.max;
+      return;
+    }
     const dt = delta / 1000;
 
     if (state === FormState.HUMAN || state === FormState.EXHAUSTED) {

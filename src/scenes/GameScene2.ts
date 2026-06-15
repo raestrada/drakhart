@@ -558,7 +558,8 @@ export class GameScene2 extends Phaser.Scene {
     // Apply extreme heat environmental damage to Warrior form
     if (this.player.active && this.player.alive) {
       const state = this.player.formMachine.state;
-      if (state === FormState.HUMAN || state === FormState.EXHAUSTED) {
+      const isGodMode = (window as any).godModeActive;
+      if ((state === FormState.HUMAN || state === FormState.EXHAUSTED) && !isGodMode) {
         this.heatWarningText.setText(t('story.extremeHeat') || 'EXTREME HEAT: WARRIOR BURNS - FIND ENERGY');
         this.heatWarningText.setAlpha(0.6 + Math.sin(time * 0.01) * 0.4);
 

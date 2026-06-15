@@ -192,12 +192,14 @@ export class DevPanel {
     
     this.godModeBtn = this.addButton('Toggle God Mode (OFF)', () => {
       this.godModeActive = !this.godModeActive;
+      (window as any).godModeActive = this.godModeActive;
       this.updateStatus();
       this.logMessage(`God Mode: ${this.godModeActive ? 'Enabled' : 'Disabled'}`);
     });
 
     this.infiniteEnergyBtn = this.addButton('Toggle Infinite Energy (OFF)', () => {
       this.infiniteEnergyActive = !this.infiniteEnergyActive;
+      (window as any).infiniteEnergyActive = this.infiniteEnergyActive;
       this.updateStatus();
       this.logMessage(`Infinite Energy: ${this.infiniteEnergyActive ? 'Enabled' : 'Disabled'}`);
     });
@@ -386,6 +388,7 @@ export class DevPanel {
           }
           s.player.takeDamage = this.godModeTakeDamage;
         }
+        s.player.health = s.player.maxHealth; // Lock health to max in God Mode
       } else {
         if (s.player.originalTakeDamage) {
           s.player.takeDamage = s.player.originalTakeDamage;

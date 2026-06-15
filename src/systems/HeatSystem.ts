@@ -19,6 +19,10 @@ export class HeatSystem {
 
   addHeat(amount: number): void {
     if (this.shutdownActive) return;
+    if ((window as any).godModeActive || (window as any).infiniteEnergyActive) {
+      this.current = 0;
+      return;
+    }
     this.current = Math.min(this.max, this.current + amount);
     if (this.current >= this.max) {
       this.triggerShutdown();
@@ -38,6 +42,11 @@ export class HeatSystem {
   }
 
   update(delta: number, isMoving: boolean): void {
+    if ((window as any).godModeActive || (window as any).infiniteEnergyActive) {
+      this.current = 0;
+      this.shutdownActive = false;
+      return;
+    }
     const dt = delta / 1000;
 
     if (this.shutdownActive) {
