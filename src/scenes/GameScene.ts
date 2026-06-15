@@ -17,6 +17,7 @@ import { SaveAltar } from '../entities/SaveAltar';
 import {
   spawnHitParticles,
   spawnTransformParticles,
+  spawnDeathExplosion,
 } from '../effects/Particles';
 import {
   LEVEL_WIDTH,
@@ -1855,32 +1856,8 @@ export class GameScene extends Phaser.Scene {
     player.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
     player.setScale(isMecha ? 1.4 : 0.8);
 
-    // Spawn mecha-core shatter particles
-    for (let i = 0; i < 35; i++) {
-      const px = player.x;
-      const py = player.y - 12; // chest level
-      const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
-      const size = Phaser.Math.Between(4, 10);
-      const spark = this.add.rectangle(px, py, size, size, sparkColor);
-      spark.setBlendMode(Phaser.BlendModes.ADD);
-
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Phaser.Math.Between(50, 250);
-      const targetX = px + Math.cos(angle) * speed * 0.6;
-      const targetY = py + Math.sin(angle) * speed * 0.6 - 20;
-
-      this.tweens.add({
-        targets: spark,
-        x: targetX,
-        y: targetY,
-        alpha: 0,
-        scale: 0.2,
-        angle: Phaser.Math.Between(-180, 180),
-        duration: Phaser.Math.Between(600, 1200),
-        ease: 'Quad.easeOut',
-        onComplete: () => spark.destroy()
-      });
-    }
+    // Spawn mecha-core shatter particles using native emitter
+    spawnDeathExplosion(this, player.x, player.y - 12);
 
     // 3. Lightning Strike (400ms delay)
     this.time.delayedCall(400, () => {

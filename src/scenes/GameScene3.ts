@@ -9,7 +9,7 @@ import { EnergyPickup } from '../entities/EnergyPickup';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
-import { spawnHitParticles } from '../effects/Particles';
+import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
 import { SaveAltar } from '../entities/SaveAltar';
 import {
   LEVEL_WIDTH,
@@ -1220,32 +1220,7 @@ export class GameScene3 extends Phaser.Scene {
 
         // 3. Core shatter explosion upon landing/impact at target
         this.gameAudio?.playCoreShatter();
-
-        for (let i = 0; i < 35; i++) {
-          const px = player.x;
-          const py = player.y;
-          const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
-          const size = Phaser.Math.Between(4, 10);
-          const spark = this.add.rectangle(px, py, size, size, sparkColor);
-          spark.setBlendMode(Phaser.BlendModes.ADD);
-
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Phaser.Math.Between(50, 250);
-          const targetX = px + Math.cos(angle) * speed * 0.6;
-          const targetY = py + Math.sin(angle) * speed * 0.6;
-
-          this.tweens.add({
-            targets: spark,
-            x: targetX,
-            y: targetY,
-            alpha: 0,
-            scale: 0.2,
-            angle: Phaser.Math.Between(-180, 180),
-            duration: Phaser.Math.Between(600, 1200),
-            ease: 'Quad.easeOut',
-            onComplete: () => spark.destroy()
-          });
-        }
+        spawnDeathExplosion(this, player.x, player.y);
 
         // 4. Lightning Strike (400ms delay after crash ends)
         this.time.delayedCall(400, () => {

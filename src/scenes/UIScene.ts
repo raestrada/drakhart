@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { t } from '../i18n';
+import { lerp } from '../utils/helpers';
 
 export class UIScene extends Phaser.Scene {
   private player!: Player;
@@ -24,6 +25,12 @@ export class UIScene extends Phaser.Scene {
   private panelW = 150 + 12 * 2;
   private panelH = 80;
 
+  private displayHealthW = 0;
+  private displayEnergyW = 0;
+  private displayHeatW = 0;
+
+  private prevHealth = 100;
+
   constructor() {
     super({ key: 'UIScene' });
   }
@@ -41,7 +48,11 @@ export class UIScene extends Phaser.Scene {
     this.panelX = 4 * this.scaleFactor;
     this.panelY = 4 * this.scaleFactor;
     this.panelW = this.barW + this.pad * 2;
-    this.panelH = 105 * this.scaleFactor;
+    this.panelH = 108 * this.scaleFactor;
+
+    this.displayHealthW = this.barW;
+    this.displayEnergyW = this.barW;
+    this.displayHeatW = 0;
 
     this.drawPanelBackground();
     this.drawHealthBar();
@@ -55,18 +66,25 @@ export class UIScene extends Phaser.Scene {
 
   private drawPanelBackground(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    g.fillStyle(0x000000, 0.5);
+    g.fillStyle(0x06040c, 0.65);
     g.fillRect(this.panelX, this.panelY, this.panelW, this.panelH);
-    g.lineStyle(1.5, 0x332222, 0.6);
+
+    // Top gold accent line
+    g.fillStyle(0xaa8844, 0.4);
+    g.fillRect(this.panelX, this.panelY, this.panelW, 2 * this.scaleFactor);
+
+    // Border
+    g.lineStyle(1, 0x332a22, 0.5);
     g.strokeRect(this.panelX, this.panelY, this.panelW, this.panelH);
+
     g.setScrollFactor(0);
     g.setDepth(-1);
 
     this.add
-      .text(this.panelX + this.panelW / 2, this.panelY + 2 * this.scaleFactor, 'DRAKHART', {
-        fontSize: `${Math.round(8 * this.scaleFactor)}px`,
+      .text(this.panelX + this.panelW / 2, this.panelY + 3 * this.scaleFactor, 'DRAKHART', {
+        fontSize: `${Math.round(7 * this.scaleFactor)}px`,
         fontFamily: 'monospace',
-        color: '#553333',
+        color: '#665533',
       })
       .setOrigin(0.5, 0)
       .setScrollFactor(0);
@@ -74,23 +92,23 @@ export class UIScene extends Phaser.Scene {
 
   private drawHealthBar(): void {
     const x = this.pad + this.panelX;
-    const y = this.pad + this.panelY + 16 * this.scaleFactor;
+    const y = this.pad + this.panelY + 18 * this.scaleFactor;
 
     this.add
       .text(x, y - 2 * this.scaleFactor, t('ui.health'), {
         fontSize: `${Math.round(9 * this.scaleFactor)}px`,
         fontFamily: 'monospace',
-        color: '#aa3333',
+        color: '#cc4444',
       })
       .setScrollFactor(0);
 
     this.add
-      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x1a1111)
+      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x140808)
       .setOrigin(0, 0)
       .setScrollFactor(0);
 
     this.add
-      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x443333)
+      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x332211)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(-1);
@@ -104,7 +122,7 @@ export class UIScene extends Phaser.Scene {
     for (let i = 0; i < 5; i++) {
       const sx = x + (i + 1) * (this.barW / 5) - 1 * this.scaleFactor;
       this.add
-        .rectangle(sx, y + 12 * this.scaleFactor, Math.max(1, Math.round(this.scaleFactor)), this.barH, 0x1a1111)
+        .rectangle(sx, y + 12 * this.scaleFactor, Math.max(1, Math.round(this.scaleFactor)), this.barH, 0x140808)
         .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(2);
@@ -113,23 +131,23 @@ export class UIScene extends Phaser.Scene {
 
   private drawEnergyBar(): void {
     const x = this.pad + this.panelX;
-    const y = this.pad + this.panelY + 42 * this.scaleFactor;
+    const y = this.pad + this.panelY + 44 * this.scaleFactor;
 
     this.add
       .text(x, y - 2 * this.scaleFactor, t('ui.energy'), {
         fontSize: `${Math.round(9 * this.scaleFactor)}px`,
         fontFamily: 'monospace',
-        color: '#aa5511',
+        color: '#cc7733',
       })
       .setScrollFactor(0);
 
     this.add
-      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x1a110a)
+      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x140a04)
       .setOrigin(0, 0)
       .setScrollFactor(0);
 
     this.add
-      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x443322)
+      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x332211)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(-1);
@@ -142,44 +160,44 @@ export class UIScene extends Phaser.Scene {
 
   private drawHeatBar(): void {
     const x = this.pad + this.panelX;
-    const y = this.pad + this.panelY + 68 * this.scaleFactor;
+    const y = this.pad + this.panelY + 70 * this.scaleFactor;
 
     this.add
       .text(x, y - 2 * this.scaleFactor, 'HEAT', {
         fontSize: `${Math.round(9 * this.scaleFactor)}px`,
         fontFamily: 'monospace',
-        color: '#aa4411',
+        color: '#cc5533',
       })
       .setScrollFactor(0);
 
     this.add
-      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x1a0a05)
+      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0x140503)
       .setOrigin(0, 0)
       .setScrollFactor(0);
 
     this.add
-      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x443322)
+      .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x332211)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(-1);
 
     this.heatFill = this.add
-      .rectangle(x, y + 12 * this.scaleFactor, this.barW, this.barH, 0xff4400)
+      .rectangle(x, y + 12 * this.scaleFactor, 0, this.barH, 0xff4400)
       .setOrigin(0, 0)
       .setScrollFactor(0);
   }
 
   private drawTransformIndicator(): void {
     const x = this.pad + this.panelX;
-    const y = this.pad + this.panelY + 92 * this.scaleFactor;
+    const y = this.pad + this.panelY + 96 * this.scaleFactor;
 
     this.coreIndicator = this.add
-      .rectangle(x + 2 * this.scaleFactor, y, 6 * this.scaleFactor, 6 * this.scaleFactor, 0x332211)
+      .rectangle(x + 2 * this.scaleFactor, y, 5 * this.scaleFactor, 5 * this.scaleFactor, 0x332211)
       .setOrigin(0, 0)
       .setScrollFactor(0);
 
     this.transformLabel = this.add
-      .text(x + 12 * this.scaleFactor, y - 1 * this.scaleFactor, '', {
+      .text(x + 10 * this.scaleFactor, y - 1 * this.scaleFactor, '', {
         fontSize: `${Math.round(8 * this.scaleFactor)}px`,
         fontFamily: 'monospace',
         color: '#665544',
@@ -243,19 +261,51 @@ export class UIScene extends Phaser.Scene {
   update(): void {
     if (!this.player || !this.player.active) return;
 
-    const healthRatio = Math.max(0, this.player.health / this.player.maxHealth);
-    this.healthFill.width = this.barW * healthRatio;
+    // Smooth health bar lerp
+    const healthTarget = this.barW * Math.max(0, this.player.health / this.player.maxHealth);
+    this.displayHealthW = lerp(this.displayHealthW, healthTarget, 0.15);
+    this.healthFill.width = this.displayHealthW;
 
-    const energyRatio = this.player.formMachine.energy.ratio;
-    this.energyFill.width = this.barW * energyRatio;
+    // Health color shift on low HP
+    const healthRatio = this.player.health / this.player.maxHealth;
+    if (healthRatio < 0.3) {
+      const pulse = 0.8 + 0.2 * Math.sin(Date.now() * 0.01);
+      this.healthFill.setFillStyle(0xff1111, pulse);
+    } else if (healthRatio < 0.6) {
+      this.healthFill.setFillStyle(0xdd4422);
+    } else {
+      this.healthFill.setFillStyle(0xcc3333);
+    }
 
+    // Damage flash: pulse panel border on damage
+    if (this.player.health < this.prevHealth) {
+      this.healthFill.setFillStyle(0xffffff);
+      this.time.delayedCall(60, () => {
+        if (this.healthFill && this.healthFill.active) {
+          this.healthFill.setFillStyle(0xcc3333);
+        }
+      });
+    }
+    this.prevHealth = this.player.health;
+
+    // Smooth energy bar lerp
+    const energyTarget = this.barW * this.player.formMachine.energy.ratio;
+    this.displayEnergyW = lerp(this.displayEnergyW, energyTarget, 0.18);
+    this.energyFill.width = this.displayEnergyW;
+
+    // Smooth heat bar lerp
     const heatRatio = this.player.formMachine.heat.ratio;
+    const heatTarget = this.barW * heatRatio;
+    this.displayHeatW = lerp(this.displayHeatW, heatTarget, 0.12);
+    this.heatFill.width = this.displayHeatW;
+
     const heatLevel = this.player.formMachine.heat.level;
-    this.heatFill.width = this.barW * heatRatio;
     if (heatLevel === 'warning') {
-      this.heatFill.setFillStyle(0xff8800);
+      const pulse = 0.7 + 0.3 * Math.sin(Date.now() * 0.008);
+      this.heatFill.setFillStyle(0xff8800, pulse);
     } else if (heatLevel === 'danger') {
-      this.heatFill.setFillStyle(0xff2200);
+      const pulse = 0.7 + 0.3 * Math.sin(Date.now() * 0.015);
+      this.heatFill.setFillStyle(0xff2200, pulse);
     } else {
       this.heatFill.setFillStyle(0xff4400);
     }
@@ -277,11 +327,7 @@ export class UIScene extends Phaser.Scene {
       }
       this.transformLabel.setColor('#ff5ea2');
     } else if (state === FormState.HUMAN) {
-      if (hasDragon && hasMecha) {
-        this.coreIndicator.setFillStyle(0xffcc00);
-        this.transformLabel.setText('C: MECHA');
-        this.transformLabel.setColor('#ffcc00');
-      } else if (hasMecha) {
+      if (hasMecha) {
         this.coreIndicator.setFillStyle(0xffcc00);
         this.transformLabel.setText('C: MECHA');
         this.transformLabel.setColor('#ffcc00');
@@ -297,6 +343,14 @@ export class UIScene extends Phaser.Scene {
       this.coreIndicator.setFillStyle(0xff0066);
       this.transformLabel.setText('A W A K E N');
       this.transformLabel.setColor('#ff0066');
+    }
+
+    // Core indicator pulse on transform ready
+    if (hasMecha && state === FormState.HUMAN) {
+      const pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.005);
+      this.coreIndicator.setAlpha(pulse);
+    } else {
+      this.coreIndicator.setAlpha(1);
     }
 
     this.updateCoreHint();

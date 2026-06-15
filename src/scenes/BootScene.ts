@@ -52,6 +52,9 @@ export class BootScene extends Phaser.Scene {
     // Spawn background atmospheric embers
     this.startEmberRain(width, height);
 
+    // Parallax menu background: subtle starfield + mist
+    this.createMenuBackground(width, height);
+
     const scale = width / 800;
 
     // Title text: Hollow Knight style fade-in scaled dynamically
@@ -356,6 +359,38 @@ export class BootScene extends Phaser.Scene {
         startCinematicTitle(targetScene, transitionData);
       });
     }
+  }
+
+  private createMenuBackground(width: number, height: number): void {
+    if (!this.textures.exists('bg-sky')) return;
+
+    const sky = this.add.tileSprite(0, 0, width, height * 1.2, 'bg-sky')
+      .setOrigin(0, 0)
+      .setAlpha(0.3)
+      .setDepth(-20);
+
+    const mist = this.add.tileSprite(0, height * 0.55, width, height * 0.5, 'bg-mist')
+      .setOrigin(0, 0)
+      .setAlpha(0.25)
+      .setDepth(-15);
+
+    this.tweens.add({
+      targets: sky,
+      tilePositionY: -50,
+      duration: 12000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.tweens.add({
+      targets: mist,
+      tilePositionX: -80,
+      duration: 18000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   private startEmberRain(width: number, height: number): void {
