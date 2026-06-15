@@ -191,9 +191,8 @@ export class GameScene3 extends Phaser.Scene {
       { x: 0, y: 704, width: 8000, height: 96, texture: 'tile-lava-ground' },
 
       // === SECTION 1: Narrow Gorge Entry (0-2000) ===
-      { x: 800, y: 350, width: 160, height: 120, texture: 'tile-lava-ground' },
-      { x: 1400, y: 96, width: 192, height: 128, texture: 'tile-lava-ground' },
-      { x: 1700, y: 500, width: 192, height: 204, texture: 'tile-lava-ground' },
+      // Clear path initially. First obstacle appears at 1800.
+      { x: 1800, y: 350, width: 160, height: 120, texture: 'tile-lava-ground' },
 
       // === SECTION 2: Refinery Maze (2000-4500) ===
       { x: 2200, y: 300, width: 256, height: 96, texture: 'tile-lava-ground' },
@@ -231,7 +230,7 @@ export class GameScene3 extends Phaser.Scene {
     const pickupLocations = [
       { x: 500, y: 300 },
       { x: 1100, y: 250 },
-      { x: 1800, y: 300 },
+      { x: 1700, y: 250 },
       { x: 2450, y: 450 },
       { x: 2950, y: 350 },
       { x: 3400, y: 250 },
@@ -261,7 +260,7 @@ export class GameScene3 extends Phaser.Scene {
   private buildWaves(): void {
     this.waves = [
       {
-        triggerX: 800,
+        triggerX: 1800,
         enemies: [
           { type: 'sky-hunter', x: 0, y: 250, speedX: -100, pattern: 'sine' },
           { type: 'sky-hunter', x: 80, y: 300, speedX: -100, pattern: 'sine' },
@@ -269,7 +268,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 1500,
+        triggerX: 2500,
         enemies: [
           { type: 'bone-serpent', x: 0, y: 400, speedX: -260 },
           { type: 'bone-serpent', x: 100, y: 200, speedX: -260 },
@@ -277,7 +276,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 2300,
+        triggerX: 3200,
         enemies: [
           { type: 'sky-hunter', x: 0, y: 200, speedX: -120 },
           { type: 'sky-hunter', x: 60, y: 250, speedX: -120 },
@@ -286,7 +285,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 3000,
+        triggerX: 3900,
         enemies: [
           { type: 'spitter', x: 0, y: 150 },
           { type: 'spitter', x: 120, y: 550 },
@@ -294,7 +293,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 3800,
+        triggerX: 4600,
         enemies: [
           { type: 'sky-hunter', x: 0, y: 220, speedX: -130, pattern: 'sine' },
           { type: 'sky-hunter', x: 80, y: 380, speedX: -130, pattern: 'sine' },
@@ -302,7 +301,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 4700,
+        triggerX: 5300,
         enemies: [
           { type: 'spitter', x: 0, y: 400 },
           { type: 'sky-hunter', x: 50, y: 200, speedX: -110 },
@@ -310,7 +309,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 5500,
+        triggerX: 6000,
         enemies: [
           { type: 'bone-serpent', x: 0, y: 200, speedX: -320 },
           { type: 'bone-serpent', x: 80, y: 320, speedX: -320 },
@@ -318,7 +317,7 @@ export class GameScene3 extends Phaser.Scene {
         ]
       },
       {
-        triggerX: 6300,
+        triggerX: 6600,
         enemies: [
           { type: 'sky-hunter', x: 0, y: 250, speedX: -150, pattern: 'sine' },
           { type: 'sky-hunter', x: 60, y: 300, speedX: -150, pattern: 'sine' },
@@ -425,11 +424,11 @@ export class GameScene3 extends Phaser.Scene {
       duration: 300,
     });
 
-    this.time.delayedCall(4500, () => {
+    this.time.delayedCall(2500, () => {
       this.tweens.add({
         targets: [bannerBg, borderTop, borderBottom, text],
         alpha: 0,
-        duration: 800,
+        duration: 500,
         onComplete: () => {
           bannerBg.destroy();
           borderTop.destroy();
