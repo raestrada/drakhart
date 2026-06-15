@@ -84,11 +84,27 @@ export class GameScene extends Phaser.Scene {
   private pendingMechaUnlock = false;
   private pendingSpawnX = 100;
   private pendingSpawnY = 650;
+  private pendingCardsToCollect: string[] = [];
   private demoEnded = false;
   public isCutsceneActive = false;
 
   constructor() {
     super({ key: 'GameScene' });
+  }
+
+  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[]; mechaUnlocked?: boolean }): void {
+    if (data) {
+      if (data.startPos) {
+        this.pendingSpawnX = data.startPos.x;
+        this.pendingSpawnY = data.startPos.y;
+      }
+      if (data.cardsCollected) {
+        this.pendingCardsToCollect = data.cardsCollected;
+      }
+      if (data.mechaUnlocked) {
+        this.pendingMechaUnlock = data.mechaUnlocked;
+      }
+    }
   }
 
   create(): void {
@@ -114,6 +130,11 @@ export class GameScene extends Phaser.Scene {
     this.createFogWall();
     this.createAshParticles();
     this.tarotSystem = new TarotSystem();
+    if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
+      this.pendingCardsToCollect.forEach((cardId) => {
+        this.tarotSystem.collect(cardId, null as any);
+      });
+    }
 
     const saveData = loadGame();
     if (saveData) {
@@ -1256,6 +1277,25 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private transitionToLevel2(): void {
+    if (this.demoEnded) return;
+    this.demoEnded = true;
+
+    this.player.setVelocity(0, 0);
+    if (this.player.body) {
+      (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
+    }
+
+    this.cameras.main.fade(1000, 0, 0, 0);
+
+    this.time.delayedCall(1000, () => {
+      this.scene.start('GameScene2', {
+        cardsCollected: this.tarotSystem.collectedCards,
+        mechaUnlocked: true
+      });
+    });
+  }
+
   private triggerDemoEnd(): void {
     if (this.demoEnded) return;
     this.demoEnded = true;
@@ -1318,7 +1358,7 @@ export class GameScene extends Phaser.Scene {
         this.player.takeDamage(100, 0);
       }
       if (this.player.x >= 7900) {
-        this.triggerDemoEnd();
+        this.transitionToLevel2();
       }
     }
   }

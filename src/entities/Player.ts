@@ -135,6 +135,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  public isJumpKeyDown(): boolean {
+    return this.cursors.up?.isDown || this.keyW?.isDown;
+  }
+
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     if (!this.alive) return;

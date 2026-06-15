@@ -13,10 +13,16 @@ export class BootScene extends Phaser.Scene {
     const v = 'v=' + Date.now();
     this.load.image('bg-moon-raw', `assets/bg-moon-raw.png?${v}`);
     this.load.image('bg-castle-raw', `assets/bg-castle-raw.png?${v}`);
+    this.load.image('bg-refinery-sun-raw', `assets/bg_refinery_sun.png?${v}`);
+    this.load.image('bg-furnace-raw', `assets/bg_furnace.png?${v}`);
+    this.load.image('bg-furnace-pipes-raw', `assets/bg_furnace_pipes.png?${v}`);
     this.load.image('title-splash', `marketing/drakhart_splash.png`);
     this.load.image('cinematic-gem-1', `assets/cinematic_gem_1.png`);
     this.load.image('cinematic-gem-2', `assets/cinematic_gem_2.png`);
     this.load.image('cinematic-gem-3', `assets/cinematic_gem_3.png`);
+    this.load.image('cinematic-dragon-1', `assets/cinematic_dragon_1.png`);
+    this.load.image('cinematic-dragon-2', `assets/cinematic_dragon_2.png`);
+    this.load.image('cinematic-dragon-3', `assets/cinematic_dragon_3.png`);
   }
 
   create(): void {
@@ -424,6 +430,14 @@ export class BootScene extends Phaser.Scene {
     this.drawBoss();
     this.drawTerrainTextures();
 
+    // Level 2 Refinery Tiles
+    this.drawRefineryTile();
+    this.drawLavaGround();
+    this.drawRefineryLavaTile();
+    this.drawSteamVent();
+    this.drawCoolValve();
+    this.drawMechaEnemy();
+
     // Bush small (procedural only)
     this.drawBush();
 
@@ -448,6 +462,25 @@ export class BootScene extends Phaser.Scene {
       this.keyOutBlackAndScale('bg-castle-raw', 'bg-castle', 384, 384);
     } else {
       this.drawCastleSilhouette();
+    }
+
+    // Refinery backgrounds
+    if (this.textures.exists('bg-refinery-sun-raw')) {
+      this.keyOutBlackAndScale('bg-refinery-sun-raw', 'bg-refinery-sun', 240, 240);
+    } else {
+      this.drawRedMoon();
+    }
+
+    if (this.textures.exists('bg-furnace-raw')) {
+      this.keyOutBlackAndScale('bg-furnace-raw', 'bg-furnace', 384, 384);
+    } else {
+      this.drawCastleSilhouette();
+    }
+
+    if (this.textures.exists('bg-furnace-pipes-raw')) {
+      this.keyOutBlackAndScale('bg-furnace-pipes-raw', 'bg-furnace-pipes', 384, 384);
+    } else {
+      this.drawBackgrounds();
     }
 
     this.drawDragonCore();
@@ -3012,5 +3045,161 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(24, 18, 1);
 
     this.tex(g, 'rock-large', 32, 32);
+  }
+
+  private drawRefineryTile(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x2d3436); g.fillRect(0, 0, 32, 16);
+    g.fillStyle(0x636e72); g.fillRect(0, 0, 32, 2);
+    g.fillStyle(0x1e272e); g.fillRect(0, 14, 32, 2);
+    
+    // Grid lines
+    g.fillStyle(0x3d4446);
+    g.fillRect(8, 2, 2, 12);
+    g.fillRect(16, 2, 2, 12);
+    g.fillRect(24, 2, 2, 12);
+    g.fillRect(2, 8, 28, 2);
+    this.tex(g, 'tile-refinery', 32, 16);
+  }
+
+  private drawLavaGround(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x2d3033); g.fillRect(0, 0, 32, 32);
+    g.fillStyle(0x3d4043); g.fillRect(0, 0, 32, 4);
+    g.fillStyle(0x1a1c1e); g.fillRect(0, 28, 32, 4);
+    
+    // Magma veins
+    g.fillStyle(0xd63031);
+    g.fillRect(4, 8, 6, 4);
+    g.fillRect(10, 10, 8, 4);
+    g.fillRect(18, 12, 10, 4);
+    g.fillRect(12, 18, 6, 8);
+    
+    g.fillStyle(0xe17055);
+    g.fillRect(6, 9, 3, 2);
+    g.fillRect(12, 11, 4, 2);
+    g.fillRect(20, 13, 6, 2);
+    g.fillRect(13, 20, 4, 4);
+    
+    g.fillStyle(0xfdcb6e);
+    g.fillCircle(14, 12, 1.5);
+    g.fillCircle(22, 14, 1.5);
+    g.fillCircle(15, 22, 1.2);
+    
+    this.tex(g, 'tile-lava-ground', 32, 32);
+  }
+
+  private drawRefineryLavaTile(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Base bright orange-red
+    g.fillStyle(0xe17055); g.fillRect(0, 0, 32, 32);
+    g.fillStyle(0xfdcb6e); g.fillRect(0, 0, 32, 6); // Top hot layer
+    
+    // Bubbles
+    g.fillStyle(0xd63031);
+    g.fillCircle(8, 12, 3);
+    g.fillCircle(24, 18, 4);
+    g.fillCircle(14, 26, 3.5);
+    
+    g.fillStyle(0xffaa44);
+    g.fillCircle(9, 11, 1.5);
+    g.fillCircle(25, 17, 2);
+    g.fillCircle(15, 25, 1.8);
+    
+    this.tex(g, 'tile-refinery-lava', 32, 32);
+  }
+
+  private drawSteamVent(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Metallic pipe base
+    g.fillStyle(0x34495e); g.fillRect(4, 16, 24, 16);
+    g.fillStyle(0x2c3e50); g.fillRect(4, 16, 12, 16);
+    
+    // Flange/rim
+    g.fillStyle(0x506275); g.fillRect(2, 8, 28, 8);
+    g.fillStyle(0x3d4e61); g.fillRect(2, 8, 14, 8);
+    
+    // Glowing hot steam output rim
+    g.fillStyle(0xe67e22); g.fillRect(6, 4, 20, 4);
+    g.fillStyle(0xf1c40f); g.fillRect(10, 4, 12, 4);
+    
+    this.tex(g, 'steam-vent', 32, 32);
+  }
+
+  private drawCoolValve(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // Vertical pipe
+    g.fillStyle(0x4b6584); g.fillRect(12, 0, 8, 32);
+    g.fillStyle(0x2b3b4e); g.fillRect(12, 0, 4, 32);
+    
+    // Valve hub
+    g.fillStyle(0x57606f); g.fillCircle(16, 16, 8);
+    g.fillStyle(0x2f3542); g.fillCircle(16, 16, 4);
+    
+    // Circular wheel valve handle
+    g.lineStyle(2.5, 0x3498db);
+    g.strokeCircle(16, 16, 11);
+    
+    // glowing indicator in center
+    g.fillStyle(0x00d2d3); g.fillCircle(16, 16, 2.5);
+    g.fillStyle(0xffffff); g.fillCircle(16, 16, 1);
+    
+    this.tex(g, 'cool-valve', 32, 32);
+  }
+
+  private drawMechaEnemy(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    
+    // Giant iron armored bulk head
+    g.fillStyle(0x2c3e50);
+    g.beginPath();
+    g.moveTo(16, 2);
+    g.lineTo(30, 8);
+    g.lineTo(32, 22);
+    g.lineTo(26, 30);
+    g.lineTo(6, 30);
+    g.lineTo(0, 22);
+    g.lineTo(2, 8);
+    g.closePath();
+    g.fillPath();
+    
+    // Inner shadow plates
+    g.fillStyle(0x1a252f);
+    g.beginPath();
+    g.moveTo(16, 5);
+    g.lineTo(28, 10);
+    g.lineTo(29, 20);
+    g.lineTo(24, 27);
+    g.lineTo(8, 27);
+    g.lineTo(3, 20);
+    g.lineTo(4, 10);
+    g.closePath();
+    g.fillPath();
+
+    // Bronze/Gold accents
+    g.fillStyle(0xd35400); // Darker mechanical bronze
+    g.fillRect(8, 6, 4, 4);
+    g.fillRect(20, 6, 4, 4);
+    
+    // Glowing visor red/orange eye line
+    g.fillStyle(0xc0392b); g.fillRect(6, 12, 20, 4);
+    g.fillStyle(0xe74c3c); g.fillRect(10, 13, 12, 2);
+    g.fillStyle(0xffffff); g.fillRect(15, 13, 2, 2);
+    
+    // Heavy circular core in chest
+    g.fillStyle(0x2c3e50); g.fillCircle(16, 21, 6);
+    g.fillStyle(0xe67e22); g.fillCircle(16, 21, 4.5);
+    g.fillStyle(0xf1c40f); g.fillCircle(16, 21, 2);
+    g.fillStyle(0xffffff); g.fillCircle(16, 21, 1);
+    
+    // Leg braces
+    g.fillStyle(0x2c3e50);
+    g.fillRect(4, 28, 6, 4);
+    g.fillRect(22, 28, 6, 4);
+    g.fillStyle(0x1a252f);
+    g.fillRect(5, 29, 4, 3);
+    g.fillRect(23, 29, 4, 3);
+
+    this.tex(g, 'enemy-mecha', 32, 32);
   }
 }

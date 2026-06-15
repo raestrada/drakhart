@@ -54,9 +54,13 @@ export class DevPanel {
   private getGameScene(): any {
     const game = (window as any).game;
     if (game && game.scene && game.scene.keys) {
-      const scene = game.scene.keys.GameScene;
-      if (scene && scene.sys && scene.sys.isActive()) {
-        return scene;
+      const scene1 = game.scene.keys.GameScene;
+      if (scene1 && scene1.sys && scene1.sys.isActive()) {
+        return scene1;
+      }
+      const scene2 = game.scene.keys.GameScene2;
+      if (scene2 && scene2.sys && scene2.sys.isActive()) {
+        return scene2;
       }
     }
     return null;
@@ -112,11 +116,13 @@ export class DevPanel {
     // Section 1: Teleportation
     this.addSectionHeader('📍 Teleport Zones');
     
-    this.addButton('Start Cavern (Section 1)', () => this.teleport(100, 650));
-    this.addButton('Ruins Ledge (Section 2)', () => this.teleport(2050, 650));
-    this.addButton('Ruin Roofs (Section 3)', () => this.teleport(4500, 400));
-    this.addButton('Core Altar (Section 4)', () => this.teleport(6900, 500));
-    this.addButton('Dragon Core Gem (X: 7478)', () => this.teleport(7400, 400));
+    this.addButton('L1: Start Cavern', () => this.teleportToScene('GameScene', 100, 650));
+    this.addButton('L1: Ruins Ledge', () => this.teleportToScene('GameScene', 2050, 650));
+    this.addButton('L1: Core Altar', () => this.teleportToScene('GameScene', 6900, 500));
+    this.addButton('L2: Start Gates', () => this.teleportToScene('GameScene2', 100, 550));
+    this.addButton('L2: Smelting Vats (Lava)', () => this.teleportToScene('GameScene2', 2500, 400));
+    this.addButton('L2: Overcharge Chamber', () => this.teleportToScene('GameScene2', 4800, 450));
+    this.addButton('L2: Dragon Shrine (X: 7478)', () => this.teleportToScene('GameScene2', 7400, 400));
 
     // Section 2: Form & Progression
     this.addSectionHeader('🔄 Form Unlock & Control');
@@ -287,12 +293,34 @@ export class DevPanel {
 
   private teleport(x: number, y: number): void {
     const s = this.getGameScene();
-    if (s && s.player) {
-      s.player.setPosition(x, y);
-      s.player.body.setVelocity(0, 0);
-      this.logMessage(`Teleported to X:${x}, Y:${y}`);
-    } else {
-      this.logMessage('Error: Load GameScene first');
+    if (s) {
+      this.teleportToScene(s.sys.settings.key, x, y);
+    }
+  }
+
+  private teleportToScene(sceneKey: string, x: number, y: number): void {
+    const game = (window as any).game;
+    if (game && game.scene) {
+      const activeScene = this.getGameScene();
+      if (activeScene && activeScene.sys.settings.key !== sceneKey) {
+        activeScene.scene.start(sceneKey, {
+          startPos: { x, y },
+          cardsCollected: activeScene.tarotSystem?.collectedCards || [],
+          mechaUnlocked: true
+        });
+        this.logMessage(`Transitioning to ${sceneKey} at X:${x}, Y:${y}`);
+      } else {
+        const s = this.getGameScene();
+        if (s && s.player) {
+          s.player.setPosition(x, y);
+          if (s.player.body) {
+            s.player.body.setVelocity(0, 0);
+          }
+          this.logMessage(`Teleported in ${sceneKey} to X:${x}, Y:${y}`);
+        } else {
+          this.logMessage('Error: Active scene player not found');
+        }
+      }
     }
   }
 

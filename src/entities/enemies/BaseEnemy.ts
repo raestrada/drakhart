@@ -19,6 +19,9 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   protected patrolMaxX?: number;
   protected patrolDir = 1;
 
+  protected slowTimer = 0;
+  protected slowMultiplier = 1.0;
+
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -54,10 +57,19 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
   }
 
-  preUpdate(time: number, _delta: number): void {
-    super.preUpdate(time, _delta);
+  preUpdate(time: number, delta: number): void {
+    super.preUpdate(time, delta);
 
     if (!this.active || !this.isActive || this.health <= 0) return;
+
+    // Handle slow decay
+    if (this.slowTimer > 0) {
+      this.slowTimer -= delta;
+      if (this.slowTimer <= 0) {
+        this.slowMultiplier = 1.0;
+        this.clearTint();
+      }
+    }
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const dist = distanceBetween(this.x, this.y, this.player.x, this.player.y);
@@ -73,20 +85,20 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
         this.doAttack();
       }
     } else if (isPlayerInSight) {
-      body.setVelocityX(dir * this.moveSpeed);
+      body.setVelocityX(dir * this.moveSpeed * this.slowMultiplier);
       this.setFlipX(dir < 0);
     } else {
       // Patrol logic
       if (this.patrolMinX !== undefined && this.patrolMaxX !== undefined) {
         if (this.patrolDir === 1) {
-          body.setVelocityX(this.moveSpeed * 0.75);
+          body.setVelocityX(this.moveSpeed * 0.75 * this.slowMultiplier);
           this.setFlipX(false);
           if (this.x >= this.patrolMaxX) {
             this.patrolDir = -1;
             this.x = this.patrolMaxX;
           }
         } else {
-          body.setVelocityX(-this.moveSpeed * 0.75);
+          body.setVelocityX(-this.moveSpeed * 0.75 * this.slowMultiplier);
           this.setFlipX(true);
           if (this.x <= this.patrolMinX) {
             this.patrolDir = 1;
@@ -135,5 +147,11 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
       duration: 500,
       onComplete: () => this.destroy(),
     });
+  }
+
+  public applySlow(duration: number, multiplier: number): void {
+    this.slowTimer = duration;
+    this.slowMultiplier = multiplier;
+    this.setTint(0x33aaff); // Ice blue tint for slow effect
   }
 }

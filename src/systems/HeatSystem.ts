@@ -25,6 +25,12 @@ export class HeatSystem {
     }
   }
 
+  clearHeat(): void {
+    this.current = 0;
+    this.shutdownActive = false;
+    this.shutdownTimer = 0;
+  }
+
   private triggerShutdown(): void {
     this.shutdownActive = true;
     this.shutdownTimer = this.SHUTDOWN_DURATION;
