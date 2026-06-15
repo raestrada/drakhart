@@ -497,9 +497,10 @@ export class GameScene3 extends Phaser.Scene {
       this.player.x = this.scrollX + this.playerScreenX;
       this.player.y = this.playerScreenY;
 
-      // enforce the pushback crush/off-screen death
+      // enforce the pushback crush/off-screen death (bypass invincibility to prevent getting stuck)
       if (this.playerScreenX <= 55) {
-        this.player.takeDamage(100, 0); // dragged off-screen death
+        this.player.isInvincible = false;
+        this.player.takeDamage(100, 0);
       }
 
       // Force zero velocity during controlled flight to avoid drift
@@ -810,139 +811,201 @@ export class GameScene3 extends Phaser.Scene {
     this.gameAudio?.stopBGM();
     this.gameAudio?.playDeathTheme();
 
-    // 2. Play chest core shatter explosion
-    this.gameAudio?.playCoreShatter();
-    
-    // 3. Spawns mecha-core shatter particles
-    for (let i = 0; i < 35; i++) {
-      const px = player.x;
-      const py = player.y;
-      const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
-      const size = Phaser.Math.Between(4, 10);
-      const spark = this.add.rectangle(px, py, size, size, sparkColor);
-      spark.setBlendMode(Phaser.BlendModes.ADD);
+    // Play a mecha crash alarm / falling sound (descending pitch siren)
+    if (this.gameAudio && (this.gameAudio as any).ctx) {
+      const ctx = (this.gameAudio as any).ctx as AudioContext;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(400, t);
+      osc.frequency.linearRampToValueAtTime(80, t + 1.5);
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 300;
 
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Phaser.Math.Between(50, 250);
-      const targetX = px + Math.cos(angle) * speed * 0.6;
-      const targetY = py + Math.sin(angle) * speed * 0.6;
+      gain.gain.setValueAtTime(0.2, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
 
-      this.tweens.add({
-        targets: spark,
-        x: targetX,
-        y: targetY,
-        alpha: 0,
-        scale: 0.2,
-        angle: Phaser.Math.Between(-180, 180),
-        duration: Phaser.Math.Between(600, 1200),
-        ease: 'Quad.easeOut',
-        onComplete: () => spark.destroy()
-      });
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect((this.gameAudio as any).sfxGainNode || ctx.destination);
+      
+      osc.start(t);
+      osc.stop(t + 1.6);
     }
 
-    // Plummet downward while spinning slowly (tragic anime dragon fall)
+    const cam = this.cameras.main;
+    // Crash targets: pull the player back to the screen (around 220px from left) and fall down
+    const targetScreenX = 220;
+    const targetScreenY = Phaser.Math.Clamp(player.y + 120, 150, 700);
+    const targetWorldX = this.scrollX + targetScreenX;
+
+    // 2. Crash flight tween (derribo)
     this.tweens.add({
       targets: player,
-      y: player.y + 400,
-      angle: player.angle - 45,
-      alpha: 0,
-      duration: 3500,
-      ease: 'Quad.easeIn',
-      onComplete: () => player.setVisible(false)
-    });
-
-    // 4. Lightning Strike (400ms delay)
-    this.time.delayedCall(400, () => {
-      if (!player.active) return;
-
-      this.gameAudio?.playLightningStrike();
-      this.cameras.main.flash(450, 220, 240, 255);
-      this.cameras.main.shake(600, 0.015);
-
-      const lightning = this.add.graphics();
-      lightning.setDepth(player.depth + 10);
-
-      const startX = player.x + Phaser.Math.Between(-60, 60);
-      const startY = this.cameras.main.scrollY;
-      const endX = player.x;
-      const endY = player.y;
-
-      const drawBolt = (g: Phaser.GameObjects.Graphics, styleColor: number, width: number, alpha: number) => {
-        g.lineStyle(width, styleColor, alpha);
-        g.beginPath();
-        g.moveTo(startX, startY);
-
-        let currentX = startX;
-        let currentY = startY;
-        const steps = 12;
-        const distY = (endY - startY) / steps;
-
-        for (let j = 1; j < steps; j++) {
-          const targetY = startY + j * distY;
-          const targetX = currentX + Phaser.Math.Between(-35, 35) + (endX - currentX) * 0.15;
-          g.lineTo(targetX, targetY);
-          currentX = targetX;
-          currentY = targetY;
-        }
-
-        g.lineTo(endX, endY);
-        g.strokePath();
-      };
-
-      const style = { color1: 0xffffff, color2: 0x90d0ff };
-      drawBolt(lightning, style.color2, 10, 0.45);
-      drawBolt(lightning, style.color1, 4, 1.0);
-
-      this.tweens.add({
-        targets: lightning,
-        alpha: 0,
-        duration: 350,
-        onComplete: () => lightning.destroy()
-      });
-    });
-
-    // Spawn ash/ember streams
-    this.time.addEvent({
-      delay: 50,
-      repeat: 60,
-      callback: () => {
+      x: targetWorldX,
+      y: targetScreenY,
+      angle: player.angle - 360, // spin
+      duration: 1500,
+      ease: 'Quad.easeOut',
+      onUpdate: () => {
         if (!player.active) return;
-
-        const px = player.x + Phaser.Math.Between(-20, 20);
-        const py = player.y + Phaser.Math.Between(-20, 20);
-
-        const targetX = px - Phaser.Math.Between(30, 90);
-        const targetY = py - Phaser.Math.Between(40, 100);
-
-        const isEmber = Math.random() < 0.25;
-        const color = isEmber ? 0xff4411 : 0x2e2e30;
-        const size = Phaser.Math.Between(3, 8);
-
-        const particle = this.add.rectangle(px, py, size, size, color);
-        if (isEmber) {
-          particle.setBlendMode(Phaser.BlendModes.ADD);
-        }
-
+        // trailing fire
+        const fire = this.add.rectangle(player.x, player.y, Phaser.Math.Between(8, 16), Phaser.Math.Between(8, 16), 0xff4400);
+        fire.setBlendMode(Phaser.BlendModes.ADD);
+        fire.setDepth(player.depth + 1);
         this.tweens.add({
-          targets: particle,
-          x: targetX,
-          y: targetY,
+          targets: fire,
+          x: fire.x + Phaser.Math.Between(-50, -10) - 20,
+          y: fire.y + Phaser.Math.Between(-15, 15),
           alpha: 0,
           scale: 0.1,
-          angle: Phaser.Math.Between(-90, 90),
-          duration: Phaser.Math.Between(1200, 2200),
-          ease: 'Sine.easeOut',
-          onComplete: () => particle.destroy()
+          duration: 350,
+          onComplete: () => fire.destroy()
+        });
+
+        // trailing smoke
+        const smoke = this.add.rectangle(player.x, player.y, Phaser.Math.Between(6, 12), Phaser.Math.Between(6, 12), 0x222225);
+        smoke.setAlpha(0.6);
+        smoke.setDepth(player.depth - 1);
+        this.tweens.add({
+          targets: smoke,
+          x: smoke.x + Phaser.Math.Between(-60, -20) - 10,
+          y: smoke.y - Phaser.Math.Between(5, 25),
+          alpha: 0,
+          scale: 1.6,
+          duration: 550,
+          onComplete: () => smoke.destroy()
+        });
+      },
+      onComplete: () => {
+        if (!player.active) return;
+
+        // 3. Core shatter explosion upon landing/impact at target
+        this.gameAudio?.playCoreShatter();
+
+        for (let i = 0; i < 35; i++) {
+          const px = player.x;
+          const py = player.y;
+          const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
+          const size = Phaser.Math.Between(4, 10);
+          const spark = this.add.rectangle(px, py, size, size, sparkColor);
+          spark.setBlendMode(Phaser.BlendModes.ADD);
+
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Phaser.Math.Between(50, 250);
+          const targetX = px + Math.cos(angle) * speed * 0.6;
+          const targetY = py + Math.sin(angle) * speed * 0.6;
+
+          this.tweens.add({
+            targets: spark,
+            x: targetX,
+            y: targetY,
+            alpha: 0,
+            scale: 0.2,
+            angle: Phaser.Math.Between(-180, 180),
+            duration: Phaser.Math.Between(600, 1200),
+            ease: 'Quad.easeOut',
+            onComplete: () => spark.destroy()
+          });
+        }
+
+        // 4. Lightning Strike (400ms delay after crash ends)
+        this.time.delayedCall(400, () => {
+          if (!player.active) return;
+
+          this.gameAudio?.playLightningStrike();
+          this.cameras.main.flash(450, 220, 240, 255);
+          this.cameras.main.shake(600, 0.015);
+
+          const lightning = this.add.graphics();
+          lightning.setDepth(player.depth + 10);
+
+          const startX = player.x + Phaser.Math.Between(-60, 60);
+          const startY = this.cameras.main.scrollY;
+          const endX = player.x;
+          const endY = player.y;
+
+          const drawBolt = (g: Phaser.GameObjects.Graphics, styleColor: number, width: number, alpha: number) => {
+            g.lineStyle(width, styleColor, alpha);
+            g.beginPath();
+            g.moveTo(startX, startY);
+
+            let currentX = startX;
+            let currentY = startY;
+            const steps = 12;
+            const distY = (endY - startY) / steps;
+
+            for (let j = 1; j < steps; j++) {
+              const targetY = startY + j * distY;
+              const targetX = currentX + Phaser.Math.Between(-35, 35) + (endX - currentX) * 0.15;
+              g.lineTo(targetX, targetY);
+              currentX = targetX;
+              currentY = targetY;
+            }
+
+            g.lineTo(endX, endY);
+            g.strokePath();
+          };
+
+          const style = { color1: 0xffffff, color2: 0x90d0ff };
+          drawBolt(lightning, style.color2, 10, 0.45);
+          drawBolt(lightning, style.color1, 4, 1.0);
+
+          this.tweens.add({
+            targets: lightning,
+            alpha: 0,
+            duration: 350,
+            onComplete: () => lightning.destroy()
+          });
+
+          // Disintegrate player
+          this.tweens.add({
+            targets: player,
+            alpha: 0,
+            duration: 2000,
+            onComplete: () => player.setVisible(false)
+          });
+
+          // Disintegration particles
+          this.time.addEvent({
+            delay: 40,
+            repeat: 40,
+            callback: () => {
+              if (!player.active) return;
+              const px = player.x + Phaser.Math.Between(-16, 16);
+              const py = player.y + Phaser.Math.Between(-16, 16);
+              const tx = px - Phaser.Math.Between(20, 80);
+              const ty = py - Phaser.Math.Between(30, 90);
+              const isEmber = Math.random() < 0.25;
+              const color = isEmber ? 0xff4411 : 0x222225;
+              const p = this.add.rectangle(px, py, Phaser.Math.Between(3, 7), Phaser.Math.Between(3, 7), color);
+              if (isEmber) p.setBlendMode(Phaser.BlendModes.ADD);
+
+              this.tweens.add({
+                targets: p,
+                x: tx,
+                y: ty,
+                alpha: 0,
+                scale: 0.1,
+                duration: Phaser.Math.Between(800, 1600),
+                onComplete: () => p.destroy()
+              });
+            }
+          });
+        });
+
+        // 5. Final fade and restart (3s delay after crash ends)
+        this.time.delayedCall(3000, () => {
+          this.cameras.main.fade(1000, 6, 4, 12);
+          this.time.delayedCall(1000, () => {
+            this.scene.restart();
+          });
         });
       }
-    });
-
-    // 5. Final Fade out and Restart (4.5s total delay)
-    this.time.delayedCall(4500, () => {
-      this.cameras.main.fade(1000, 6, 4, 12);
-      this.time.delayedCall(1000, () => {
-        this.scene.restart();
-      });
     });
   }
 }
