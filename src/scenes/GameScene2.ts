@@ -252,42 +252,51 @@ export class GameScene2 extends Phaser.Scene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    const platforms: PlatformDef[] = [
-      // === SECTION 1: Refinery Gates (0-2000) ===
-      { x: 0, y: 736, width: 2000, height: 64, texture: 'tile-lava-ground' },
-      { x: 400, y: 600, width: 192, height: 16, texture: 'tile-refinery' },
-      { x: 700, y: 520, width: 160, height: 16, texture: 'tile-refinery' },
-      { x: 1000, y: 600, width: 192, height: 16, texture: 'tile-refinery' },
-      { x: 1300, y: 520, width: 160, height: 16, texture: 'tile-refinery' },
-      { x: 1600, y: 600, width: 192, height: 16, texture: 'tile-refinery' },
+    // === MECHA GRAVEYARD BACKGROUND LAYER ===
+    // Wide tiled silhouette of fallen giants, scrolls slowly
+    const graveyardBg = this.add.tileSprite(0, 340, LEVEL_WIDTH, 400, 'bg-mecha-graveyard')
+      .setOrigin(0, 0)
+      .setScrollFactor(0.12, 0)
+      .setDepth(-18)
+      .setAlpha(0.75)
+      .setTint(0xaa5533, 0x882211, 0x441100, 0x330800);
 
-      // === SECTION 2: Smelting Vats (Lava pits: 2000-3800) ===
-      { x: 2000, y: 736, width: 200, height: 64, texture: 'tile-lava-ground' },
-      // Lava Lake from 2200 to 3800
-      { x: 3800, y: 736, width: 700, height: 64, texture: 'tile-lava-ground' },
-
-      // Floating platforms in the lava zone (widened gaps):
-      { x: 2350, y: 560, width: 96, height: 16, texture: 'tile-refinery' },
-      { x: 2750, y: 460, width: 96, height: 16, texture: 'tile-refinery' },
-      { x: 3150, y: 420, width: 96, height: 16, texture: 'tile-refinery' },
-      { x: 3500, y: 540, width: 96, height: 16, texture: 'tile-refinery' },
-
-      // === SECTION 3: Overcharge Chamber (4500-6800) ===
-      { x: 4500, y: 736, width: 2300, height: 64, texture: 'tile-lava-ground' },
-      { x: 4700, y: 600, width: 192, height: 16, texture: 'tile-refinery' },
-      { x: 4950, y: 480, width: 192, height: 16, texture: 'tile-refinery' },
-      { x: 5200, y: 360, width: 192, height: 16, texture: 'tile-refinery' },
-      { x: 5500, y: 500, width: 256, height: 16, texture: 'tile-refinery' },
-      { x: 5900, y: 600, width: 192, height: 16, texture: 'tile-refinery' },
-      { x: 6200, y: 480, width: 192, height: 16, texture: 'tile-refinery' },
-
-      // === SECTION 4: Dragon Shrine (6800-8000) ===
-      { x: 6800, y: 736, width: 1200, height: 64, texture: 'tile-lava-ground' },
-      { x: 7100, y: 620, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 7350, y: 500, width: 256, height: 236, texture: 'tile-lava-ground' }, // Altar structure
+    // === GROUND CORRIDORS — wide combat arenas ===
+    // The level is almost entirely flat ground with deliberate lava pit breaks.
+    // Warriors suffer the heat drain and cannot jump the lava pits.
+    // Mecha thrusters can fly over them trivially.
+    const groundSegments: PlatformDef[] = [
+      // Entry ruins corridor (0 - 1350)
+      { x: 0,    y: 736, width: 1360, height: 64, texture: 'tile-lava-ground' },
+      // After first lava pit (1500 - 2900)
+      { x: 1500, y: 736, width: 1420, height: 64, texture: 'tile-lava-ground' },
+      // After second lava pit (3060 - 4500)
+      { x: 3060, y: 736, width: 1460, height: 64, texture: 'tile-lava-ground' },
+      // After third lava pit (4660 - 6100)
+      { x: 4660, y: 736, width: 1460, height: 64, texture: 'tile-lava-ground' },
+      // Final gauntlet + shrine (6280 - 8000)
+      { x: 6280, y: 736, width: 1720, height: 64, texture: 'tile-lava-ground' },
     ];
 
-    platforms.forEach((p) => {
+    // Elevated command platforms (for flying enemy sentries — NOT for human platforming)
+    const commandPlatforms: PlatformDef[] = [
+      // Sniper perches — high up, only flying enemies use these
+      { x: 400,  y: 200, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 900,  y: 180, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 1700, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 2400, y: 190, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 3300, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 4100, y: 180, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 4900, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 5700, y: 190, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 6600, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 7200, y: 180, width: 96,  height: 16, texture: 'tile-refinery' },
+      // Altar structure for Dragon Shrine
+      { x: 7350, y: 500, width: 256, height: 236, texture: 'tile-lava-ground' },
+    ];
+
+    const allPlatforms = [...groundSegments, ...commandPlatforms];
+    allPlatforms.forEach((p) => {
       const textureKey = p.texture || 'tile-refinery';
       const isGround = textureKey === 'tile-lava-ground';
       const tileW = 32;
@@ -305,11 +314,49 @@ export class GameScene2 extends Phaser.Scene {
       }
     });
 
-    // Populate lava hazard at y=768 in the smelting vats gap (2200 to 3800)
-    for (let tx = 2200; tx < 3800; tx += 32) {
+    // === LAVA PITS (3 deliberate gaps, too wide to jump as warrior, trivial for Mecha) ===
+    // Pit 1: x 1360 to 1499 (140px)
+    for (let tx = 1360; tx < 1500; tx += 32) {
       const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
       (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
     }
+    // Pit 2: x 2920 to 3059 (140px)
+    for (let tx = 2920; tx < 3060; tx += 32) {
+      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
+      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
+    }
+    // Pit 3: x 4500 to 4659 (160px)
+    for (let tx = 4500; tx < 4660; tx += 32) {
+      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
+      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
+    }
+    // Pit 4: x 6100 to 6279 (180px)
+    for (let tx = 6100; tx < 6280; tx += 32) {
+      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
+      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
+    }
+
+    // === THRUSTER BARRIERS (energy walls — warrior-proof, Mecha flies over) ===
+    // These are tall barriers from y=544 to y=736 (192px = 2 tiles wide)
+    // Warrior cannot jump over 192px of vertical barrier. Mecha boosts through the air above.
+    const barrierXPositions = [680, 1900, 3450, 5100, 6700];
+    barrierXPositions.forEach((bx) => {
+      // Stack tiles to form a 24px × 192px wall column
+      for (let by = 544; by < 736; by += 96) {
+        const barrier = this.hazards.create(bx + 12, by + 48, 'thruster-barrier');
+        (barrier.body as Phaser.Physics.Arcade.StaticBody).setSize(24, 96);
+        barrier.setDepth(3);
+        // Add a pulsing glow tween
+        this.tweens.add({
+          targets: barrier,
+          alpha: { from: 0.7, to: 1.0 },
+          duration: Phaser.Math.Between(500, 900),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+    });
   }
 
   private createInteractiveObjects(): void {
@@ -318,51 +365,55 @@ export class GameScene2 extends Phaser.Scene {
     this.coolingValves = this.physics.add.staticGroup();
     this.energyPickups = this.physics.add.staticGroup();
 
-    // Barricades that require heavy mecha claymore slashes
-    // Ground blockades
-    const b1 = new Barricade(this, 800, 704);
-    const b2 = new Barricade(this, 4200, 704);
-    const b3 = new Barricade(this, 6500, 704);
+    // Barricades — ground-level chokepoints requiring Mecha claymore to break.
+    // They serve as tactical beats in each corridor segment.
+    const b1 = new Barricade(this, 550, 704);   // Mid-entry — forces first engagement
+    const b2 = new Barricade(this, 2500, 704);  // Segment 2 chokepoint
+    const b3 = new Barricade(this, 3800, 704);  // Segment 3 entrance
+    const b4 = new Barricade(this, 5600, 704);  // Segment 4 chokepoint
+    const b5 = new Barricade(this, 7000, 704);  // Final gauntlet gate
 
-    // Upper platform blockades (Warrior cannot pass since sword damage is 25, below the 75 threshold)
-    const bPlatform1 = new Barricade(this, 780, 488);  // Platform at x:700, y:520
-    const bPlatform2 = new Barricade(this, 1380, 488); // Platform at x:1300, y:520
-    const bPlatform3 = new Barricade(this, 2798, 428); // Platform 2 at x:2750, y:460
-    const bPlatform4 = new Barricade(this, 5300, 328); // Platform at x:5200, y:360
-    const bPlatform5 = new Barricade(this, 6300, 448); // Platform at x:6200, y:480
-    const bPlatform6 = new Barricade(this, 7160, 588); // Platform at x:7100, y:620
+    this.barricades.addMultiple([b1, b2, b3, b4, b5]);
 
-    this.barricades.addMultiple([
-      b1, b2, b3,
-      bPlatform1, bPlatform2, bPlatform3, bPlatform4, bPlatform5, bPlatform6
-    ]);
+    // Steam vents — placed at the EDGE of each lava pit (both sides) so the Mecha
+    // can boost launch over the pit with style. Warriors get burned instead.
+    const v1 = new SteamVent(this, 1340, 720);  // Left edge of Pit 1
+    const v2 = new SteamVent(this, 1510, 720);  // Right edge of Pit 1
+    const v3 = new SteamVent(this, 2910, 720);  // Left edge of Pit 2
+    const v4 = new SteamVent(this, 3070, 720);  // Right edge of Pit 2
+    const v5 = new SteamVent(this, 4490, 720);  // Left edge of Pit 3
+    const v6 = new SteamVent(this, 4670, 720);  // Right edge of Pit 3
+    const v7 = new SteamVent(this, 6090, 720);  // Left edge of Pit 4
+    const v8 = new SteamVent(this, 6290, 720);  // Right edge of Pit 4
+    this.steamVents.addMultiple([v1, v2, v3, v4, v5, v6, v7, v8]);
 
-    // Steam vents for launching mecha and increasing heat
-    const v1 = new SteamVent(this, 1400, 720);
-    const v2 = new SteamVent(this, 2398, 544); // Platform 1 at x:2350, y:560
-    const v3 = new SteamVent(this, 3198, 404); // Platform 3 at x:3150, y:420
-    const v4 = new SteamVent(this, 4800, 720);
-    this.steamVents.addMultiple([v1, v2, v3, v4]);
+    // Cooling valves — mid-corridor for heat management during long fights
+    const c1 = new CoolingValve(this, 700,  704);
+    const c2 = new CoolingValve(this, 2100, 704);
+    const c3 = new CoolingValve(this, 3700, 704);
+    const c4 = new CoolingValve(this, 5300, 704);
+    const c5 = new CoolingValve(this, 6850, 704);
+    this.coolingValves.addMultiple([c1, c2, c3, c4, c5]);
 
-    // Cooling valves for heat dumping and freezing enemies
-    const c1 = new CoolingValve(this, 1800, 704);
-    const c2 = new CoolingValve(this, 3530, 524); // Adjust slightly for Platform 4
-    const c3 = new CoolingValve(this, 5000, 704);
-    this.coolingValves.addMultiple([c1, c2, c3]);
-
-    // Scatter Energy Pickups across Level 2 to sustain Mecha and help Warrior recover
+    // Energy pickups — scattered along corridors, near barricades and lava pit edges.
+    // They bait the player into moving into dangerous territory.
     const pickupSpots = [
-      { x: 900, y: 540 },
-      { x: 1450, y: 460 },
-      { x: 2150, y: 680 },
-      { x: 2550, y: 440 }, // floating in gap 1-2
-      { x: 2950, y: 340 }, // floating in gap 2-3
-      { x: 3350, y: 380 }, // floating in gap 3-4
-      { x: 4000, y: 680 },
-      { x: 5100, y: 300 },
-      { x: 5700, y: 440 },
-      { x: 6355, y: 420 },
-      { x: 7000, y: 560 },
+      { x: 200,  y: 700 },  // Entry — near start, easy grab
+      { x: 800,  y: 700 },  // Near first barricade
+      { x: 1430, y: 700 },  // Just before Pit 1
+      { x: 1530, y: 700 },  // Just after Pit 1 — dangerous pickup
+      { x: 1900, y: 700 },  // Segment 2 mid-fight
+      { x: 2400, y: 700 },  // Near second barricade
+      { x: 2870, y: 700 },  // Just before Pit 2
+      { x: 3200, y: 700 },  // Segment 3 entry
+      { x: 3900, y: 700 },  // Segment 3 mid-fight
+      { x: 4400, y: 700 },  // Near Pit 3 edge
+      { x: 4720, y: 700 },  // Just after Pit 3 — dangerous
+      { x: 5050, y: 700 },  // Segment 4 start
+      { x: 5550, y: 700 },  // Near barricade 4
+      { x: 5980, y: 700 },  // Before Pit 4
+      { x: 6400, y: 700 },  // Final gauntlet
+      { x: 6950, y: 700 },  // Near final barricade
     ];
 
     pickupSpots.forEach((spot) => {
@@ -384,45 +435,54 @@ export class GameScene2 extends Phaser.Scene {
   private createEnemies(): void {
     this.enemies = this.physics.add.group();
 
-    // Rogue Mecha enemies (vulnerable only to mecha form, swing maces)
-    const m1 = new MechaEnemy(this, 1200, 680, this.player, { patrolMinX: 950, patrolMaxX: 1550 });
-    const m2 = new MechaEnemy(this, 3950, 680, this.player, { patrolMinX: 3850, patrolMaxX: 4150 });
-    const m3 = new MechaEnemy(this, 4800, 680, this.player, { patrolMinX: 4600, patrolMaxX: 5200 });
-    const m4 = new MechaEnemy(this, 5800, 680, this.player, { patrolMinX: 5600, patrolMaxX: 6200 });
-    const m5 = new MechaEnemy(this, 7150, 680, this.player, { patrolMinX: 6900, patrolMaxX: 7300 });
+    // === SEGMENT 1: Entry Ruins (0–1350) — 3 Mechas, wide patrol, instant aggression ===
+    const m1a = new MechaEnemy(this, 380, 700, this.player, { health: 350, speed: 65, damage: 35, patrolMinX: 50,  patrolMaxX: 680  });
+    const m1b = new MechaEnemy(this, 950, 700, this.player, { health: 350, speed: 65, damage: 35, patrolMinX: 680, patrolMaxX: 1350 });
+    const m1c = new MechaEnemy(this, 1220, 700, this.player, { health: 350, speed: 65, damage: 35, patrolMinX: 800, patrolMaxX: 1340 });
 
-    // Upper platform Rogue Mechas (completely block/penalize warrior form)
-    const mPlatform1 = new MechaEnemy(this, 1700, 544, this.player, { patrolMinX: 1620, patrolMaxX: 1780 }); // Platform at 1600, y:600
-    const mPlatform2 = new MechaEnemy(this, 4800, 544, this.player, { patrolMinX: 4720, patrolMaxX: 4880 }); // Platform at 4700, y:600
-    const mPlatform3 = new MechaEnemy(this, 6000, 544, this.player, { patrolMinX: 5920, patrolMaxX: 6080 }); // Platform at 5900, y:600
+    // === SEGMENT 2: After Lava Pit 1 (1500–2920) — Pincer: 2 rush from sides + shield blocker ===
+    const m2a = new MechaEnemy(this, 1650, 700, this.player, { health: 380, speed: 70, damage: 40, patrolMinX: 1500, patrolMaxX: 2100 });
+    const m2b = new MechaEnemy(this, 2200, 700, this.player, { health: 380, speed: 70, damage: 40, patrolMinX: 1700, patrolMaxX: 2500 });
+    const m2c = new MechaEnemy(this, 2700, 700, this.player, { health: 400, speed: 55, damage: 45, patrolMinX: 2400, patrolMaxX: 2900 });
+    const sh2a = new ShieldEnemy(this, 2050, 700, this.player);
+
+    // === SEGMENT 3: After Lava Pit 2 (3060–4500) — 4 Mechas, brutal gauntlet ===
+    const m3a = new MechaEnemy(this, 3150, 700, this.player, { health: 400, speed: 70, damage: 40, patrolMinX: 3060, patrolMaxX: 3700 });
+    const m3b = new MechaEnemy(this, 3500, 700, this.player, { health: 400, speed: 70, damage: 40, patrolMinX: 3200, patrolMaxX: 3900 });
+    const m3c = new MechaEnemy(this, 4000, 700, this.player, { health: 420, speed: 75, damage: 45, patrolMinX: 3700, patrolMaxX: 4450 });
+    const m3d = new MechaEnemy(this, 4350, 700, this.player, { health: 400, speed: 75, damage: 40, patrolMinX: 4000, patrolMaxX: 4480 });
+
+    // === SEGMENT 4: After Lava Pit 3 (4660–6100) — Apex difficulty + shield blocker ===
+    const m4a = new MechaEnemy(this, 4780, 700, this.player, { health: 450, speed: 80, damage: 50, patrolMinX: 4660, patrolMaxX: 5350 });
+    const m4b = new MechaEnemy(this, 5400, 700, this.player, { health: 450, speed: 80, damage: 50, patrolMinX: 5000, patrolMaxX: 5900 });
+    const m4c = new MechaEnemy(this, 5900, 700, this.player, { health: 480, speed: 60, damage: 55, patrolMinX: 5500, patrolMaxX: 6080 });
+    const sh4a = new ShieldEnemy(this, 5200, 700, this.player);
+
+    // === SEGMENT 5: Final Gauntlet (6280–7400) — Last stand before Dragon Shrine ===
+    const m5a = new MechaEnemy(this, 6400, 700, this.player, { health: 480, speed: 85, damage: 55, patrolMinX: 6280, patrolMaxX: 7000 });
+    const m5b = new MechaEnemy(this, 6900, 700, this.player, { health: 480, speed: 85, damage: 55, patrolMinX: 6500, patrolMaxX: 7200 });
+    const m5c = new MechaEnemy(this, 7150, 700, this.player, { health: 500, speed: 70, damage: 60, patrolMinX: 6900, patrolMaxX: 7350 });
 
     this.enemies.addMultiple([
-      m1, m2, m3, m4, m5,
-      mPlatform1, mPlatform2, mPlatform3
+      m1a, m1b, m1c,
+      m2a, m2b, m2c, sh2a,
+      m3a, m3b, m3c, m3d,
+      m4a, m4b, m4c, sh4a,
+      m5a, m5b, m5c,
     ]);
 
-    // Spitters & Shield sentries on ground & upper platforms
-    const s1 = new SpitterEnemy(this, 600, 680, this.player);
-    const s2 = new SpitterEnemy(this, 1700, 680, this.player);
-    const sh1 = new ShieldEnemy(this, 1500, 680, this.player);
-
-    // Upper platform Spitters
-    const sPlatform1 = new SpitterEnemy(this, 1100, 584, this.player); // Platform at 1000, y:600
-    const sPlatform2 = new SpitterEnemy(this, 2800, 444, this.player); // Platform 2 at x:2750, y:460 (lava zone)
-    const sPlatform3 = new SpitterEnemy(this, 3170, 404, this.player); // Platform 3 at x:3150, y:420 (lava zone)
-    const sPlatform4 = new SpitterEnemy(this, 5600, 484, this.player); // Platform at 5500, y:500
-
-    this.enemies.addMultiple([
-      s1, s2, sh1,
-      sPlatform1, sPlatform2, sPlatform3, sPlatform4
-    ]);
-
-    // Flying Sentinels (crucial shmup style hazards in lava lake)
-    const f1 = new FlyingEnemy(this, 2450, 320, this.player);
-    const f2 = new FlyingEnemy(this, 3050, 280, this.player);
-    const f3 = new FlyingEnemy(this, 5100, 240, this.player);
-    const f4 = new FlyingEnemy(this, 6100, 300, this.player);
-    this.enemies.addMultiple([f1, f2, f3, f4]);
+    // === FLYING SENTRIES on elevated command perches (aerial fire support) ===
+    const f1  = new FlyingEnemy(this,  450, 150, this.player);
+    const f2  = new FlyingEnemy(this,  950, 140, this.player);
+    const f3  = new FlyingEnemy(this, 1750, 155, this.player);
+    const f4  = new FlyingEnemy(this, 2450, 145, this.player);
+    const f5  = new FlyingEnemy(this, 3350, 155, this.player);
+    const f6  = new FlyingEnemy(this, 4150, 140, this.player);
+    const f7  = new FlyingEnemy(this, 4950, 155, this.player);
+    const f8  = new FlyingEnemy(this, 5750, 145, this.player);
+    const f9  = new FlyingEnemy(this, 6650, 155, this.player);
+    const f10 = new FlyingEnemy(this, 7250, 140, this.player);
+    this.enemies.addMultiple([f1, f2, f3, f4, f5, f6, f7, f8, f9, f10]);
   }
 
   private setupCamera(): void {
@@ -993,62 +1053,74 @@ export class GameScene2 extends Phaser.Scene {
   }
 
   private createDecorations(): void {
-    // Spawn refinery consoles on platforms
-    const consoleSpots = [
-      { x: 300, y: 736 },
-      { x: 500, y: 600 },
-      { x: 800, y: 520 },
-      { x: 1100, y: 600 },
-      { x: 1400, y: 520 },
-      { x: 1700, y: 600 },
-      { x: 2350, y: 580 },
-      { x: 2600, y: 460 },
-      { x: 3000, y: 520 },
-      { x: 3350, y: 400 },
-      { x: 3650, y: 460 },
-      { x: 4000, y: 736 },
-      { x: 4400, y: 520 },
-      { x: 4800, y: 600 },
-      { x: 5350, y: 460 },
-      { x: 5700, y: 520 },
-      { x: 6150, y: 600 },
-      { x: 6600, y: 400 },
-      { x: 7050, y: 520 },
-      { x: 7350, y: 736 },
+    // === DESTROYED MECHA CARCASSES — large foreground props ===
+    // These are half-buried fallen mechas that establish the "graveyard" atmosphere.
+    // Alternating types A and B, scattered across each corridor segment.
+    const mechaDecoA = [
+      { x: 250,  y: 736, scale: 1.8, flipX: false },
+      { x: 1100, y: 736, scale: 2.0, flipX: true  },
+      { x: 1700, y: 736, scale: 1.6, flipX: false },
+      { x: 2600, y: 736, scale: 1.9, flipX: true  },
+      { x: 3400, y: 736, scale: 1.7, flipX: false },
+      { x: 4300, y: 736, scale: 2.1, flipX: true  },
+      { x: 5100, y: 736, scale: 1.8, flipX: false },
+      { x: 5900, y: 736, scale: 2.0, flipX: true  },
+      { x: 6700, y: 736, scale: 1.9, flipX: false },
+      { x: 7400, y: 736, scale: 1.7, flipX: true  },
     ];
 
-    consoleSpots.forEach((spot) => {
-      const console = this.add.image(spot.x, spot.y, 'prop-console');
-      console.setOrigin(0.5, 1);
-      console.setDepth(-1);
-      if (Math.random() > 0.5) console.setFlipX(true);
+    mechaDecoA.forEach((d) => {
+      const img = this.add.image(d.x, d.y, 'deco-mecha-a');
+      img.setOrigin(0.5, 1);
+      img.setDepth(2);
+      img.setScale(d.scale);
+      img.setFlipX(d.flipX);
+      img.setAlpha(0.9);
+      // Slight red glow tint to suggest still-hot reactor remnants
+      img.setTint(0xcc5533);
     });
 
-    // Spawn blinking warning lights on background walls / ceilings
+    const mechaDecoB = [
+      { x: 650,  y: 736, scale: 1.6, flipX: true  },
+      { x: 1480, y: 736, scale: 1.8, flipX: false },
+      { x: 2150, y: 736, scale: 1.7, flipX: true  },
+      { x: 3700, y: 736, scale: 1.9, flipX: false },
+      { x: 4800, y: 736, scale: 1.5, flipX: true  },
+      { x: 5500, y: 736, scale: 1.8, flipX: false },
+      { x: 6350, y: 736, scale: 1.6, flipX: true  },
+      { x: 7100, y: 736, scale: 2.0, flipX: false },
+    ];
+
+    mechaDecoB.forEach((d) => {
+      const img = this.add.image(d.x, d.y, 'deco-mecha-b');
+      img.setOrigin(0.5, 1);
+      img.setDepth(1);
+      img.setScale(d.scale);
+      img.setFlipX(d.flipX);
+      img.setAlpha(0.85);
+      img.setTint(0xaa4422);
+    });
+
+    // === SCORCH MARKS on the ground ===
+    // Large dark ellipses burned into the floor under fallen mechas
+    const scorch = this.add.graphics();
+    scorch.setDepth(0);
+    const scorchPositions = [250, 650, 1100, 1480, 1700, 2150, 2600, 3400, 3700, 4300, 4800, 5100, 5500, 5900, 6350, 6700, 7100, 7400];
+    scorchPositions.forEach((sx) => {
+      const sw = Phaser.Math.Between(80, 140);
+      scorch.fillStyle(0x0a0808, 0.7);
+      scorch.fillEllipse(sx, 738, sw, 18);
+    });
+
+    // === BLINKING RED ALARM LIGHTS on high walls (atmosphere) ===
     const lightSpots = [
-      { x: 150, y: 150 },
-      { x: 420, y: 180 },
-      { x: 680, y: 140 },
-      { x: 950, y: 160 },
-      { x: 1250, y: 180 },
-      { x: 1520, y: 150 },
-      { x: 1880, y: 170 },
-      { x: 2150, y: 130 },
-      { x: 2480, y: 160 },
-      { x: 2820, y: 140 },
-      { x: 3150, y: 150 },
-      { x: 3520, y: 170 },
-      { x: 3900, y: 150 },
-      { x: 4250, y: 140 },
-      { x: 4620, y: 160 },
-      { x: 4950, y: 150 },
-      { x: 5280, y: 130 },
-      { x: 5620, y: 160 },
-      { x: 5950, y: 140 },
-      { x: 6280, y: 150 },
-      { x: 6650, y: 170 },
-      { x: 7020, y: 140 },
-      { x: 7450, y: 150 },
+      { x: 150,  y: 120 }, { x: 450, y: 100 }, { x: 750,  y: 130 },
+      { x: 1050, y: 110 }, { x: 1350, y: 95 }, { x: 1650, y: 125 },
+      { x: 1950, y: 105 }, { x: 2300, y: 90 }, { x: 2700, y: 115 },
+      { x: 3100, y: 100 }, { x: 3500, y: 125 }, { x: 3900, y: 95 },
+      { x: 4250, y: 110 }, { x: 4600, y: 90 }, { x: 5000, y: 120 },
+      { x: 5400, y: 100 }, { x: 5800, y: 130 }, { x: 6200, y: 105 },
+      { x: 6600, y: 90 },  { x: 7000, y: 115 }, { x: 7400, y: 100 },
     ];
 
     lightSpots.forEach((spot) => {
@@ -1059,9 +1131,9 @@ export class GameScene2 extends Phaser.Scene {
 
       this.tweens.add({
         targets: wLight,
-        alpha: { from: 0.2, to: 1.0 },
-        scale: { from: 0.9, to: 1.25 },
-        duration: Phaser.Math.Between(400, 800),
+        alpha: { from: 0.15, to: 0.9 },
+        scale: { from: 0.8, to: 1.3 },
+        duration: Phaser.Math.Between(300, 700),
         yoyo: true,
         repeat: -1,
         ease: 'Cubic.easeInOut'

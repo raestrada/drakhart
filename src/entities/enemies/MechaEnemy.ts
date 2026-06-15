@@ -5,6 +5,9 @@ import { FormState } from '../../systems/FormStateMachine';
 import { spawnHitParticles } from '../../effects/Particles';
 
 export class MechaEnemy extends BaseEnemy {
+  private chargeCooldown = false;
+  private chargeTimer = 0;
+
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -22,48 +25,46 @@ export class MechaEnemy extends BaseEnemy {
     }
   ) {
     super(scene, x, y, 'enemy-mecha', player, {
-      health: config?.health ?? 300, // Increased health for longer fights
-      speed: config?.speed ?? 40,   // Slow moving heavy unit
-      detectRange: config?.detectRange ?? 240,
-      attackRange: config?.attackRange ?? 70, // Slightly longer range for larger sprite
-      damage: config?.damage ?? 30,   // Increased contact damage
-      attackCooldown: config?.attackCooldown ?? 1800,
+      health: config?.health ?? 350,
+      speed: config?.speed ?? 65,
+      detectRange: config?.detectRange ?? 320,
+      attackRange: config?.attackRange ?? 80,
+      damage: config?.damage ?? 35,
+      attackCooldown: config?.attackCooldown ?? 2000,
       patrolMinX: config?.patrolMinX,
       patrolMaxX: config?.patrolMaxX,
     });
 
-    this.setScale(1.6); // Scale up to look heavy and threatening
-    (this.body as Phaser.Physics.Arcade.Body).setSize(28, 32);
-    (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 0);
+    // Match new wide 48×36 sprite
+    this.setScale(1.4);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(44, 30);
+    (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 6);
   }
 
   takeDamage(amount: number): void {
     if (this.health <= 0) return;
 
-    // Check player state
     const playerState = this.player.formMachine.state;
     if (playerState === FormState.HUMAN || playerState === FormState.EXHAUSTED) {
-      // Immune to human attacks!
+      // Immune to human attacks
       (this.scene as any).gameAudio?.playShieldBlock?.();
-      
-      // Spawn metallic shield block particles
+
       for (let i = 0; i < 6; i++) {
         const spark = this.scene.add.rectangle(
-          this.x + Phaser.Math.Between(-10, 10),
-          this.y + Phaser.Math.Between(-10, 10),
+          this.x + Phaser.Math.Between(-12, 12),
+          this.y + Phaser.Math.Between(-8, 8),
           3, 3, 0x00d2d3
         );
         this.scene.tweens.add({
           targets: spark,
-          y: spark.y - 20,
+          y: spark.y - 24,
           alpha: 0,
-          duration: 300,
+          duration: 320,
           onComplete: () => spark.destroy()
         });
       }
 
-      // Show "IMMUNE" warning floating text
-      const immuneText = this.scene.add.text(this.x, this.y - 24, 'IMMUNE', {
+      const immuneText = this.scene.add.text(this.x, this.y - 28, 'IMMUNE', {
         fontSize: '10px',
         fontFamily: 'monospace',
         color: '#3498db',
@@ -73,36 +74,70 @@ export class MechaEnemy extends BaseEnemy {
 
       this.scene.tweens.add({
         targets: immuneText,
-        y: immuneText.y - 16,
+        y: immuneText.y - 18,
         alpha: 0,
-        duration: 600,
+        duration: 650,
         onComplete: () => immuneText.destroy()
       });
       return;
     }
 
-    // Vulnerable to Mecha claymore and Dragon fire
     super.takeDamage(amount);
   }
 
   protected doAttack(): void {
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
-    if (dist <= this.attackRange + 15) {
-      const knockDir = this.player.x < this.x ? -1 : 1;
-      this.player.takeDamage(this.attackDamage, knockDir);
+    if (dist > this.attackRange + 20) return;
 
-      // Mace ground shockwave effect
-      this.scene.cameras.main.shake(200, 0.003);
-      (this.scene as any).gameAudio?.playLand?.(); // Heavy smash sound
+    const knockDir = this.player.x < this.x ? -1 : 1;
+    this.player.takeDamage(this.attackDamage, knockDir);
 
-      // Spawn shockwave dust rings on ground
-      const dust = this.scene.add.rectangle(this.x, this.y + 24, 8, 4, 0x555555);
+    // Camera shake — heavy impact
+    this.scene.cameras.main.shake(220, 0.004);
+    (this.scene as any).gameAudio?.playLand?.();
+
+    // Mace ground shockwave ring
+    const dust = this.scene.add.rectangle(this.x, this.y + 14, 10, 5, 0x444444);
+    this.scene.tweens.add({
+      targets: dust,
+      scaleX: 7.0,
+      alpha: 0,
+      duration: 280,
+      onComplete: () => dust.destroy()
+    });
+
+    // Thruster exhaust burst on attack
+    for (let i = 0; i < 4; i++) {
+      const exhaust = this.scene.add.rectangle(
+        this.x - knockDir * 16 + Phaser.Math.Between(-6, 6),
+        this.y + 12 + Phaser.Math.Between(-4, 4),
+        4, 4, 0x0066cc
+      );
+      exhaust.setBlendMode(Phaser.BlendModes.ADD);
       this.scene.tweens.add({
-        targets: dust,
-        scaleX: 6.0,
+        targets: exhaust,
+        x: exhaust.x - knockDir * Phaser.Math.Between(20, 40),
+        y: exhaust.y + Phaser.Math.Between(8, 20),
         alpha: 0,
         duration: 250,
-        onComplete: () => dust.destroy()
+        onComplete: () => exhaust.destroy()
+      });
+    }
+
+    // Charge dash — short burst velocity toward player
+    if (!this.chargeCooldown) {
+      this.chargeCooldown = true;
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setVelocityX(knockDir * 320);
+
+      this.scene.time.delayedCall(180, () => {
+        if (this.active && this.body) {
+          (this.body as Phaser.Physics.Arcade.Body).setVelocityX(0);
+        }
+      });
+
+      this.scene.time.delayedCall(900, () => {
+        this.chargeCooldown = false;
       });
     }
   }

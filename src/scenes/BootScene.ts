@@ -441,6 +441,10 @@ export class BootScene extends Phaser.Scene {
     this.drawSteamVent();
     this.drawCoolValve();
     this.drawMechaEnemy();
+    this.drawMechaGraveyardBg();
+    this.drawDestroyedMechaA();
+    this.drawDestroyedMechaB();
+    this.drawThrusterBarrier();
 
     // Bush small (procedural only)
     this.drawBush();
@@ -3163,59 +3167,382 @@ export class BootScene extends Phaser.Scene {
 
   private drawMechaEnemy(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
-    
-    // Giant iron armored bulk head
-    g.fillStyle(0x2c3e50);
-    g.beginPath();
-    g.moveTo(16, 2);
-    g.lineTo(30, 8);
-    g.lineTo(32, 22);
-    g.lineTo(26, 30);
-    g.lineTo(6, 30);
-    g.lineTo(0, 22);
-    g.lineTo(2, 8);
-    g.closePath();
-    g.fillPath();
-    
-    // Inner shadow plates
-    g.fillStyle(0x1a252f);
-    g.beginPath();
-    g.moveTo(16, 5);
-    g.lineTo(28, 10);
-    g.lineTo(29, 20);
-    g.lineTo(24, 27);
-    g.lineTo(8, 27);
-    g.lineTo(3, 20);
-    g.lineTo(4, 10);
-    g.closePath();
-    g.fillPath();
+    // Dimensions: 48 wide x 36 tall — horizontal tank-mech chassis
+    const W = 48, H = 36;
 
-    // Bronze/Gold accents
-    g.fillStyle(0xd35400); // Darker mechanical bronze
-    g.fillRect(8, 6, 4, 4);
-    g.fillRect(20, 6, 4, 4);
-    
-    // Glowing visor red/orange eye line
-    g.fillStyle(0xc0392b); g.fillRect(6, 12, 20, 4);
-    g.fillStyle(0xe74c3c); g.fillRect(10, 13, 12, 2);
-    g.fillStyle(0xffffff); g.fillRect(15, 13, 2, 2);
-    
-    // Heavy circular core in chest
-    g.fillStyle(0x2c3e50); g.fillCircle(16, 21, 6);
-    g.fillStyle(0xe67e22); g.fillCircle(16, 21, 4.5);
-    g.fillStyle(0xf1c40f); g.fillCircle(16, 21, 2);
-    g.fillStyle(0xffffff); g.fillCircle(16, 21, 1);
-    
-    // Leg braces
-    g.fillStyle(0x2c3e50);
-    g.fillRect(4, 28, 6, 4);
-    g.fillRect(22, 28, 6, 4);
-    g.fillStyle(0x1a252f);
-    g.fillRect(5, 29, 4, 3);
-    g.fillRect(23, 29, 4, 3);
+    // === Main body — heavy armored chassis (dark gunmetal) ===
+    g.fillStyle(0x1c2330);
+    g.fillRect(4, 10, 40, 20);
 
-    this.tex(g, 'enemy-mecha', 32, 32);
+    // Upper hull ridge — thick top plate
+    g.fillStyle(0x2a3545);
+    g.fillRect(6, 6, 36, 10);
+
+    // Chest highlight stripe
+    g.fillStyle(0x3a4a5e);
+    g.fillRect(8, 8, 32, 4);
+
+    // Battle damage scratches
+    g.fillStyle(0x111820);
+    g.fillRect(12, 9, 6, 1);
+    g.fillRect(24, 11, 10, 1);
+
+    // === Glowing RED visor band (intimidating eye strip) ===
+    g.fillStyle(0x8b0000);
+    g.fillRect(6, 14, 36, 6);
+    g.fillStyle(0xdd1111);
+    g.fillRect(8, 15, 32, 4);
+    g.fillStyle(0xff3333);
+    g.fillRect(10, 16, 28, 2);
+    // Glint highlights
+    g.fillStyle(0xff8888);
+    g.fillRect(11, 16, 3, 1);
+    g.fillStyle(0xffffff);
+    g.fillRect(13, 16, 1, 1);
+
+    // === Left shoulder cannon ===
+    g.fillStyle(0x141b26);
+    g.fillRect(0, 8, 12, 8);
+    g.fillStyle(0x1e2a36);
+    g.fillRect(1, 9, 10, 6);
+    // Cannon barrel (pointing left)
+    g.fillStyle(0x0d1219);
+    g.fillRect(0, 11, 6, 4);
+    // Cannon muzzle flash ring
+    g.fillStyle(0xff5500);
+    g.fillRect(0, 12, 2, 2);
+
+    // === Right shoulder cannon ===
+    g.fillStyle(0x141b26);
+    g.fillRect(36, 8, 12, 8);
+    g.fillStyle(0x1e2a36);
+    g.fillRect(37, 9, 10, 6);
+    // Cannon barrel (pointing right)
+    g.fillStyle(0x0d1219);
+    g.fillRect(42, 11, 6, 4);
+    g.fillStyle(0xff5500);
+    g.fillRect(46, 12, 2, 2);
+
+    // === Central reactor core (glowing orange/gold) ===
+    g.fillStyle(0x0d1219);
+    g.fillCircle(24, 19, 6);
+    g.fillStyle(0xcc4400);
+    g.fillCircle(24, 19, 5);
+    g.fillStyle(0xff8800);
+    g.fillCircle(24, 19, 3);
+    g.fillStyle(0xffcc00);
+    g.fillCircle(24, 19, 1.5);
+    g.fillStyle(0xffffff);
+    g.fillCircle(24, 19, 0.8);
+
+    // === Armor panels with rivets ===
+    g.fillStyle(0x0d1219);
+    // Left panel rivets
+    g.fillRect(7, 21, 2, 2);
+    g.fillRect(7, 27, 2, 2);
+    // Right panel rivets
+    g.fillRect(39, 21, 2, 2);
+    g.fillRect(39, 27, 2, 2);
+
+    // === Bottom thruster pods / legs ===
+    g.fillStyle(0x141b26);
+    g.fillRect(6, 28, 10, 8);
+    g.fillRect(32, 28, 10, 8);
+    g.fillStyle(0x1e2a36);
+    g.fillRect(8, 29, 6, 6);
+    g.fillRect(34, 29, 6, 6);
+    // Thruster exhaust glow (blue-cyan)
+    g.fillStyle(0x003366);
+    g.fillRect(9, 33, 4, 3);
+    g.fillRect(35, 33, 4, 3);
+    g.fillStyle(0x0066cc);
+    g.fillRect(10, 34, 2, 2);
+    g.fillRect(36, 34, 2, 2);
+
+    // === Damage wear — rust streaks below reactor ===
+    g.fillStyle(0x3a1800);
+    g.fillRect(20, 24, 2, 4);
+    g.fillRect(26, 25, 1, 3);
+    g.fillRect(22, 26, 1, 2);
+
+    // === Gold trim accents (Escaflowne nod) ===
+    g.fillStyle(0x8a6800);
+    g.fillRect(6, 6, 36, 1);    // top trim
+    g.fillRect(6, 29, 36, 1);   // bottom trim
+
+    this.tex(g, 'enemy-mecha', W, H);
   }
+
+  private drawMechaGraveyardBg(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const W = 640, H = 400;
+
+    // Dark ashen sky gradient
+    for (let y = 0; y < H; y++) {
+      const t = y / H;
+      const r = Math.floor(18 * (1 - t) + 8 * t);
+      const gr = Math.floor(10 * (1 - t) + 4 * t);
+      const bl = Math.floor(14 * (1 - t) + 6 * t);
+      g.fillStyle((r << 16) | (gr << 8) | bl);
+      g.fillRect(0, y, W, 1);
+    }
+
+    // Distant columns of smoke (tall dark plumes)
+    const smokePillars = [50, 130, 260, 380, 490, 580];
+    smokePillars.forEach((sx) => {
+      for (let sy = 0; sy < H - 80; sy++) {
+        const alpha = 0.15 + 0.08 * Math.sin(sy * 0.05 + sx);
+        const w = 14 + 6 * Math.sin(sy * 0.03);
+        g.fillStyle(0x111111, alpha);
+        g.fillRect(sx - w / 2, sy, w, 1);
+      }
+    });
+
+    // Fallen giant mecha silhouettes in distance
+    const mechaPositions = [
+      { x: 40, y: H - 120, w: 90, h: 100 },
+      { x: 180, y: H - 100, w: 110, h: 90 },
+      { x: 340, y: H - 130, w: 80, h: 110 },
+      { x: 470, y: H - 95, w: 100, h: 85 },
+      { x: 570, y: H - 115, w: 70, h: 100 },
+    ];
+
+    mechaPositions.forEach((m) => {
+      // Main fallen body (tilted at ~25 deg — suggest collapsed)
+      g.fillStyle(0x0d0f14);
+      // Torso slab
+      g.fillRect(m.x, m.y, m.w, m.h * 0.5);
+      // Arm strewn to side
+      g.fillRect(m.x + m.w - 10, m.y + 10, m.w * 0.4, m.h * 0.2);
+      // Leg stub pointing down
+      g.fillRect(m.x + m.w * 0.2, m.y + m.h * 0.4, m.w * 0.25, m.h * 0.6);
+      // Cracked reactor glow (faint, deep red)
+      g.fillStyle(0x330000);
+      g.fillCircle(m.x + m.w * 0.4, m.y + m.h * 0.2, m.w * 0.12);
+      g.fillStyle(0x660000);
+      g.fillCircle(m.x + m.w * 0.4, m.y + m.h * 0.2, m.w * 0.07);
+      // Dark rim
+      g.fillStyle(0x0d0f14);
+      g.fillRect(m.x - 2, m.y - 2, m.w + 4, 2);
+    });
+
+    // Ground line (scorched dark earth)
+    g.fillStyle(0x0a0c0e);
+    g.fillRect(0, H - 80, W, 80);
+
+    // Scorch marks on ground
+    for (let i = 0; i < 8; i++) {
+      const sx = 40 + i * 75;
+      g.fillStyle(0x060708);
+      g.fillEllipse(sx, H - 75, 60, 20);
+    }
+
+    this.tex(g, 'bg-mecha-graveyard', W, H);
+  }
+
+  private drawDestroyedMechaA(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // 96x80 — fallen mech torso half-buried in the ground
+
+    // Shadow beneath
+    g.fillStyle(0x000000, 0.4);
+    g.fillEllipse(48, 74, 80, 16);
+
+    // Main torso slab (tilted — fallen forward)
+    g.fillStyle(0x111820);
+    // Tilted hull
+    g.beginPath();
+    g.moveTo(8, 30);
+    g.lineTo(88, 18);
+    g.lineTo(92, 70);
+    g.lineTo(4, 76);
+    g.closePath();
+    g.fillPath();
+
+    // Armor plates — darker overlay
+    g.fillStyle(0x0a1018);
+    g.beginPath();
+    g.moveTo(12, 34);
+    g.lineTo(80, 23);
+    g.lineTo(84, 66);
+    g.lineTo(8, 72);
+    g.closePath();
+    g.fillPath();
+
+    // Exposed ribs / structural beams (rust orange)
+    g.fillStyle(0x4a1e00);
+    g.fillRect(20, 38, 50, 4);
+    g.fillRect(22, 48, 44, 3);
+    g.fillRect(18, 56, 46, 3);
+    g.fillStyle(0x7a3500);
+    g.fillRect(20, 39, 50, 1);
+
+    // Cracked-open reactor cavity (glowing dark red)
+    g.fillStyle(0x1a0000);
+    g.fillEllipse(50, 50, 28, 20);
+    g.fillStyle(0x440000);
+    g.fillEllipse(50, 50, 20, 14);
+    g.fillStyle(0x880000);
+    g.fillEllipse(50, 50, 12, 8);
+    g.fillStyle(0xcc2200);
+    g.fillEllipse(50, 50, 6, 4);
+
+    // Exposed wiring hanging out (dark green lines)
+    g.lineStyle(1.5, 0x004422);
+    g.beginPath(); g.moveTo(60, 52); g.lineTo(68, 68); g.lineTo(72, 75); g.strokePath();
+    g.beginPath(); g.moveTo(55, 54); g.lineTo(64, 72); g.strokePath();
+    g.lineStyle(1, 0x002211);
+    g.beginPath(); g.moveTo(58, 53); g.lineTo(70, 74); g.strokePath();
+
+    // Shoulder cannon stub (blown off) — charred end
+    g.fillStyle(0x0a1018);
+    g.fillRect(2, 26, 18, 14);
+    g.fillStyle(0x220000);
+    g.fillRect(2, 26, 4, 14); // char mark
+    g.fillStyle(0xff4400);
+    g.fillRect(2, 29, 2, 3); // ember
+
+    // Battle damage gashes
+    g.fillStyle(0x060a10);
+    g.beginPath(); g.moveTo(30, 23); g.lineTo(36, 30); g.lineTo(33, 31); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(62, 30); g.lineTo(70, 38); g.lineTo(66, 40); g.closePath(); g.fillPath();
+
+    // Rust streaks
+    g.fillStyle(0x3a1200);
+    g.fillRect(40, 24, 2, 20);
+    g.fillRect(56, 28, 1, 18);
+    g.fillRect(28, 30, 1, 14);
+
+    // Gold trim remnants (Escaflowne heritage)
+    g.fillStyle(0x4a3600);
+    g.fillRect(12, 34, 50, 2);
+
+    this.tex(g, 'deco-mecha-a', 96, 80);
+  }
+
+  private drawDestroyedMechaB(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // 80x64 — smashed mech leg/arm half-buried diagonally
+
+    // Shadow
+    g.fillStyle(0x000000, 0.3);
+    g.fillEllipse(40, 60, 72, 12);
+
+    // Main arm/leg shaft — thick diagonal slab
+    g.fillStyle(0x111820);
+    g.beginPath();
+    g.moveTo(0, 14);
+    g.lineTo(68, 0);
+    g.lineTo(78, 24);
+    g.lineTo(12, 40);
+    g.closePath();
+    g.fillPath();
+
+    // Inner darker plate
+    g.fillStyle(0x0a1018);
+    g.beginPath();
+    g.moveTo(4, 16);
+    g.lineTo(64, 4);
+    g.lineTo(72, 22);
+    g.lineTo(14, 36);
+    g.closePath();
+    g.fillPath();
+
+    // Joint socket area (at the wide end)
+    g.fillStyle(0x1e2a36);
+    g.fillEllipse(68, 12, 20, 20);
+    g.fillStyle(0x0d1219);
+    g.fillEllipse(68, 12, 12, 12);
+    g.fillStyle(0x2a3545);
+    g.fillEllipse(68, 12, 6, 6);
+
+    // Knee/elbow actuator pistons
+    g.fillStyle(0x222a35);
+    g.fillRect(52, 6, 6, 12);
+    g.fillRect(58, 8, 4, 8);
+    g.fillStyle(0x556070);
+    g.fillRect(53, 7, 2, 4); // piston highlight
+
+    // Rust streaks on the diagonal hull
+    g.fillStyle(0x3a1200);
+    g.fillRect(18, 14, 2, 14);
+    g.fillRect(30, 10, 1, 16);
+    g.fillRect(44, 6, 2, 16);
+
+    // Scorched impact crater (blown hole)
+    g.fillStyle(0x050a0e);
+    g.fillEllipse(22, 24, 14, 10);
+    g.fillStyle(0x220000);
+    g.fillEllipse(22, 24, 8, 6);
+    g.fillStyle(0xff4400);
+    g.fillEllipse(22, 24, 3, 2);
+
+    // Debris/rubble at base
+    g.fillStyle(0x111820);
+    g.fillRect(0, 36, 15, 8);
+    g.fillRect(5, 40, 10, 5);
+    g.fillStyle(0x0a1018);
+    g.fillRect(2, 38, 6, 6);
+
+    this.tex(g, 'deco-mecha-b', 80, 64);
+  }
+
+  private drawThrusterBarrier(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // 24x96 — tall energy barrier / force field pillar
+
+    // Metal frame edges (left and right)
+    g.fillStyle(0x1a2030);
+    g.fillRect(0, 0, 6, 96);
+    g.fillRect(18, 0, 6, 96);
+    g.fillStyle(0x2a3040);
+    g.fillRect(1, 0, 4, 96);
+    g.fillRect(19, 0, 4, 96);
+
+    // Frame rivets
+    for (let ry = 8; ry < 96; ry += 16) {
+      g.fillStyle(0x3a4555);
+      g.fillRect(2, ry, 2, 2);
+      g.fillStyle(0x3a4555);
+      g.fillRect(20, ry, 2, 2);
+    }
+
+    // Energy field core (magenta/cyan oscillating bands)
+    for (let by = 0; by < 96; by++) {
+      const t = by / 96;
+      // Oscillate between cyan and magenta
+      const phase = (Math.sin(t * Math.PI * 8) + 1) / 2;
+      const r = Math.floor(0 * (1 - phase) + 180 * phase);
+      const gr = Math.floor(180 * (1 - phase) + 0 * phase);
+      const bl = Math.floor(220 * (1 - phase) + 220 * phase);
+      const brightness = 0.5 + 0.5 * Math.sin(t * Math.PI * 14);
+      const fr = Math.floor(r * brightness);
+      const fg = Math.floor(gr * brightness);
+      const fb = Math.floor(bl * brightness);
+      g.fillStyle((fr << 16) | (fg << 8) | fb);
+      g.fillRect(6, by, 12, 1);
+    }
+
+    // Glow edge overlays
+    g.fillStyle(0x00cccc, 0.3);
+    g.fillRect(6, 0, 2, 96);
+    g.fillRect(16, 0, 2, 96);
+
+    // Top and bottom cap emitters
+    g.fillStyle(0x2a3040);
+    g.fillRect(0, 0, 24, 6);
+    g.fillRect(0, 90, 24, 6);
+    g.fillStyle(0x00aacc);
+    g.fillRect(4, 1, 16, 3);
+    g.fillRect(4, 92, 16, 3);
+    g.fillStyle(0x00ffff);
+    g.fillRect(8, 2, 8, 1);
+    g.fillRect(8, 93, 8, 1);
+
+    this.tex(g, 'thruster-barrier', 24, 96);
+  }
+
+
 
   private drawEnergyPickup(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
