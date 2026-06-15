@@ -118,13 +118,16 @@ export class GameScene extends Phaser.Scene {
     // Initialize Game Audio system
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM();
+    this.gameAudio.playAmbientZone(1);
 
     // Cleanup BGM when transitioning/destroying scene
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
     });
 
     this.createParallax();

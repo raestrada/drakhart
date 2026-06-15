@@ -98,12 +98,15 @@ export class GameScene2 extends Phaser.Scene {
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(2);
+    this.gameAudio.playAmbientZone(2);
 
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
     });
 
     this.createParallax();

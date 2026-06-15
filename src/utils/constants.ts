@@ -71,3 +71,36 @@ export const CAMERA_ZOOM_DURATION = 600;
 
 export const TRANSFORM_DURATION = 800;
 export const TRANSFORM_COOLDOWN_DURATION = 2500;
+
+export const SHAKE = {
+  LIGHT_HIT:     { intensity: 0.003, duration: 80 },
+  HEAVY_HIT:     { intensity: 0.007, duration: 120 },
+  PLAYER_DAMAGE: { intensity: 0.005, duration: 100 },
+  LAND:          { intensity: 0.002, duration: 60 },
+  LAND_HEAVY:    { intensity: 0.004, duration: 80 },
+  SWORD:         { intensity: 0.004, duration: 60 },
+  MECHA_SWORD:   { intensity: 0.008, duration: 140 },
+  ELITE_STOMP:   { intensity: 0.015, duration: 200 },
+  TRANSFORM:     { intensity: 0.012, duration: 400 },
+  BOSS_HIT:      { intensity: 0.010, duration: 150 },
+  EXPLOSION:     { intensity: 0.018, duration: 300 },
+  DEATH:         { intensity: 0.025, duration: 500 },
+} as const;
+
+export const HITSTOP = {
+  SWORD_LIGHT:    { duration: 40,  intensity: 0.002 },
+  SWORD_HEAVY:    { duration: 60,  intensity: 0.005 },
+  MECHA_CLAYMORE: { duration: 80,  intensity: 0.008 },
+  ELITE_STOMP:    { duration: 120, intensity: 0.012 },
+  BOSS_HIT:       { duration: 100, intensity: 0.010 },
+  EXPLOSION:      { duration: 100, intensity: 0.015 },
+  DEATH:          { duration: 200, intensity: 0.020 },
+} as const;
+
+export const DAMAGE_NUMBER = {
+  DURATION: 900,
+  FLOAT_Y: 60,
+  FONT_SIZE: 18,
+  COLOR: '#ff4444',
+  HEAVY_COLOR: '#ff8800',
+} as const;

@@ -10,7 +10,9 @@ import {
   CAMERA_ZOOM_MECHA,
   CAMERA_ZOOM_HUMAN,
   CAMERA_ZOOM_DURATION,
+  SHAKE,
 } from '../utils/constants';
+import { playFlash } from '../effects/ScreenEffects';
 
 export enum FormState {
   HUMAN = 'HUMAN',
@@ -109,8 +111,8 @@ export class FormStateMachine {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
-    this.scene.cameras.main.shake(400, 0.004);
-    this.scene.cameras.main.flash(400, 255, 255, 255, false);
+    this.scene.cameras.main.shake(400, SHAKE.TRANSFORM.intensity);
+    playFlash(this.scene, 400, 255, 255, 255);
 
     this.scene.time.delayedCall(400, () => {
       this.enterMecha();
@@ -139,8 +141,8 @@ export class FormStateMachine {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
-    this.scene.cameras.main.shake(TRANSFORM_DURATION, 0.006);
-    this.scene.cameras.main.flash(TRANSFORM_DURATION, 255, 0, 100, false); // magenta flash for mecha-dragon
+    this.scene.cameras.main.shake(TRANSFORM_DURATION, SHAKE.TRANSFORM.intensity);
+    playFlash(this.scene, TRANSFORM_DURATION, 255, 0, 100); // magenta flash for mecha-dragon
 
     this.scene.time.delayedCall(TRANSFORM_DURATION, () => {
       this.enterDragon();

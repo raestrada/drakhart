@@ -16,9 +16,9 @@ import {
   INVINCIBILITY_DURATION,
 } from '../utils/constants';
 import { TarotSystem } from '../systems/TarotSystem';
+import { spawnLandingDust, spawnHoverThrust, spawnDragonExhaust, spawnHitParticles } from '../effects/Particles';
+import { spawnDamageNumber } from '../effects/DamageNumbers';
 
-const WALK_FRAME_MS = 140;
-const IDLE_FRAME_MS = 180;
 const DRAGON_FRAME_MS = 220;
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
@@ -41,8 +41,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private facingRight = true;
   private jumpPressed = false;
 
-  private animTimer = 0;
-  private animFrame = 0;
   public animState: 'idle' | 'walk' | 'jump' | 'dragon' | 'kneeling' = 'idle';
 
   // Game feel / juice state variables
@@ -57,6 +55,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   // Phaser effects state
   private auraTimer = 0;
   private afterimageTimer = 0;
+  private footstepTimer = 0;
   private visorGlowTween: Phaser.Tweens.Tween | null = null;
   private visorGlow: Phaser.GameObjects.Rectangle | null = null;
 
@@ -220,6 +219,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (isMoving && onGround) {
       this.animState = 'walk';
+      this.updateFootstep(delta, 'stone', false);
     } else if (onGround) {
       this.animState = 'idle';
     } else {
@@ -316,6 +316,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
       if (isMoving) {
         this.animState = 'walk';
+        this.updateFootstep(delta, 'metal', true);
       } else {
         this.animState = 'idle';
       }
@@ -382,11 +383,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private updateAnimation(delta: number): void {
-    this.animTimer += delta;
-
     if (this.animState === 'kneeling') {
       const isMecha = this.formMachine.isMecha();
-      this.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
+      this.play(isMecha ? 'm-kneeling' : 'h-kneeling');
       return;
     }
 
@@ -395,14 +394,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       let vx = body.velocity.x;
       let vy = body.velocity.y;
 
-      // If physical velocity is zero (autoscroll scene overrides it), simulate velocity for tilt & particles
       if (vx === 0 && vy === 0) {
         const left = this.cursors.left?.isDown || this.keyA?.isDown;
         const right = this.cursors.right?.isDown || this.keyD?.isDown;
         const up = this.cursors.up?.isDown || this.keyW?.isDown;
         const down = this.cursors.down?.isDown || this.keyS?.isDown;
 
-        const speed = 260; // fly speed
+        const speed = 260;
         if (left) vx = -speed;
         else if (right) vx = speed;
 
@@ -412,76 +410,50 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
       const flightSpeed = Math.sqrt(vx * vx + vy * vy);
 
-      // 1. Aerodynamic tilting
       const targetAngle = this.facingRight
         ? vy * 0.04 + vx * 0.015
         : -(vy * 0.04 - vx * 0.015);
       this.angle = Phaser.Math.Linear(this.angle, Phaser.Math.Clamp(targetAngle, -25, 25), 0.12);
 
-      // 2. Dynamic flap speed
-      const dynamicFlapMs = Math.max(120, DRAGON_FRAME_MS - flightSpeed * 0.3);
-      if (this.animTimer >= dynamicFlapMs) {
-        this.animTimer = 0;
-        this.animFrame = (this.animFrame + 1) % 4;
-        this.setTexture(`d-fly-${this.animFrame}`);
-      }
+      this.play('d-fly', true);
 
-      // 3. Flight core particles
+      const dynamicFlapMs = Math.max(120, DRAGON_FRAME_MS - flightSpeed * 0.3);
+      this.anims.timeScale = DRAGON_FRAME_MS / dynamicFlapMs;
+
       if (flightSpeed > 50) {
         this.spawnFlightParticles(body, vx, vy);
       }
       return;
     }
 
-    // Reset rotation angle for non-dragon forms
     this.angle = 0;
 
-    // Mecha animations
     if (this.formMachine.state === FormState.MECHA) {
       if (this.animState === 'idle') {
-        const frameMs = 260;
-        if (this.animTimer >= frameMs) {
-          this.animTimer = 0;
-          this.animFrame = (this.animFrame + 1) % 3;
-          this.setTexture(`m-idle-${this.animFrame}`);
-        }
+        this.play('m-idle', true);
       } else if (this.animState === 'walk') {
-        const frameMs = 150;
-        if (this.animTimer >= frameMs) {
-          this.animTimer = 0;
-          this.animFrame = (this.animFrame + 1) % 4;
-          this.setTexture(`m-walk-${this.animFrame}`);
-        }
+        this.play('m-walk', true);
       } else {
         const body = this.body as Phaser.Physics.Arcade.Body;
         if (body.velocity.y < 0) {
-          this.setTexture('m-jump');
+          this.play('m-jump', true);
         } else {
-          this.setTexture('m-fall');
+          this.play('m-fall', true);
         }
       }
       return;
     }
 
-    // Human animations
     if (this.animState === 'idle') {
-      if (this.animTimer >= IDLE_FRAME_MS) {
-        this.animTimer = 0;
-        this.animFrame = (this.animFrame + 1) % 4;
-        this.setTexture(`h-idle-${this.animFrame}`);
-      }
+      this.play('h-idle', true);
     } else if (this.animState === 'walk') {
-      if (this.animTimer >= WALK_FRAME_MS) {
-        this.animTimer = 0;
-        this.animFrame = (this.animFrame + 1) % 4;
-        this.setTexture(`h-walk-${this.animFrame}`);
-      }
+      this.play('h-walk', true);
     } else {
       const body = this.body as Phaser.Physics.Arcade.Body;
       if (body.velocity.y < 0) {
-        this.setTexture('h-jump');
+        this.play('h-jump', true);
       } else {
-        this.setTexture('h-fall');
+        this.play('h-fall', true);
       }
     }
   }
@@ -511,6 +483,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.visorGlow.setPosition(this.x + dir * 8, this.y - 18);
       this.visorGlow.fillColor = 0xff3322;
+    }
+  }
+
+  private updateFootstep(delta: number, surface: 'stone' | 'metal' | 'ash', heavy: boolean): void {
+    this.footstepTimer += delta;
+    const interval = heavy ? 480 : 340;
+    if (this.footstepTimer >= interval) {
+      this.footstepTimer = 0;
+      (this.scene as any).gameAudio?.playFootstep?.(surface, heavy);
     }
   }
 
@@ -618,28 +599,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const px = this.x;
     const py = this.y + body.height / 2;
     const isMecha = this.formMachine.state === FormState.MECHA;
-    const count = isMecha ? 10 : 6;
-
-    for (let i = 0; i < count; i++) {
-      const p = this.scene.add.rectangle(
-        px + Phaser.Math.Between(-18, 18),
-        py,
-        Phaser.Math.Between(2, isMecha ? 8 : 6),
-        Phaser.Math.Between(2, 4),
-        isMecha ? 0x3a4050 : 0x443325,
-        0.7
-      );
-      p.setDepth(20);
-      this.scene.tweens.add({
-        targets: p,
-        x: p.x + Phaser.Math.Between(-30, 30),
-        y: p.y - Phaser.Math.Between(4, 14),
-        alpha: 0,
-        scale: 0.3,
-        duration: Phaser.Math.Between(300, 600),
-        onComplete: () => p.destroy(),
-      });
-    }
+    spawnLandingDust(this.scene, px, py, isMecha);
 
     if (isMecha) {
       this.scene.cameras.main.shake(80, 0.003);
@@ -650,77 +610,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const px = this.x;
     const py = this.y + body.height / 2;
-
-    for (let i = 0; i < 2; i++) {
-      const col = Phaser.Math.Between(0, 1) ? 0xd61a1a : 0xffaa00; // red/orange thrusters
-      const p = this.scene.add.rectangle(
-        px + Phaser.Math.Between(-10, 10),
-        py,
-        Phaser.Math.Between(2, 4),
-        Phaser.Math.Between(3, 6),
-        col,
-        0.85
-      );
-      p.setDepth(20);
-      p.setBlendMode(Phaser.BlendModes.ADD);
-      this.scene.tweens.add({
-        targets: p,
-        x: p.x + Phaser.Math.Between(-12, 12),
-        y: p.y + Phaser.Math.Between(15, 30),
-        alpha: 0,
-        scale: 0.2,
-        duration: Phaser.Math.Between(200, 350),
-        onComplete: () => p.destroy(),
-      });
-    }
+    spawnHoverThrust(this.scene, px, py);
   }
 
   private spawnFlightParticles(body: Phaser.Physics.Arcade.Body, virtualVx?: number, virtualVy?: number): void {
     const dir = this.facingRight ? -1 : 1;
-    // Align starting point at the base of the tail/rear thruster.
-    // The dragon sprite is 96x72, and since it rotates, we apply rotation offsets.
     const rad = Phaser.Math.DegToRad(this.angle);
     const offsetX = dir * 28;
     const offsetY = 4;
-    
-    // Rotate offset to match current dragon angle
+
     const px = this.x + (offsetX * Math.cos(rad) - offsetY * Math.sin(rad));
     const py = this.y + (offsetX * Math.sin(rad) + offsetY * Math.cos(rad));
 
-    for (let i = 0; i < 2; i++) {
-      const isEnergist = Math.random() > 0.4;
-      const col = isEnergist 
-        ? (Math.random() > 0.5 ? 0xff0066 : 0xff5ea2) // Energist pink/magenta
-        : (Math.random() > 0.5 ? 0xffaa00 : 0xcc3300); // Mechanical exhaust orange/red
-      
-      const sz = Phaser.Math.Between(2, 5);
-      const p = this.scene.add.rectangle(
-        px,
-        py + Phaser.Math.Between(-5, 5),
-        sz, sz, col, 0.85
-      );
-      p.setDepth(this.depth - 1);
-      p.setBlendMode(Phaser.BlendModes.ADD);
+    const isEnergist = Math.random() > 0.4;
+    const tint = isEnergist
+      ? [0xff0066, 0xff5ea2]
+      : [0xffaa00, 0xcc3300];
 
-      // Eject particles backward relative to facing and velocity
-      const angleRad = rad + (dir === -1 ? 0 : Math.PI);
-      const spread = Phaser.Math.FloatBetween(-0.25, 0.25);
-      const speedVal = Phaser.Math.Between(160, 320);
-      const currentVx = virtualVx !== undefined ? virtualVx : body.velocity.x;
-      const currentVy = virtualVy !== undefined ? virtualVy : body.velocity.y;
-      const vx = Math.cos(angleRad + spread) * speedVal + currentVx * 0.25;
-      const vy = Math.sin(angleRad + spread) * speedVal + currentVy * 0.25;
-
-      this.scene.tweens.add({
-        targets: p,
-        x: p.x + vx * 0.2,
-        y: p.y + vy * 0.2,
-        alpha: 0,
-        scale: 0.1,
-        duration: Phaser.Math.Between(220, 450),
-        onComplete: () => p.destroy(),
-      });
-    }
+    spawnDragonExhaust(this.scene, px, py, tint);
   }
 
   takeDamage(amount: number, knockbackDir: number): void {
@@ -732,6 +639,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMecha = this.formMachine.state === FormState.MECHA;
+    spawnDamageNumber(this.scene, this.x, this.y, amount, isMecha);
     const kbX = isMecha ? knockbackDir * 80 : knockbackDir * 220;
     const kbY = isMecha ? -60 : -150;
     body.setVelocityX(kbX);
@@ -771,24 +679,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
 
     // Damage spark burst
-    for (let i = 0; i < 8; i++) {
-      const spark = this.scene.add.rectangle(
-        this.x, this.y,
-        Phaser.Math.Between(2, 5), Phaser.Math.Between(2, 5),
-        Math.random() > 0.5 ? 0xff3322 : 0xffaa00, 0.9
-      );
-      spark.setBlendMode(Phaser.BlendModes.ADD);
-      spark.setDepth(30);
-      this.scene.tweens.add({
-        targets: spark,
-        x: spark.x + Phaser.Math.Between(-40, 40),
-        y: spark.y + Phaser.Math.Between(-40, 40),
-        alpha: 0,
-        angle: Phaser.Math.Between(-180, 180),
-        duration: Phaser.Math.Between(200, 400),
-        onComplete: () => spark.destroy(),
-      });
-    }
+    spawnHitParticles(this.scene, this.x, this.y, 8);
 
     if (this.formMachine.state === FormState.DRAGON || this.formMachine.state === FormState.MECHA) {
       this.formMachine.energy.consumeDamage();

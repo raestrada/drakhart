@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { t, setLanguage, getLanguage } from '../i18n';
 import { TitleAudio } from '../systems/TitleAudio';
 import { clearSave, loadGame } from '../systems/SaveSystem';
+import { createPlayerAnims, createEnemyAnims } from '../animations/PlayerAnims';
 
 export class BootScene extends Phaser.Scene {
   private titleAudio!: TitleAudio;
@@ -43,6 +44,10 @@ export class BootScene extends Phaser.Scene {
 
     // Generate all procedural game textures
     this.generateTextures();
+
+    // Register all Phaser animations
+    createPlayerAnims(this);
+    createEnemyAnims(this);
 
     // Spawn background atmospheric embers
     this.startEmberRain(width, height);

@@ -130,12 +130,15 @@ export class GameScene3 extends Phaser.Scene {
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(3);
+    this.gameAudio.playAmbientZone(3);
 
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
     });
 
     // Initialize groups & arrays before creating levels
