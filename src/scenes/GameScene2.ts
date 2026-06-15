@@ -115,6 +115,12 @@ export class GameScene2 extends Phaser.Scene {
 
     this.bloom = new BloomSystem(this);
 
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene', { gameScene: 'GameScene2' });
+    });
+
     this.createParallax();
     this.moltenDroplets = this.physics.add.group({ allowGravity: false });
     this.createBackgroundEffects();

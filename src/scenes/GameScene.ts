@@ -137,6 +137,12 @@ export class GameScene extends Phaser.Scene {
 
     this.bloom = new BloomSystem(this);
 
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene', { gameScene: 'GameScene' });
+    });
+
     this.createParallax();
     this.createLevel();
     this.createCrumblingPlatforms();

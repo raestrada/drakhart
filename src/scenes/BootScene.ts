@@ -581,6 +581,8 @@ export class BootScene extends Phaser.Scene {
     this.drawWarrior('h-walk-1', 1, -1, -1, 0, 'none');
     this.drawWarrior('h-walk-2', -4, 0, 2, 0, 'none');
     this.drawWarrior('h-walk-3', -1, -1, 1, 0, 'none');
+    this.drawWarrior('h-walk-4', 3, -1, -1, 0, 'none');
+    this.drawWarrior('h-walk-5', -2, -1, -2, 0, 'none');
 
     this.drawWarrior('h-jump', 0, -2, 0, 0, 'jump');
     this.drawWarrior('h-fall', 0, 2, 3, 0, 'fall');
@@ -1014,6 +1016,8 @@ export class BootScene extends Phaser.Scene {
     this.drawMecha('m-walk-1', 0, -1, 0, 'none');
     this.drawMecha('m-walk-2', -4, 0, 0, 'none');
     this.drawMecha('m-walk-3', 0, -1, 0, 'none');
+    this.drawMecha('m-walk-4', 2, -1, 0, 'none');
+    this.drawMecha('m-walk-5', -2, -1, 0, 'none');
 
     this.drawMecha('m-jump', 0, -3, 0, 'jump');
     this.drawMecha('m-fall', 0, 3, 0, 'fall');

@@ -147,6 +147,12 @@ export class GameScene3 extends Phaser.Scene {
 
     this.bloom = new BloomSystem(this);
 
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene', { gameScene: 'GameScene3' });
+    });
+
     // Initialize groups & arrays before creating levels
     this.enemies = this.physics.add.group();
     this.laserBeams = this.physics.add.staticGroup();

@@ -10,6 +10,15 @@ export class BaseLevelScene extends Phaser.Scene {
     super({ key });
   }
 
+  create(): void {
+    this.input.keyboard?.on('keydown-ESC', () => {
+      if (this.scene.isPaused()) return;
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene', { gameScene: this.scene.key });
+    });
+  }
+
   protected createVignette(): void {
     const { width, height } = this.scale;
     this.vignette = this.add.rectangle(

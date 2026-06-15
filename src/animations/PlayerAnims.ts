@@ -20,8 +20,10 @@ export function createPlayerAnims(scene: Phaser.Scene): void {
       { key: 'h-walk-1' },
       { key: 'h-walk-2' },
       { key: 'h-walk-3' },
+      { key: 'h-walk-4' },
+      { key: 'h-walk-5' },
     ],
-    frameRate: 8,
+    frameRate: 10,
     repeat: -1,
   });
 
@@ -75,8 +77,10 @@ export function createPlayerAnims(scene: Phaser.Scene): void {
       { key: 'm-walk-1' },
       { key: 'm-walk-2' },
       { key: 'm-walk-3' },
+      { key: 'm-walk-4' },
+      { key: 'm-walk-5' },
     ],
-    frameRate: 7,
+    frameRate: 9,
     repeat: -1,
   });
 

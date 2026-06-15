@@ -5,6 +5,8 @@ export class GameAudio {
   private sfxGainNode!: GainNode;
   private bgmVolScale = 1.0;
   private sfxVolScale = 1.0;
+  private combatIntensity = 0;
+  private targetIntensity = 0;
   
   // Reverb/Delay echo lines
   private echoNode!: DelayNode;
@@ -574,12 +576,55 @@ export class GameAudio {
   public update(playerX: number): void {
     // Dynamic BGM fade-out past x = 6500 (approaching the Dragon Core at 7478)
     if (playerX > 6500) {
-      const fadeDist = 800; // Fade out completely by x = 7300
+      const fadeDist = 800;
       const multiplier = Math.max(0, 1 - (playerX - 6500) / fadeDist);
       this.setBGMVolume(multiplier * 0.35);
     } else {
       this.setBGMVolume(0.35);
     }
+
+    // Smooth combat intensity lerp
+    this.combatIntensity += (this.targetIntensity - this.combatIntensity) * 0.05;
+    if (this.bgmGainNode && this.ctx) {
+      const boost = 1 + this.combatIntensity * 0.3;
+      this.bgmGainNode.gain.setValueAtTime(0.35 * this.bgmVolScale * boost, this.ctx.currentTime);
+    }
+  }
+
+  public setCombatActive(active: boolean): void {
+    this.targetIntensity = active ? 1 : 0;
+  }
+
+  public setBossActive(active: boolean): void {
+    this.targetIntensity = active ? 2 : (this.targetIntensity > 0 ? 1 : 0);
+  }
+
+  // ═══════════════════════════════════════
+  //  SPATIAL AUDIO (pan by screen position)
+  // ═══════════════════════════════════════
+
+  public playSpatialSFX(
+    playFn: (destination: AudioNode) => void,
+    worldX: number,
+    cameraScrollX: number,
+    viewportWidth: number
+  ): void {
+    if (!this.ctx) {
+      return;
+    }
+
+    const screenX = worldX - cameraScrollX;
+    const pan = Phaser.Math.Clamp((screenX / viewportWidth) * 2 - 1, -1, 1);
+
+    const panner = this.ctx.createStereoPanner();
+    panner.pan.value = pan;
+    panner.connect(this.ctx.destination);
+
+    playFn(panner);
+
+    setTimeout(() => {
+      try { panner.disconnect(); } catch (e) {}
+    }, 200);
   }
 
   // ═══════════════════════════════════════
