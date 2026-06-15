@@ -7,6 +7,7 @@ It fuses **Draconus (Atari, 70%)** with **Escaflowne (anime, 30%)**.
 
 - **Draconus DNA**: side-scrolling exploration, dark atmosphere, earned transformation, dual-form gameplay, sword combat, grim fantasy
 - **Escaflowne DNA**: the dragon form is a biomechanical draconel (mecha-dragon of bone & metal), destiny/tarot themes as collectibles, epic aerial boss fights
+- **The Core Conflict**: The player utilizes **forgotten dragon-based mecha technology** (biomechanical, constructed of ancient dragon bones, steel, and powered by a magical, suppressed Dragon Core). In contrast, the enemy forces use **modern military technology** (MechWarrior-like brutalist design, heavy boxy steel plating, rivets, soot exhaust pipes, diesel/nuclear power generators, and physical railguns/cannons).
 
 The core mechanic: human form (Warrior) for agile platforming, humanoid mecha (Draconel) for heavy combat/barricade smashing, and dragon-mech form for shmup-style flying. Transformation is earned (find the Dragon Core), not given.
 

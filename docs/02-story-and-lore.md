@@ -2,23 +2,23 @@
 
 ## The World: "The Shattered Continent"
 
-Once, dragons ruled the skies. Their hearts were furnaces of raw creation — each beat a pulse of elemental power. Humanity, in its hubris, learned to harvest these hearts and forge them into **Draconels**: biomechanical war machines of bone, metal, and dragon-fire.
+Once, the world thrived on a sacred symbiosis of magic and steel. Dragons ruled the skies, and ancient civilizations learned to cooperate with them, creating the **Draconels**—magical biomechanical constructs built of dragon bone, steel plates, and bound by a pulsing, living **Dragon Core**. They were symbols of destiny and magical harmony.
 
-The **Dragon War** consumed the continent. Empires rose and fell in a single generation. When the war ended, the world was ash. The dragons were gone. Only their hearts remained — scattered across the ruins, waiting.
+The **Dragon War** devastated the continent, leaving it in ruins. The ancient dragon-bonding magic was lost. From the ash arose the **Iron Empire**, a brutalist faction that rejected the ancient ways. They outlawed, hunted down, and systematically eliminated the magical dragon-based technology, deeming it unstable and dangerous.
 
-The **Iron Empire** rose from the ashes, not to rebuild, but to conquer what remained. They seek every last Dragon Core to forge an unstoppable army of Draconels. The continent's few survivors call this the **Final Forging**.
+In its place, the Empire forged **modern military technology**—imposing, mass-produced MechWarrior-style war machines built of heavy riveted steel plates, powered by roaring diesel engines, and armed with crude, devastating physical firepower (railguns, heavy mortars, pikes). To fuel their industrial war machine, they seek to harvest the dormant Cores, not to bond with them, but to extract their raw thermal energy.
 
-You are one of them.
+You are the last hope to restore the old world.
 
 ## The Protagonist: The Warden
 
-A nameless warrior of the old guard. You wear the green armor of the **Wardens** — an order sworn to protect the Dragon Cores from those who would corrupt them. Most Wardens are dead. You should be too.
+A nameless warrior of the old guard. You wear the green armor of the **Wardens** — an order sworn to protect the suppressed artifacts of dragon-based mecha technology. Most Wardens have been hunted down and executed by the Empire's military.
 
-But you found a Core that still beats.
+You discovered a dormant Dragon Core hidden inside an ancient altar.
 
-When you touched it, it didn't burn you. It *recognized* you.
+When you touched it, the core bound with your chest. It did not burn you; it *recognized* you as a compatible host.
 
-Now the Core lives inside your chest. It whispers in a language older than steel. It shows you visions — battles you never fought, skies you never flew. It wants to become something more. It wants to become you.
+Now, you wield a forgotten power. The core allows you to summon and reconstruct the ancient biomechanical mecha armor from the bones and metal debris scattered across the ruins. You can take on the form of the Draconel (humanoid bone-and-metal giant) and the Sky Graver (flying mecha-dragon) to tear through the Empire's modern military blockades.
 
 **Personality**: Silent, determined, haunted. The Warden doesn't speak because there's no one left to speak to. The few NPCs you meet — echoes of the dead, fragments of broken machines — do the talking.
 
@@ -26,14 +26,16 @@ Now the Core lives inside your chest. It whispers in a language older than steel
 
 ## The Antagonist: The Iron Empire
 
-Led by the **Iron Chancellor**, a figure never seen but felt everywhere. The Empire's philosophy is simple: dragons were weapons. We will use them better than our ancestors did. Every Draconel they capture, they corrupt. Every Core they find, they forge into a soldier.
+Led by the **Iron Chancellor**, the Empire enforces absolute militaristic and industrial dominance. They see the ancient dragon technology as a magic that must be fully exterminated. Their weapons are blocky, heavy, brutalist, and modern, designed to overwhelm the elegant bone-and-steel forms of the past.
 
 The Empire's forces:
 
-- **Iron Guard** — Humanoid mecha with heavy armor. Slow but devastating. (Mecha zone enemies)
-- **Sky Hunters** — Aerial drones that patrol the skies. (Dragon/shmup zone enemies)
-- **Corrupted Draconels** — Captured dragon-mecha, twisted by imperial technology. (Bosses)
-- **The Forgemaster** — The Empire's chief engineer. Never seen, but his work is everywhere: barricades, traps, corrupted cores.
+- **Iron Guard** — Heavy, brutalist humanoid mechas built of thick dark steel plates and powered by roaring steam/diesel engines. (Mecha zone enemies)
+- **Sky Hunters** — Mass-produced military drones that patrol the skies with mechanical thrusters and physical guns. (Dragon/shmup zone enemies)
+- **Draconel Bastion** — A colossal, heavily armed military mini-boss fitted with tank treads, railguns, and hazard stripes, guarding the Smelting Vats. (Level 2 Mini-boss)
+- **Corrupted Draconels** — Captured ancient dragon-mechas, twisted and retrofitted with modern imperial military technology. (Bosses)
+- **The Forgemaster** — The Empire's chief military engineer. Never seen, but his industrial work is everywhere: metallic barricades, thermal traps, overcharged cores.
+
 
 ## The Tarot: Echoes of Destiny
 

@@ -10,7 +10,7 @@
 | **Size** | 48×72 pixels (human), 96×72 (dragon), ~80×100 (mecha) |
 | **Color** | Green armor (Draconus homage) with gold/bronze trim, dark red cape |
 | **Silhouette** | Horned helmet, broad shoulders, flowing cape, sword extended forward |
-| **Key features** | Glowing orange visor (eyes), green layered armor plates, Draconus-style horned helmet, sword with bright blade tip |
+| **Key features** | Glowing orange visor (eyes), green layered armor plates, Draconus-style horned helmet. The transformed forms (**Mecha** and **Dragon**) are organic-skeletal constructs of exposed white dragon bones integrated with polished magical steel plates and powered by the glowing crimson Dragon Core in the chest. |
 
 ### Personality
 - **Silent protagonist** — no spoken dialogue
@@ -47,36 +47,69 @@
 
 ## Enemy Types
 
-### Sentinel
+### Iron Scout Drone (Sentinel)
 - **Zone**: Ashen Forest, Crystal Mines
-- **Appearance**: Floating dark crystal shard, 32×32 pixels, purple glow, single central eye
+- **Appearance**: Side-view profile of a compact octagonal flying drone (32×32 pixels) made of dark steel plates with corner rivets, featuring a horizontal glowing red target visor at the front-right, a stabilizing top rotor, and a back-left exhaust pipe venting soot and orange engine sparks.
 - **Behavior**: Patrols horizontally, detects player within 220px, chases
 - **Attack**: Contact damage, 10 dmg, 900ms cooldown
 - **HP**: 40
 - **Speed**: 70 px/s
 - **Weakness**: Human sword (2 hits to kill), Mecha overkill
-- **Notes**: Tutorial enemy. Teaches basic combat and evasion.
+- **Notes**: Standard scout drone of the Iron Empire. Teaches basic combat and evasion.
+
+### Iron Defender (Shield Sentry)
+- **Zone**: Ashen Forest, Ruins
+- **Appearance**: Side-view profile of a boxy bipedal mecha (32×32 pixels) built of dark steel plates with jointed mechanical legs and a narrow red visor. The front-right features a heavy steel shield plate decorated with diagonal yellow/black hazard warning stripes.
+- **Behavior**: Slow patrol, blocks frontal human attacks using its shield, charges with physical pike thrusts.
+- **Attack**: Shield block (immune to front-facing human attacks), physical pike thrust (15 damage).
+- **HP**: 70
+- **Speed**: 45 px/s
+- **Weakness**: Mecha claymore (shatters/bypasses shield), attacking from behind.
+- **Notes**: Anti-infantry defender. Teaches player to jump over and attack from behind or switch to Mecha form.
+
+### Iron Mortar Sentry (Ranged Spitter)
+- **Zone**: Ashen Forest, Smelting Refinery
+- **Appearance**: Side-view profile of a boxy tracked drone (32×32 pixels) in industrial military green, resting on dark tank tracks. Features an angled physical mortar barrel pointing up-right and a glowing orange targeting lens.
+- **Behavior**: Fires fireballs at a distance, backs away slowly if approached.
+- **Attack**: Spits fast-moving magma fireballs (15 damage).
+- **HP**: 35
+- **Speed**: 50 px/s
+- **Weakness**: Rapid fire, Mecha claymore.
+- **Notes**: Artillerist sentry drone firing diesel-combusted magma blobs.
+
+### Iron Hopper (Leaper Sentry)
+- **Zone**: Ashen Forest, Ruins
+- **Appearance**: Side-view profile of a lightweight bipedal mecha (32×32 pixels) in dark iron plates, featuring a circular red target lens, jointed mechanical legs with spring absorber struts, and a booster backpack venting blue thruster flames.
+- **Behavior**: Patrols and leaps high towards the player when detected.
+- **Attack**: High leap landing contact damage (20 damage).
+- **HP**: 50
+- **Speed**: 90 px/s
+- **Weakness**: Ground attacks, claymore.
+- **Notes**: High-agility shock trooper. Tests jump timing and spatial awareness.
+
 
 ### Iron Guard
 - **Zone**: Iron Bastion, The Core
-- **Appearance**: Heavy humanoid mecha, 48×64 pixels, dark steel with red visor, carries energy pike
+- **Appearance**: Brutalist humanoid mecha, 48×64 pixels. Built of heavy, square-angled dark steel plates, held together with massive industrial rivets. Features a smoking exhaust pipe on its back, a glaring red narrow visor, and carries a mechanical, physical-hydraulic energy pike.
 - **Behavior**: Slow patrol, detects player, charges with shoulder bash
 - **Attack**: Pike thrust (20 dmg), shoulder charge (15 dmg + knockback)
 - **HP**: 80
 - **Armor**: Reduces damage by 30%
 - **Speed**: 40 px/s
 - **Weakness**: Mecha claymore (75 dmg = effective). Human sword (25 - 30% = ~18 dmg, 5 hits — inefficient)
-- **Notes**: Designed to make Mecha form feel powerful and Human form feel tedious. The player CAN kill them with Human, but it takes forever.
+- **Notes**: Designed to highlight the thematic contrast between the player's ancient, skeletal dragon-bone mecha (organic curves) and the Empire's boxy, brutalist, industrialized military power.
+- **Visuals**: MechWarrior-style military aesthetics.
 
 ### Sky Hunter
 - **Zone**: Storm Gorge (shmup), Sky Temple
-- **Appearance**: Small aerial drone, 24×16 pixels, metallic with red thrusters
+- **Appearance**: Mass-produced military surveillance drone, 24×16 pixels, blocky dark steel chassis with directional physical thrusters and a physical gatling gun muzzle.
 - **Behavior**: Flies in formation patterns (V, line, diamond), shoots aimed bullets
 - **Attack**: Single aimed bullet, 10 dmg, fires every 1.5s
 - **HP**: 15
 - **Speed**: 120 px/s
 - **Weakness**: Dragon fire (2 hits), Mecha can't reach, Human can't reach
 - **Notes**: Shmup enemy. Appears in waves of 3–5. Teaches basic bullet dodging.
+
 
 ### Gorge Turret
 - **Zone**: Storm Gorge (shmup)
@@ -151,6 +184,15 @@
 ---
 
 ## Bosses
+
+### Level 2 Mini-Boss: Draconel Bastion
+- **Zone**: Smelting Refinery (Level 2 Arena)
+- **Appearance**: A colossal modern militaristic war machine, scaled to 1.8x player size. Features dark, blocky iron plates, hazard warning lines, turning mechanical spine gears, heavy tank treads/hydraulic mechanical legs, and a glowing diesel combustion chamber core. Armed with a heavy thermal arm cannon and a mechanical tower shield.
+- **Behavior**: Patrols arena, switches attacks dynamically, responds with physical stomps and cannon fires.
+- **Attack**: Plasma spit (fires a spread of 3 fast-moving magma projects, 24 damage), Colossal ground stomp (leaps and slams the ground, shaking camera, spawning expanding ground shockwaves, 32 damage).
+- **HP**: 2500
+- **Armor**: Fully immune to human warrior attacks (sword/sparks block), requiring the player to use Mecha or Dragon forms.
+- **Notes**: Represents the pinnacle of the Empire's modern military technology. Heavily armored, industrial, and highly destructive.
 
 ### Boss 1: Corrupted Draconel
 - **Zone**: Storm Gorge (x: 16,000–17,000)

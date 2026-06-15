@@ -7,7 +7,7 @@
 
 ![Drakhart Marketing Splash Art](public/marketing/drakhart_splash.png)
 
-> *"Humanity forged the hearts of dragons into biomechanical gods of war. The Dragon War burned the skies, leaving the continent in ash. Now, the Iron Empire seeks the final Cores to complete their army of Corrupted Draconels... and the last beating heart lives inside your chest."*
+> *"The ancient world bonded with dragons, building biomechanical gods of bone and magical steel. The rising Iron Empire eliminated this magic, replacing it with massive, brutalist military engines of steel and steam. They sought to suppress the ancient dragon-core technology forever... but the last beating Dragon Core lives inside your chest."*
 
 ---
 
@@ -18,7 +18,7 @@ Experience the grimdark fantasy action-platformer directly in your browser:
 ---
 
 ## 🕹️ About the Game
-**DRAKHART** is a grimdark fantasy action-platformer that fuses **three distinct genres into a single, continuous, genre-bending adventure**. Blending the earned transformations of Atari’s *Draconus (1988)*, the biomechanical clockwork mecha designs of *Vision of Escaflowne (1996)*, and the tactical arcade horizontal scrolling of *R-Type*, DRAKHART casts you as **The Warden**—a silent knight bonded with a living mechanical dragon core, fighting to protect the Shattered Continent from the *Final Forging*.
+**DRAKHART** is a grimdark fantasy action-platformer that fuses **three distinct genres into a single, continuous, genre-bending adventure**. Blending the earned transformations of Atari’s *Draconus (1988)*, the biomechanical clockwork mecha designs of *Vision of Escaflowne (1996)*, and the tactical arcade horizontal scrolling of *R-Type*, DRAKHART casts you as **The Warden**—a silent knight bonded with a forgotten, living mechanical dragon core made of bone and steel, fighting to protect the Shattered Continent from the Iron Empire's industrialized, brutalist military war machines.
 
 ---
 
@@ -30,7 +30,19 @@ Seamlessly shift between three radically different forms at the press of a key `
 | :---: | :---: | :---: |
 | ![Warden Profile](public/marketing/warrior_card.png) | ![Mecha Profile](public/marketing/draconel_card.png) | ![Dragon Profile](public/marketing/dragon_card.png) |
 | **Precision Platformer** | **Heavy Mecha Combat** | **Horizontal Shmup** |
-| Agile, swift, and classic. Explore tight caverns, dodge traps, and strike fast with your short sword. Human form is essential for accessing narrow passages. | A titanic, white-and-gold biomechanical knight mecha. Smash through heavy stone gates and obliterate guards with your massive Claymore. | A flying mecha-dragon. Take to the skies in horizontal forced-scrolling shmup sections, dogfight aerial drones, and breathe fire. |
+| Agile, swift, and classic. Explore tight caverns, dodge traps, and strike fast with your short sword. Human form is essential for accessing narrow passages. | A titanic, white-and-gold biomechanical knight mecha forged from ancient dragon bones and magical metal plates. Smash through the Empire's heavy military stone gates and obliterate guards with your massive Claymore. | A flying mecha-dragon of steel, bone, and core energy. Take to the skies in horizontal forced-scrolling shmup sections, dogfight the Empire's brutalist aerial drones, and breathe fire. |
+
+---
+
+## ⚙️ The Enemy Arsenal: Brutalist Industrial Military Might
+
+The Iron Empire has suppressed and outlawed the ancient, organic dragon-mecha magic. In its place, they deploy brutalist, blocky, and mass-produced military mechas—imposing war machines of dark riveted iron, smoke exhaust vents, and physical firepower (resembling classic *MechWarrior* aesthetics).
+
+| 🔴 Standard Trooper: Iron Guard | 💀 Heavy Mini-Boss: Draconel Bastion |
+| :---: | :---: |
+| ![Iron Guard Card](public/marketing/enemy_mecha_card.png) | ![Draconel Bastion Card](public/marketing/enemy_boss_card.png) |
+| **Mass-Produced Heavy Unit** | **Colossal Smelting Guardian** |
+| The frontline soldier of the Empire. Built of thick, square-angled steel plates and powered by roaring diesel engines, the Iron Guard charges players with a heavy energy pike, ignoring weak sword slashes. | A colossal, multi-legged mobile defense system and industrial guardian. Fitted with tank treads, heavy railguns, and hazard warnings, it unleashes magma cannon spreads and heavy ground stomps. |
 
 ---
 

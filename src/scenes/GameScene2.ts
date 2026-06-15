@@ -6,6 +6,7 @@ import { EnergyPickup } from '../entities/EnergyPickup';
 import { TarotCard } from '../entities/TarotCard';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { MechaEnemy } from '../entities/enemies/MechaEnemy';
+import { EliteMecha } from '../entities/enemies/EliteMecha';
 import { FlyingEnemy } from '../entities/enemies/FlyingEnemy';
 import { SpitterEnemy } from '../entities/enemies/SpitterEnemy';
 import { ShieldEnemy } from '../entities/enemies/ShieldEnemy';
@@ -16,6 +17,7 @@ import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles } from '../effects/Particles';
+import { SaveAltar } from '../entities/SaveAltar';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -37,6 +39,9 @@ export class GameScene2 extends Phaser.Scene {
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
+  private bgCauldrons: Phaser.GameObjects.Image[] = [];
+  private moltenDroplets!: Phaser.Physics.Arcade.Group;
+  private dripTimer = 0;
   private barricades!: Phaser.Physics.Arcade.StaticGroup;
   private hazards!: Phaser.Physics.Arcade.StaticGroup;
   private steamVents!: Phaser.Physics.Arcade.StaticGroup;
@@ -57,8 +62,10 @@ export class GameScene2 extends Phaser.Scene {
   private emberTimer = 0;
 
   private pendingMechaUnlock = true;
+  private pendingDragonUnlock = false;
   private pendingSpawnX = 100;
   private pendingSpawnY = 550;
+  private bossIntroTriggered = false;
   private pendingCardsToCollect: string[] = [];
   private demoEnded = false;
   public isCutsceneActive = false;
@@ -67,7 +74,7 @@ export class GameScene2 extends Phaser.Scene {
     super({ key: 'GameScene2' });
   }
 
-  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[]; mechaUnlocked?: boolean }): void {
+  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[]; mechaUnlocked?: boolean; dragonUnlocked?: boolean }): void {
     if (data) {
       if (data.startPos) {
         this.pendingSpawnX = data.startPos.x;
@@ -78,6 +85,9 @@ export class GameScene2 extends Phaser.Scene {
       }
       if (data.mechaUnlocked !== undefined) {
         this.pendingMechaUnlock = data.mechaUnlocked;
+      }
+      if (data.dragonUnlocked !== undefined) {
+        this.pendingDragonUnlock = data.dragonUnlocked;
       }
     }
   }
@@ -97,6 +107,8 @@ export class GameScene2 extends Phaser.Scene {
     });
 
     this.createParallax();
+    this.moltenDroplets = this.physics.add.group({ allowGravity: false });
+    this.createBackgroundEffects();
     this.createDecorations();
     this.createLevel();
     this.createInteractiveObjects();
@@ -113,6 +125,9 @@ export class GameScene2 extends Phaser.Scene {
     this.player.setPosition(this.pendingSpawnX, this.pendingSpawnY);
     if (this.pendingMechaUnlock) {
       this.player.formMachine.unlockTransform();
+    }
+    if (this.pendingDragonUnlock) {
+      this.player.formMachine.unlockDragon();
     }
 
     this.createEnemies();
@@ -278,19 +293,18 @@ export class GameScene2 extends Phaser.Scene {
       { x: 6280, y: 736, width: 1720, height: 64, texture: 'tile-lava-ground' },
     ];
 
-    // Elevated command platforms (for flying enemy sentries — NOT for human platforming)
+    // Elevated command platforms (now visible and reachable)
     const commandPlatforms: PlatformDef[] = [
-      // Sniper perches — high up, only flying enemies use these
-      { x: 400,  y: 200, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 900,  y: 180, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 1700, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 2400, y: 190, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 3300, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 4100, y: 180, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 4900, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 5700, y: 190, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 6600, y: 200, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 7200, y: 180, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 400,  y: 490, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 900,  y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 1700, y: 490, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 2400, y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 3300, y: 495, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 4100, y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 4900, y: 490, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 5700, y: 485, width: 96,  height: 16, texture: 'tile-refinery' },
+      { x: 6600, y: 490, width: 128, height: 16, texture: 'tile-refinery' },
+      { x: 7200, y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
       // Altar structure for Dragon Shrine
       { x: 7350, y: 500, width: 256, height: 236, texture: 'tile-lava-ground' },
     ];
@@ -371,7 +385,7 @@ export class GameScene2 extends Phaser.Scene {
     const b2 = new Barricade(this, 2500, 704);  // Segment 2 chokepoint
     const b3 = new Barricade(this, 3800, 704);  // Segment 3 entrance
     const b4 = new Barricade(this, 5600, 704);  // Segment 4 chokepoint
-    const b5 = new Barricade(this, 7000, 704);  // Final gauntlet gate
+    const b5 = new Barricade(this, 6450, 704);  // Final gauntlet gate (gate to Elite Mecha arena)
 
     this.barricades.addMultiple([b1, b2, b3, b4, b5]);
 
@@ -459,30 +473,36 @@ export class GameScene2 extends Phaser.Scene {
     const sh4a = new ShieldEnemy(this, 5200, 700, this.player);
 
     // === SEGMENT 5: Final Gauntlet (6280–7400) — Last stand before Dragon Shrine ===
-    const m5a = new MechaEnemy(this, 6400, 700, this.player, { health: 480, speed: 85, damage: 55, patrolMinX: 6280, patrolMaxX: 7000 });
-    const m5b = new MechaEnemy(this, 6900, 700, this.player, { health: 480, speed: 85, damage: 55, patrolMinX: 6500, patrolMaxX: 7200 });
-    const m5c = new MechaEnemy(this, 7150, 700, this.player, { health: 500, speed: 70, damage: 60, patrolMinX: 6900, patrolMaxX: 7350 });
+    const m5a = new MechaEnemy(this, 6380, 700, this.player, { health: 480, speed: 85, damage: 55, patrolMinX: 6280, patrolMaxX: 6420 });
+
+    // Mini-boss Arena (6500 - 7300): Completely clean space except for the Elite Mecha Guard!
+    const eliteBoss = new EliteMecha(this, 6880, 650, this.player);
 
     this.enemies.addMultiple([
       m1a, m1b, m1c,
       m2a, m2b, m2c, sh2a,
       m3a, m3b, m3c, m3d,
       m4a, m4b, m4c, sh4a,
-      m5a, m5b, m5c,
+      m5a, eliteBoss,
     ]);
 
+    // Overwrite die method of EliteMecha to trigger boss defeat cinematic
+    const originalDie = (eliteBoss as any).die.bind(eliteBoss);
+    (eliteBoss as any).die = () => {
+      this.triggerBossDeathCinematic(eliteBoss, originalDie);
+    };
+
     // === FLYING SENTRIES on elevated command perches (aerial fire support) ===
-    const f1  = new FlyingEnemy(this,  450, 150, this.player);
-    const f2  = new FlyingEnemy(this,  950, 140, this.player);
-    const f3  = new FlyingEnemy(this, 1750, 155, this.player);
-    const f4  = new FlyingEnemy(this, 2450, 145, this.player);
-    const f5  = new FlyingEnemy(this, 3350, 155, this.player);
-    const f6  = new FlyingEnemy(this, 4150, 140, this.player);
-    const f7  = new FlyingEnemy(this, 4950, 155, this.player);
-    const f8  = new FlyingEnemy(this, 5750, 145, this.player);
-    const f9  = new FlyingEnemy(this, 6650, 155, this.player);
-    const f10 = new FlyingEnemy(this, 7250, 140, this.player);
-    this.enemies.addMultiple([f1, f2, f3, f4, f5, f6, f7, f8, f9, f10]);
+    const f1  = new FlyingEnemy(this,  450, 440, this.player);
+    const f2  = new FlyingEnemy(this,  950, 430, this.player);
+    const f3  = new FlyingEnemy(this, 1750, 445, this.player);
+    const f4  = new FlyingEnemy(this, 2450, 435, this.player);
+    const f5  = new FlyingEnemy(this, 3350, 445, this.player);
+    const f6  = new FlyingEnemy(this, 4150, 430, this.player);
+    const f7  = new FlyingEnemy(this, 4950, 445, this.player);
+    const f8  = new FlyingEnemy(this, 5750, 435, this.player);
+    // Sentries removed near final boss area to keep the arena clean!
+    this.enemies.addMultiple([f1, f2, f3, f4, f5, f6, f7, f8]);
   }
 
   private setupCamera(): void {
@@ -532,6 +552,30 @@ export class GameScene2 extends Phaser.Scene {
       this.gameAudio?.playCoreCollect();
       this.triggerDragonGemCutscene();
     });
+
+    // Overlap checks for player's fire breath bullets vs enemies
+    this.physics.add.overlap(
+      this.player.combatSystem.bullets,
+      this.enemies,
+      (_bullet, _enemy) => {
+        const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        if (!b.active) return;
+        b.disableBody(true, true);
+        const enemy = _enemy as BaseEnemy;
+        enemy.takeDamage(this.player.combatSystem.getFireDamage());
+        spawnHitParticles(this, enemy.x, enemy.y);
+      }
+    );
+
+    // Collider for player's bullets vs platforms
+    this.physics.add.collider(
+      this.player.combatSystem.bullets,
+      this.platforms,
+      (_bullet) => {
+        const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        b.disableBody(true, true);
+      }
+    );
   }
 
   private createVignette(): void {
@@ -544,6 +588,10 @@ export class GameScene2 extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    if (this.player && this.player.active && this.player.x >= 6520 && !this.bossIntroTriggered) {
+      this.triggerBossIntro();
+    }
+
     if (this.isCutsceneActive) return;
 
     if (this.player && this.player.active) {
@@ -554,6 +602,7 @@ export class GameScene2 extends Phaser.Scene {
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
+    this.updateMoltenDrips(delta);
 
     // Apply extreme heat environmental damage to Warrior form
     if (this.player.active && this.player.alive) {
@@ -613,6 +662,12 @@ export class GameScene2 extends Phaser.Scene {
     if (this.player.active) {
       if (this.player.y > LEVEL_HEIGHT + 60) {
         this.player.takeDamage(100, 0);
+      }
+      if (this.player.x <= 80) {
+        this.transitionToLevel1();
+      }
+      if (this.player.x >= 7950) {
+        this.transitionToLevel3();
       }
     }
   }
@@ -983,10 +1038,28 @@ export class GameScene2 extends Phaser.Scene {
           borderTop.destroy();
           borderBottom.destroy();
           unlockText.destroy();
-
-          // After showing unlock banner, transition to Level 3 autoscroller
-          this.transitionToLevel3();
         }
+      });
+    });
+  }
+
+  private transitionToLevel1(): void {
+    if (this.demoEnded) return;
+    this.demoEnded = true;
+
+    this.player.setVelocity(0, 0);
+    if (this.player.body) {
+      (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
+    }
+
+    this.cameras.main.fade(1000, 0, 0, 0);
+
+    this.time.delayedCall(1000, () => {
+      this.scene.start('TransitionScene12', {
+        startPos: { x: 720, y: 650 },
+        cardsCollected: this.tarotSystem.collectedCards,
+        mechaUnlocked: this.player.formMachine.isMechaUnlocked(),
+        dragonUnlocked: this.player.formMachine.isDragonUnlocked()
       });
     });
   }
@@ -1003,10 +1076,11 @@ export class GameScene2 extends Phaser.Scene {
     this.cameras.main.fade(1000, 0, 0, 0);
 
     this.time.delayedCall(1000, () => {
-      this.scene.start('GameScene3', {
+      this.scene.start('TransitionScene23', {
+        startPos: { x: 150, y: 650 },
         cardsCollected: this.tarotSystem.collectedCards,
-        mechaUnlocked: true,
-        dragonUnlocked: true
+        mechaUnlocked: this.player.formMachine.isMechaUnlocked(),
+        dragonUnlocked: this.player.formMachine.isDragonUnlocked()
       });
     });
   }
@@ -1139,6 +1213,409 @@ export class GameScene2 extends Phaser.Scene {
         repeat: -1,
         ease: 'Cubic.easeInOut'
       });
+    });
+  }
+
+  private createBackgroundEffects(): void {
+    const cauldronSpots = [
+      { x: 1000, y: 500 },
+      { x: 2200, y: 490 },
+      { x: 3500, y: 510 },
+      { x: 4800, y: 490 },
+      { x: 6000, y: 500 },
+      { x: 6880, y: 490 }
+    ];
+
+    cauldronSpots.forEach((spot) => {
+      const cauldron = this.add.image(spot.x, spot.y, 'bg-cauldron');
+      cauldron.setOrigin(0.5, 0.5);
+      cauldron.setDepth(-8);
+      cauldron.setScrollFactor(1.0);
+      this.bgCauldrons.push(cauldron);
+
+      this.tweens.add({
+        targets: cauldron,
+        angle: { from: -3, to: 3 },
+        duration: Phaser.Math.Between(2500, 4000),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    });
+  }
+
+  private spawnMoltenDrip(): void {
+    if (this.bgCauldrons.length === 0) return;
+    const cauldron = Phaser.Utils.Array.GetRandom(this.bgCauldrons);
+    if (!cauldron) return;
+
+    const rad = Phaser.Math.DegToRad(cauldron.angle);
+    const localX = 18;
+    const localY = 44;
+    const spawnX = cauldron.x + (localX * Math.cos(rad) - localY * Math.sin(rad));
+    const spawnY = cauldron.y + (localX * Math.sin(rad) + localY * Math.cos(rad));
+
+    const droplet = this.add.rectangle(spawnX, spawnY, 2, 7, 0xffaa00);
+    droplet.setDepth(-7);
+
+    this.physics.add.existing(droplet);
+    const body = droplet.body as Phaser.Physics.Arcade.Body;
+    body.allowGravity = false;
+    body.setVelocityY(Phaser.Math.Between(260, 360));
+
+    this.moltenDroplets.add(droplet);
+  }
+
+  private updateMoltenDrips(delta: number): void {
+    this.dripTimer += delta;
+    if (this.dripTimer >= 220) {
+      this.dripTimer = 0;
+      this.spawnMoltenDrip();
+    }
+
+    this.moltenDroplets.getChildren().forEach((dobj) => {
+      const d = dobj as Phaser.GameObjects.Rectangle;
+      if (d.y >= 736) {
+        for (let i = 0; i < 4; i++) {
+          const spark = this.add.rectangle(d.x, 736, 2, 2, 0xff5500);
+          spark.setDepth(-6);
+          this.tweens.add({
+            targets: spark,
+            x: spark.x + Phaser.Math.Between(-15, 15),
+            y: spark.y - Phaser.Math.Between(5, 20),
+            alpha: 0,
+            duration: Phaser.Math.Between(150, 300),
+            onComplete: () => spark.destroy()
+          });
+        }
+        d.destroy();
+      }
+    });
+  }
+
+  private triggerDramaticDeath(player: Player): void {
+    // 1. Stop all normal BGM and play tragic death theme
+    this.gameAudio?.stopBGM();
+    this.gameAudio?.playDeathTheme();
+
+    const isMecha = player.formMachine.state === 'MECHA' || player.formMachine.state === 'DRAGON';
+    
+    // 2. Play chest core shatter explosion
+    this.gameAudio?.playCoreShatter();
+    
+    // Lock character position and set kneeling posture
+    player.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
+    player.setScale(isMecha ? 1.4 : 0.8);
+
+    // Spawn mecha-core shatter particles
+    for (let i = 0; i < 35; i++) {
+      const px = player.x;
+      const py = player.y - 12; // chest level
+      const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
+      const size = Phaser.Math.Between(4, 10);
+      const spark = this.add.rectangle(px, py, size, size, sparkColor);
+      spark.setBlendMode(Phaser.BlendModes.ADD);
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Phaser.Math.Between(50, 250);
+      const targetX = px + Math.cos(angle) * speed * 0.6;
+      const targetY = py + Math.sin(angle) * speed * 0.6 - 20;
+
+      this.tweens.add({
+        targets: spark,
+        x: targetX,
+        y: targetY,
+        alpha: 0,
+        scale: 0.2,
+        angle: Phaser.Math.Between(-180, 180),
+        duration: Phaser.Math.Between(600, 1200),
+        ease: 'Quad.easeOut',
+        onComplete: () => spark.destroy()
+      });
+    }
+
+    // 3. Lightning Strike (400ms delay)
+    this.time.delayedCall(400, () => {
+      if (!player.active) return;
+
+      this.gameAudio?.playLightningStrike();
+      this.cameras.main.flash(450, 220, 240, 255);
+      this.cameras.main.shake(600, 0.015);
+
+      const lightning = this.add.graphics();
+      lightning.setDepth(player.depth + 10);
+
+      const startX = player.x + Phaser.Math.Between(-60, 60);
+      const startY = this.cameras.main.scrollY;
+      const endX = player.x;
+      const endY = player.y - 10;
+
+      const drawBolt = (g: Phaser.GameObjects.Graphics, styleColor: number, width: number, alpha: number) => {
+        g.lineStyle(width, styleColor, alpha);
+        g.beginPath();
+        g.moveTo(startX, startY);
+
+        let currentX = startX;
+        let currentY = startY;
+        const steps = 12;
+        const distY = (endY - startY) / steps;
+
+        for (let j = 1; j < steps; j++) {
+          const targetY = startY + j * distY;
+          const targetX = currentX + Phaser.Math.Between(-35, 35) + (endX - currentX) * 0.15;
+          g.lineTo(targetX, targetY);
+          currentX = targetX;
+          currentY = targetY;
+        }
+
+        g.lineTo(endX, endY);
+        g.strokePath();
+      };
+
+      const style = { color1: 0xffffff, color2: 0x90d0ff };
+      drawBolt(lightning, style.color2, 10, 0.45);
+      drawBolt(lightning, style.color1, 4, 1.0);
+
+      // Ground blast smoke
+      for (let i = 0; i < 15; i++) {
+        const smX = player.x + Phaser.Math.Between(-25, 25);
+        const smY = player.y + 25 + Phaser.Math.Between(-5, 5);
+        const size = Phaser.Math.Between(8, 20);
+        const smoke = this.add.rectangle(smX, smY, size, size, 0xaaaaaa);
+        smoke.setAlpha(0.6);
+        this.tweens.add({
+          targets: smoke,
+          x: smX + Phaser.Math.Between(-40, 40),
+          y: smY - Phaser.Math.Between(10, 40),
+          alpha: 0,
+          scale: 1.5,
+          duration: Phaser.Math.Between(800, 1400),
+          ease: 'Sine.easeOut',
+          onComplete: () => smoke.destroy()
+        });
+      }
+
+      this.tweens.add({
+        targets: lightning,
+        alpha: 0,
+        duration: 350,
+        onComplete: () => lightning.destroy()
+      });
+    });
+
+    // 4. Ash Disintegration (900ms delay)
+    this.time.delayedCall(900, () => {
+      if (!player.active) return;
+
+      this.tweens.add({
+        targets: player,
+        alpha: 0,
+        duration: 3000,
+        ease: 'Linear',
+        onComplete: () => {
+          player.setVisible(false);
+        }
+      });
+
+      // Spawn ash particles stream over 3 seconds
+      this.time.addEvent({
+        delay: 50,
+        repeat: 60,
+        callback: () => {
+          if (!player.active) return;
+
+          const px = player.x + Phaser.Math.Between(-24, 24);
+          const py = player.y + Phaser.Math.Between(-35, 35);
+
+          const targetX = px + Phaser.Math.Between(20, 90);
+          const targetY = py - Phaser.Math.Between(60, 150);
+
+          const isEmber = Math.random() < 0.25;
+          const color = isEmber ? 0xff4411 : 0x2e2e30;
+          const size = Phaser.Math.Between(3, 8);
+
+          const particle = this.add.rectangle(px, py, size, size, color);
+          if (isEmber) {
+            particle.setBlendMode(Phaser.BlendModes.ADD);
+          }
+
+          this.tweens.add({
+            targets: particle,
+            x: targetX,
+            y: targetY,
+            alpha: 0,
+            scale: 0.1,
+            angle: Phaser.Math.Between(-90, 90),
+            duration: Phaser.Math.Between(1200, 2200),
+            ease: 'Sine.easeOut',
+            onComplete: () => particle.destroy()
+          });
+        }
+      });
+    });
+
+    // 5. Final Fade out and Restart (4.5s total delay)
+    this.time.delayedCall(4500, () => {
+      this.cameras.main.fade(1000, 6, 4, 12);
+      this.time.delayedCall(1000, () => {
+        const saveData = loadGame();
+        if (saveData && saveData.currentScene && saveData.currentScene !== this.scene.key) {
+          this.scene.start(saveData.currentScene, {
+            startPos: { x: saveData.playerX, y: saveData.playerY },
+            cardsCollected: saveData.cardsCollected,
+            mechaUnlocked: saveData.mechaUnlocked,
+            dragonUnlocked: saveData.dragonUnlocked
+          });
+        } else {
+          this.scene.restart({
+            startPos: saveData ? { x: saveData.playerX, y: saveData.playerY } : undefined,
+            cardsCollected: saveData?.cardsCollected || [],
+            mechaUnlocked: saveData?.mechaUnlocked || false,
+            dragonUnlocked: saveData?.dragonUnlocked || false
+          });
+        }
+      });
+    });
+  }
+
+  private triggerBossIntro(): void {
+    this.bossIntroTriggered = true;
+    this.isCutsceneActive = true;
+    this.physics.world.pause();
+    this.player.setInputEnabled(false);
+    this.player.setVelocity(0, 0);
+
+    // Stop Level 2 BGM, start Boss BGM
+    this.gameAudio?.stopBGM();
+    this.gameAudio?.playBGM(4);
+
+    const cam = this.cameras.main;
+    cam.stopFollow();
+
+    cam.flash(500, 200, 0, 0);
+    cam.shake(200, 0.005);
+
+    this.tweens.add({
+      targets: cam,
+      scrollX: 6880 - cam.width / 2,
+      duration: 1200,
+      ease: 'Cubic.easeInOut',
+      onComplete: () => {
+        const bannerBg = this.add.rectangle(cam.scrollX + cam.width / 2, 240, cam.width, 100, 0x000000, 0.8)
+          .setDepth(600)
+          .setAlpha(0);
+        const borderTop = this.add.rectangle(cam.scrollX + cam.width / 2, 190, cam.width, 2, 0xff3300)
+          .setDepth(601)
+          .setAlpha(0);
+        const borderBottom = this.add.rectangle(cam.scrollX + cam.width / 2, 290, cam.width, 2, 0xff3300)
+          .setDepth(601)
+          .setAlpha(0);
+        const titleText = this.add.text(cam.scrollX + cam.width / 2, 240, t('boss.eliteName') || 'DRACONEL BASTION', {
+          fontSize: '20px',
+          fontFamily: 'monospace',
+          color: '#ff3300',
+          stroke: '#000000',
+          strokeThickness: 3
+        }).setOrigin(0.5).setDepth(602).setAlpha(0);
+
+        this.tweens.add({
+          targets: [bannerBg, borderTop, borderBottom, titleText],
+          alpha: 1,
+          duration: 500,
+          yoyo: true,
+          hold: 1400,
+          onComplete: () => {
+            bannerBg.destroy();
+            borderTop.destroy();
+            borderBottom.destroy();
+            titleText.destroy();
+
+            this.tweens.add({
+              targets: cam,
+              scrollX: this.player.x - cam.width / 2,
+              duration: 1000,
+              ease: 'Cubic.easeInOut',
+              onComplete: () => {
+                cam.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
+                this.isCutsceneActive = false;
+                this.physics.world.resume();
+                this.player.setInputEnabled(true);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  private triggerBossDeathCinematic(eliteBoss: EliteMecha, originalDie: () => void): void {
+    this.isCutsceneActive = true;
+    this.physics.world.pause();
+    this.player.setInputEnabled(false);
+    this.player.setVelocity(0, 0);
+
+    this.gameAudio?.stopBGM();
+    this.cameras.main.stopFollow();
+    this.cameras.main.shake(1200, 0.012);
+
+    this.tweens.add({
+      targets: this.cameras.main,
+      scrollX: eliteBoss.x - this.cameras.main.width / 2,
+      duration: 600,
+      ease: 'Power2',
+      onComplete: () => {
+        originalDie();
+
+        this.time.delayedCall(1600, () => {
+          this.gameAudio?.playCoreCollect();
+
+          const cam = this.cameras.main;
+          const bannerBg = this.add.rectangle(cam.scrollX + cam.width / 2, 240, cam.width, 100, 0x000000, 0.8)
+            .setDepth(600)
+            .setAlpha(0);
+          const borderTop = this.add.rectangle(cam.scrollX + cam.width / 2, 190, cam.width, 2, 0x00d2d3)
+            .setDepth(601)
+            .setAlpha(0);
+          const borderBottom = this.add.rectangle(cam.scrollX + cam.width / 2, 290, cam.width, 2, 0x00d2d3)
+            .setDepth(601)
+            .setAlpha(0);
+          const titleText = this.add.text(cam.scrollX + cam.width / 2, 240, t('boss.defeated') || 'DRACONEL DEFEATED', {
+            fontSize: '22px',
+            fontFamily: 'monospace',
+            color: '#00d2d3',
+            stroke: '#000000',
+            strokeThickness: 3
+          }).setOrigin(0.5).setDepth(602).setAlpha(0);
+
+          this.tweens.add({
+            targets: [bannerBg, borderTop, borderBottom, titleText],
+            alpha: 1,
+            duration: 600,
+            yoyo: true,
+            hold: 2000,
+            onComplete: () => {
+              bannerBg.destroy();
+              borderTop.destroy();
+              borderBottom.destroy();
+              titleText.destroy();
+
+              this.tweens.add({
+                targets: cam,
+                scrollX: this.player.x - cam.width / 2,
+                duration: 1000,
+                ease: 'Cubic.easeInOut',
+                onComplete: () => {
+                  cam.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
+                  this.isCutsceneActive = false;
+                  this.physics.world.resume();
+                  this.player.setInputEnabled(true);
+                  this.gameAudio?.playBGM(2);
+                }
+              });
+            }
+          });
+        });
+      }
     });
   }
 }

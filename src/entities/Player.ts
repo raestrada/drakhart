@@ -43,7 +43,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private animTimer = 0;
   private animFrame = 0;
-  private animState: 'idle' | 'walk' | 'jump' | 'dragon' = 'idle';
+  public animState: 'idle' | 'walk' | 'jump' | 'dragon' | 'kneeling' = 'idle';
 
   // Game feel / juice state variables
   private wasOnGround = true;
@@ -64,6 +64,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'player-human');
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setDepth(10); // Ensure player renders on top of altar
 
     this.setScale(0.8);
     this.setCollideWorldBounds(true);
@@ -148,7 +149,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       if (body) {
         body.setVelocity(0, 0);
       }
-      this.animState = 'idle';
+      if (this.animState !== 'kneeling') {
+        this.animState = 'idle';
+      }
       this.updateAnimation(delta);
       this.updateJuice(delta);
       this.updateVisorGlowPosition();
@@ -380,6 +383,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private updateAnimation(delta: number): void {
     this.animTimer += delta;
+
+    if (this.animState === 'kneeling') {
+      const isMecha = this.formMachine.isMecha();
+      this.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
+      return;
+    }
 
     if (this.formMachine.state === FormState.DRAGON) {
       const body = this.body as Phaser.Physics.Arcade.Body;

@@ -13,6 +13,7 @@ import { ShmupSystem } from '../systems/ShmupSystem';
 import { TarotSystem } from '../systems/TarotSystem';
 import { saveGame, loadGame } from '../systems/SaveSystem';
 import { CrumblingPlatform } from '../entities/CrumblingPlatform';
+import { SaveAltar } from '../entities/SaveAltar';
 import {
   spawnHitParticles,
   spawnTransformParticles,
@@ -82,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private ashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
 
   private pendingMechaUnlock = false;
+  private pendingDragonUnlock = false;
   private pendingSpawnX = 100;
   private pendingSpawnY = 650;
   private pendingCardsToCollect: string[] = [];
@@ -92,7 +94,7 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[]; mechaUnlocked?: boolean }): void {
+  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[]; mechaUnlocked?: boolean; dragonUnlocked?: boolean }): void {
     if (data) {
       if (data.startPos) {
         this.pendingSpawnX = data.startPos.x;
@@ -101,8 +103,11 @@ export class GameScene extends Phaser.Scene {
       if (data.cardsCollected) {
         this.pendingCardsToCollect = data.cardsCollected;
       }
-      if (data.mechaUnlocked) {
+      if (data.mechaUnlocked !== undefined) {
         this.pendingMechaUnlock = data.mechaUnlocked;
+      }
+      if (data.dragonUnlocked !== undefined) {
+        this.pendingDragonUnlock = data.dragonUnlocked;
       }
     }
   }
@@ -137,15 +142,11 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    const saveData = loadGame();
-    if (saveData) {
-      this.restoreSave(saveData);
-    }
-
     this.createPlayer();
     this.player.tarotSystem = this.tarotSystem;
     this.player.setPosition(this.pendingSpawnX, this.pendingSpawnY);
     if (this.pendingMechaUnlock) this.player.formMachine.unlockTransform();
+    if (this.pendingDragonUnlock) this.player.formMachine.unlockDragon();
 
     this.createEnemies();
     this.createDragonCore();
@@ -1360,9 +1361,11 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fade(1000, 0, 0, 0);
 
     this.time.delayedCall(1000, () => {
-      this.scene.start('GameScene2', {
+      this.scene.start('TransitionScene12', {
+        startPos: { x: 150, y: 650 },
         cardsCollected: this.tarotSystem.collectedCards,
-        mechaUnlocked: true
+        mechaUnlocked: this.player.formMachine.isMechaUnlocked(),
+        dragonUnlocked: this.player.formMachine.isDragonUnlocked()
       });
     });
   }
@@ -1428,7 +1431,7 @@ export class GameScene extends Phaser.Scene {
       if (this.player.y > LEVEL_HEIGHT + 60) {
         this.player.takeDamage(100, 0);
       }
-      if (this.player.x >= 7900) {
+      if (this.player.x >= 7950) {
         this.transitionToLevel2();
       }
     }
@@ -2000,7 +2003,22 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(4500, () => {
       this.cameras.main.fade(1000, 6, 4, 12);
       this.time.delayedCall(1000, () => {
-        this.scene.restart();
+        const saveData = loadGame();
+        if (saveData && saveData.currentScene && saveData.currentScene !== this.scene.key) {
+          this.scene.start(saveData.currentScene, {
+            startPos: { x: saveData.playerX, y: saveData.playerY },
+            cardsCollected: saveData.cardsCollected,
+            mechaUnlocked: saveData.mechaUnlocked,
+            dragonUnlocked: saveData.dragonUnlocked
+          });
+        } else {
+          this.scene.restart({
+            startPos: saveData ? { x: saveData.playerX, y: saveData.playerY } : undefined,
+            cardsCollected: saveData?.cardsCollected || [],
+            mechaUnlocked: saveData?.mechaUnlocked || false,
+            dragonUnlocked: saveData?.dragonUnlocked || false
+          });
+        }
       });
     });
   }

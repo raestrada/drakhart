@@ -4,6 +4,18 @@
 
 **Dark pixel art with modern rendering techniques.** The pixel art is authentic (nearest-neighbor scaling, limited palettes) but the engine applies dynamic lighting, particles, ADD blend glows, vignette, and screen effects to create depth and atmosphere beyond what retro hardware could achieve.
 
+### Technology Style Contrast
+The world is defined by a stark visual clash between two distinct types of technology:
+1. **Forgotten Biomechanical Dragon Magic (Player)**:
+   - *Aesthetic*: Art Nouveau curves, organic skeletal fusions of bone and steel, polished white bone textures, and glowing magical energy conduits.
+   - *Forms*: The Warden's transformed Mecha and Dragon states show exposed, skeletal white dragon bones, bound by gold-trimmed plates and powered by the pulsing crimson-red Dragon Core.
+   - *FX*: Swelling magical swells, glowing red/orange embers, and volumetric light sweeps.
+2. **Modern Industrial Brutalist Military (Enemies)**:
+   - *Aesthetic*: Blocky shapes, sharp angles, mass-produced machinery, heavy riveted dark iron, hazard warning stripes, treadmills/treads, hydraulic cylinders, and smoke exhaust pipes.
+   - *Forces*: The Iron Guards and Elite Mechas resemble classic *MechWarrior* armor, showing heavy militaristic, industrial power that rejects and suppresses the old magic.
+   - *FX*: Dark diesel/steam smoke clouds, physical sparks, and harsh red visors/sensors.
+
+
 ## Color Palette
 
 ### Global Palette (32 colors)
@@ -53,7 +65,10 @@ Each zone shifts the environmental palette slightly:
 | Human Warrior | 48×72 px | 4 (idle×2, walk×2) | Green armor, visor glow |
 | Mecha | TBD | TBD (planned 2 idle, 2 walk) | Larger, heavier silhouette |
 | Dragon Draconel | 96×72 px | 3 (fly×2, neutral) | Wings animate, head on right |
-| Sentinel | 32×32 px | 1 | Floating crystal |
+| Iron Scout Drone | 32×32 px | 1 | Floating scout drone, side-view |
+| Iron Defender | 32×32 px | 1 | Shield biped mecha, side-view |
+| Iron Mortar Sentry | 32×32 px | 1 | Tracked mortar turret, side-view |
+| Iron Hopper | 32×32 px | 1 | Booster scout hopper, side-view |
 | Iron Guard | 48×64 px | 1 (planned 2) | Heavy mecha |
 | Sky Hunter | 24×16 px | 1 | Small drone |
 | Boss 1 | 128×128 px | 1 | Corrupted Draconel |

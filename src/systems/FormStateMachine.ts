@@ -71,6 +71,19 @@ export class FormStateMachine {
     return this.dragonUnlocked;
   }
 
+  isMecha(): boolean {
+    return this.currentState === FormState.MECHA;
+  }
+
+  isMechaUnlocked(): boolean {
+    return this.transformUnlocked;
+  }
+
+  isDragonUnlocked(): boolean {
+    return this.dragonUnlocked;
+  }
+
+
   requestTransform(): void {
     if (!this.canTransform) return;
 

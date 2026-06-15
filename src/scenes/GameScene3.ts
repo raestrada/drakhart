@@ -10,6 +10,7 @@ import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles } from '../effects/Particles';
+import { SaveAltar } from '../entities/SaveAltar';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -26,7 +27,7 @@ interface PlatformDef {
 }
 
 interface WaveEnemyDef {
-  type: 'sky-hunter' | 'bone-serpent' | 'spitter';
+  type: 'sky-hunter' | 'bone-serpent' | 'spitter' | 'seeker-drone' | 'mine-dropper' | 'gunship';
   x: number; // offset from wave triggerX
   y: number;
   speedX?: number;
@@ -49,6 +50,15 @@ export class GameScene3 extends Phaser.Scene {
   private boss: Boss | null = null;
   private tarotSystem!: TarotSystem;
 
+  private laserGates: LaserGate[] = [];
+  private laserBeams!: Phaser.Physics.Arcade.StaticGroup;
+  private steamPipes: SteamPipeHazard[] = [];
+  private pistons!: Phaser.Physics.Arcade.Group;
+  private lastLaserDamageTime = 0;
+  private lastSteamDamageTime = 0;
+  private lastPistonDamageTime = 0;
+  private windLines!: Phaser.GameObjects.Graphics;
+
   private bgGorgeSky!: Phaser.GameObjects.TileSprite;
   private bgGorgeWalls!: Phaser.GameObjects.TileSprite;
   private bgGorgeStructures!: Phaser.GameObjects.TileSprite;
@@ -62,6 +72,11 @@ export class GameScene3 extends Phaser.Scene {
   private playerScreenX = 200; // start 200px from left
   private playerScreenY = 400; // start center vertical
 
+
+  private shmupStarted = false;
+  private warningTriggered = false;
+  private pendingMechaUnlock = true;
+  private pendingDragonUnlock = true;
 
   private waves: WaveDef[] = [];
   private spawnedWaves = new Set<number>();
@@ -83,7 +98,7 @@ export class GameScene3 extends Phaser.Scene {
     super({ key: 'GameScene3' });
   }
 
-  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[] }): void {
+  init(data?: { startPos?: { x: number; y: number }; cardsCollected?: string[]; mechaUnlocked?: boolean; dragonUnlocked?: boolean }): void {
     if (data) {
       if (data.startPos) {
         this.pendingSpawnX = data.startPos.x;
@@ -91,6 +106,12 @@ export class GameScene3 extends Phaser.Scene {
       }
       if (data.cardsCollected) {
         this.pendingCardsToCollect = data.cardsCollected;
+      }
+      if (data.mechaUnlocked !== undefined) {
+        this.pendingMechaUnlock = data.mechaUnlocked;
+      }
+      if (data.dragonUnlocked !== undefined) {
+        this.pendingDragonUnlock = data.dragonUnlocked;
       }
     }
   }
@@ -117,6 +138,16 @@ export class GameScene3 extends Phaser.Scene {
       this.gameAudio.stopBGM();
     });
 
+    // Initialize groups & arrays before creating levels
+    this.enemies = this.physics.add.group();
+    this.laserBeams = this.physics.add.staticGroup();
+    this.pistons = this.physics.add.group();
+    this.laserGates = [];
+    this.steamPipes = [];
+
+    this.windLines = this.add.graphics();
+    this.windLines.setDepth(10);
+
     this.createParallax();
     this.createLevel();
     this.createInteractiveObjects();
@@ -132,17 +163,14 @@ export class GameScene3 extends Phaser.Scene {
     this.createPlayer();
     this.player.tarotSystem = this.tarotSystem;
     
-    // Force player immediately into Dragon form
-    this.player.formMachine.unlockTransform();
-    this.player.formMachine.unlockDragon();
-    (this.player.formMachine as any).enterDragon();
+    if (this.pendingMechaUnlock) this.player.formMachine.unlockTransform();
+    if (this.pendingDragonUnlock) this.player.formMachine.unlockDragon();
     this.player.formMachine.energy.addEnergy(100); // start full
 
     this.player.setPosition(this.pendingSpawnX, this.pendingSpawnY);
     this.playerScreenX = this.pendingSpawnX;
     this.playerScreenY = this.pendingSpawnY;
 
-    this.enemies = this.physics.add.group();
     this.buildWaves();
     this.setupCamera();
     this.setupCollisions();
@@ -194,31 +222,10 @@ export class GameScene3 extends Phaser.Scene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
+    // Ceiling and floor boundaries to lock player in the gorge corridor
     const platforms: PlatformDef[] = [
-      // === CEILINGS (0 to 8000) ===
       { x: 0, y: 0, width: 8000, height: 96, texture: 'tile-lava-ground' },
-
-      // === FLOORS (0 to 8000) ===
-      { x: 0, y: 704, width: 8000, height: 96, texture: 'tile-lava-ground' },
-
-      // === SECTION 1: Narrow Gorge Entry (0-2000) ===
-      // Clear path initially. First obstacle appears at 1800.
-      { x: 1800, y: 350, width: 160, height: 120, texture: 'tile-lava-ground' },
-
-      // === SECTION 2: Refinery Maze (2000-4500) ===
-      { x: 2200, y: 300, width: 256, height: 96, texture: 'tile-lava-ground' },
-      { x: 2600, y: 96, width: 160, height: 256, texture: 'tile-lava-ground' }, // top divider wall
-      { x: 2600, y: 450, width: 160, height: 254, texture: 'tile-lava-ground' }, // bottom divider wall
-      { x: 3100, y: 200, width: 192, height: 96, texture: 'tile-lava-ground' },
-      { x: 3500, y: 450, width: 192, height: 96, texture: 'tile-lava-ground' },
-      { x: 4000, y: 300, width: 256, height: 120, texture: 'tile-lava-ground' },
-
-      // === SECTION 3: Obsidian Gates (4500-6800) ===
-      { x: 4600, y: 96, width: 192, height: 300, texture: 'tile-lava-ground' },
-      { x: 5000, y: 400, width: 192, height: 304, texture: 'tile-lava-ground' },
-      { x: 5400, y: 280, width: 256, height: 120, texture: 'tile-lava-ground' },
-      { x: 5900, y: 96, width: 160, height: 300, texture: 'tile-lava-ground' },
-      { x: 6300, y: 400, width: 160, height: 304, texture: 'tile-lava-ground' },
+      { x: 0, y: 704, width: 8000, height: 96, texture: 'tile-lava-ground' }
     ];
 
     platforms.forEach((p) => {
@@ -231,6 +238,49 @@ export class GameScene3 extends Phaser.Scene {
           this.platforms.create(tx + tileW / 2, ty + tileH / 2, textureKey);
         }
       }
+    });
+
+    // Spawn Steam Pipes
+    const steamLocs = [
+      { x: 1200, isCeiling: true },
+      { x: 2000, isCeiling: false },
+      { x: 2800, isCeiling: true },
+      { x: 3800, isCeiling: false },
+      { x: 4600, isCeiling: true },
+      { x: 5400, isCeiling: false },
+      { x: 6200, isCeiling: true }
+    ];
+    steamLocs.forEach((loc) => {
+      const pipeY = loc.isCeiling ? 96 : 704;
+      const pipe = new SteamPipeHazard(this, loc.x, pipeY, loc.isCeiling);
+      this.steamPipes.push(pipe);
+    });
+
+    // Spawn Pistons
+    const pistonLocs = [
+      { x: 1600, isCeiling: true },
+      { x: 2200, isCeiling: false },
+      { x: 3200, isCeiling: true },
+      { x: 3200, isCeiling: false },
+      { x: 4200, isCeiling: true },
+      { x: 4800, isCeiling: false },
+      { x: 5800, isCeiling: true },
+      { x: 5800, isCeiling: false }
+    ];
+    pistonLocs.forEach((loc) => {
+      const pipeY = loc.isCeiling ? 96 : 704;
+      const piston = new PistonHazard(this, loc.x, pipeY, loc.isCeiling);
+      this.pistons.add(piston);
+    });
+
+    // Spawn Laser Gates
+    const laserGateXs = [2500, 3600, 4500, 5200, 6000, 6600];
+    laserGateXs.forEach((x) => {
+      const gate = new LaserGate(this, x);
+      this.laserGates.push(gate);
+      this.laserBeams.add(gate.beam);
+      this.enemies.add(gate.nodeTop);
+      this.enemies.add(gate.nodeBottom);
     });
   }
 
@@ -271,69 +321,117 @@ export class GameScene3 extends Phaser.Scene {
   private buildWaves(): void {
     this.waves = [
       {
+        triggerX: 1400,
+        enemies: [
+          { type: 'seeker-drone', x: 0, y: 200 },
+          { type: 'seeker-drone', x: 100, y: 400 },
+          { type: 'seeker-drone', x: 200, y: 600 }
+        ]
+      },
+      {
         triggerX: 1800,
         enemies: [
-          { type: 'sky-hunter', x: 0, y: 250, speedX: -100, pattern: 'sine' },
-          { type: 'sky-hunter', x: 80, y: 300, speedX: -100, pattern: 'sine' },
-          { type: 'sky-hunter', x: 160, y: 350, speedX: -100, pattern: 'sine' },
+          { type: 'mine-dropper', x: 0, y: 140 },
+          { type: 'sky-hunter', x: 100, y: 300, speedX: -110 },
+          { type: 'sky-hunter', x: 200, y: 500, speedX: -110 }
         ]
       },
       {
-        triggerX: 2500,
+        triggerX: 2200,
         enemies: [
-          { type: 'bone-serpent', x: 0, y: 400, speedX: -260 },
-          { type: 'bone-serpent', x: 100, y: 200, speedX: -260 },
-          { type: 'spitter', x: 50, y: 550 }
+          { type: 'gunship', x: 0, y: 300 },
+          { type: 'bone-serpent', x: 150, y: 200, speedX: -280 },
+          { type: 'bone-serpent', x: 150, y: 500, speedX: -280 }
         ]
       },
       {
-        triggerX: 3200,
+        triggerX: 2600,
+        enemies: [
+          { type: 'seeker-drone', x: 0, y: 250 },
+          { type: 'seeker-drone', x: 80, y: 450 },
+          { type: 'mine-dropper', x: 160, y: 140 }
+        ]
+      },
+      {
+        triggerX: 3000,
         enemies: [
           { type: 'sky-hunter', x: 0, y: 200, speedX: -120 },
-          { type: 'sky-hunter', x: 60, y: 250, speedX: -120 },
-          { type: 'sky-hunter', x: 120, y: 300, speedX: -120 },
-          { type: 'sky-hunter', x: 180, y: 350, speedX: -120 }
+          { type: 'sky-hunter', x: 50, y: 300, speedX: -120 },
+          { type: 'sky-hunter', x: 100, y: 400, speedX: -120 },
+          { type: 'sky-hunter', x: 150, y: 500, speedX: -120 }
+        ]
+      },
+      {
+        triggerX: 3400,
+        enemies: [
+          { type: 'gunship', x: 0, y: 400 },
+          { type: 'seeker-drone', x: 120, y: 200 },
+          { type: 'seeker-drone', x: 200, y: 600 }
         ]
       },
       {
         triggerX: 3900,
         enemies: [
-          { type: 'spitter', x: 0, y: 150 },
-          { type: 'spitter', x: 120, y: 550 },
-          { type: 'bone-serpent', x: 200, y: 360, speedX: -300 }
+          { type: 'mine-dropper', x: 0, y: 140 },
+          { type: 'mine-dropper', x: 150, y: 140 },
+          { type: 'bone-serpent', x: 200, y: 350, speedX: -300 }
         ]
       },
       {
-        triggerX: 4600,
+        triggerX: 4300,
         enemies: [
-          { type: 'sky-hunter', x: 0, y: 220, speedX: -130, pattern: 'sine' },
-          { type: 'sky-hunter', x: 80, y: 380, speedX: -130, pattern: 'sine' },
-          { type: 'bone-serpent', x: 120, y: 300, speedX: -280 }
+          { type: 'gunship', x: 0, y: 300 },
+          { type: 'gunship', x: 200, y: 450 }
         ]
       },
       {
-        triggerX: 5300,
+        triggerX: 4700,
         enemies: [
-          { type: 'spitter', x: 0, y: 400 },
-          { type: 'sky-hunter', x: 50, y: 200, speedX: -110 },
-          { type: 'sky-hunter', x: 150, y: 500, speedX: -110 }
+          { type: 'seeker-drone', x: 0, y: 200 },
+          { type: 'seeker-drone', x: 50, y: 350 },
+          { type: 'seeker-drone', x: 100, y: 500 }
         ]
       },
       {
-        triggerX: 6000,
+        triggerX: 5100,
         enemies: [
-          { type: 'bone-serpent', x: 0, y: 200, speedX: -320 },
-          { type: 'bone-serpent', x: 80, y: 320, speedX: -320 },
-          { type: 'bone-serpent', x: 160, y: 440, speedX: -320 }
+          { type: 'mine-dropper', x: 0, y: 140 },
+          { type: 'sky-hunter', x: 100, y: 250, speedX: -120 },
+          { type: 'sky-hunter', x: 150, y: 450, speedX: -120 }
         ]
       },
       {
-        triggerX: 6600,
+        triggerX: 5500,
         enemies: [
-          { type: 'sky-hunter', x: 0, y: 250, speedX: -150, pattern: 'sine' },
-          { type: 'sky-hunter', x: 60, y: 300, speedX: -150, pattern: 'sine' },
-          { type: 'sky-hunter', x: 120, y: 350, speedX: -150, pattern: 'sine' },
-          { type: 'spitter', x: 80, y: 150 }
+          { type: 'gunship', x: 0, y: 250 },
+          { type: 'bone-serpent', x: 100, y: 400, speedX: -300 },
+          { type: 'bone-serpent', x: 200, y: 550, speedX: -300 }
+        ]
+      },
+      {
+        triggerX: 5900,
+        enemies: [
+          { type: 'seeker-drone', x: 0, y: 300 },
+          { type: 'mine-dropper', x: 100, y: 140 },
+          { type: 'gunship', x: 200, y: 400 }
+        ]
+      },
+      {
+        triggerX: 6300,
+        enemies: [
+          { type: 'sky-hunter', x: 0, y: 200, speedX: -140 },
+          { type: 'sky-hunter', x: 50, y: 320, speedX: -140 },
+          { type: 'sky-hunter', x: 100, y: 440, speedX: -140 },
+          { type: 'bone-serpent', x: 150, y: 560, speedX: -320 }
+        ]
+      },
+      {
+        triggerX: 6700,
+        enemies: [
+          { type: 'gunship', x: 0, y: 300 },
+          { type: 'seeker-drone', x: 100, y: 200 },
+          { type: 'seeker-drone', x: 100, y: 500 },
+          { type: 'mine-dropper', x: 200, y: 140 }
         ]
       }
     ];
@@ -341,7 +439,12 @@ export class GameScene3 extends Phaser.Scene {
 
   private setupCamera(): void {
     this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
-    this.cameras.main.setZoom(1.4); // CAMERA_ZOOM_DRAGON
+    if (!this.shmupStarted) {
+      this.cameras.main.setZoom(1.6);
+      this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+    } else {
+      this.cameras.main.setZoom(1.4);
+    }
   }
 
   private setupCollisions(): void {
@@ -364,17 +467,37 @@ export class GameScene3 extends Phaser.Scene {
 
     // Enemy collision deals damage and inflicts high drag/pushback penalty
     this.physics.add.collider(this.player, this.enemies, (_player, _enemy) => {
-      const enemy = _enemy as BaseEnemy;
-      if (!enemy.active || enemy.health <= 0) return;
+      const obj = _enemy as Phaser.Physics.Arcade.Sprite;
+      if (!obj.active) return;
 
+      // Check if it's a homing missile or drift mine
+      if (typeof (_enemy as any).explode === 'function') {
+        (_enemy as any).explode();
+        return;
+      }
+
+      // Check if it is a LaserGateNode
+      if (_enemy instanceof LaserGateNode) {
+        if (this.time.now - this.lastLaserDamageTime > 400) {
+          this.lastLaserDamageTime = this.time.now;
+          this.playerScreenX -= 65;
+          this.player.takeDamage(15, -1);
+        }
+        return;
+      }
+
+      const enemy = _enemy as BaseEnemy;
+      if (enemy.health <= 0) return;
+
+      const dmg = enemy.attackDamage ?? 10;
       if (this.player.formMachine.state === FormState.DRAGON) {
         // Heavy pushback to the left on hit
         this.playerScreenX -= 65;
-        this.player.takeDamage(enemy.attackDamage, -1);
+        this.player.takeDamage(dmg, -1);
       } else {
         // Warrior gets knocked back normally
         const knockDir = this.player.x < enemy.x ? -1 : 1;
-        this.player.takeDamage(enemy.attackDamage, knockDir);
+        this.player.takeDamage(dmg, knockDir);
       }
     });
 
@@ -385,6 +508,54 @@ export class GameScene3 extends Phaser.Scene {
         // Push forward boost callback
         this.playerScreenX += 90;
       });
+    });
+
+    // Bullets vs platforms
+    this.physics.add.collider(
+      this.player.combatSystem.bullets,
+      this.platforms,
+      (_bullet) => {
+        const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        b.disableBody(true, true);
+      }
+    );
+
+    // Bullets vs enemies (Standard + Custom nodes/missiles/mines)
+    this.physics.add.overlap(
+      this.player.combatSystem.bullets,
+      this.enemies,
+      (_bullet, _enemy) => {
+        const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        if (!b.active) return;
+        b.disableBody(true, true);
+
+        const target = _enemy as Phaser.Physics.Arcade.Sprite;
+        if (typeof (target as any).takeDamage === 'function') {
+          (target as any).takeDamage(this.player.combatSystem.getFireDamage());
+        } else {
+          target.destroy();
+        }
+        spawnHitParticles(this, target.x, target.y);
+      }
+    );
+
+    // Player vs Laser Beams
+    this.physics.add.overlap(this.player, this.laserBeams, () => {
+      if (this.time.now - this.lastLaserDamageTime > 400) {
+        this.lastLaserDamageTime = this.time.now;
+        this.playerScreenX -= 40; // small pushback
+        this.player.takeDamage(8, -1);
+      }
+    });
+
+    // Player vs Pistons
+    this.physics.add.collider(this.player, this.pistons, (_player, _piston) => {
+      if (this.time.now - this.lastPistonDamageTime > 500) {
+        this.lastPistonDamageTime = this.time.now;
+        this.playerScreenX -= 80; // heavy pushback
+        this.player.takeDamage(12, -1);
+        this.cameras.main.shake(150, 0.008);
+      }
     });
   }
 
@@ -450,6 +621,86 @@ export class GameScene3 extends Phaser.Scene {
     });
   }
 
+  private startShmupPhase(): void {
+    if (this.warningTriggered) return;
+    this.warningTriggered = true;
+
+    // Force player into Dragon form
+    if (this.player.formMachine.state !== FormState.DRAGON) {
+      (this.player.formMachine as any).enterDragon();
+    }
+
+    // Play warning effects
+    this.cameras.main.shake(1000, 0.01);
+    this.cameras.main.flash(500, 255, 0, 0);
+
+    // Stop follow and setup autoscroll positions
+    this.cameras.main.stopFollow();
+    this.cameras.main.setZoom(1.4);
+    
+    // Warn player banner
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const scale = this.scale.width / 800;
+
+    const bannerBg = this.add.rectangle(cx, cy, this.scale.width, 100 * scale, 0x000000, 0.8)
+      .setOrigin(0.5).setScrollFactor(0).setDepth(1000).setAlpha(0);
+    const borderTop = this.add.rectangle(cx, cy - 50 * scale, this.scale.width, 2 * scale, 0xff0000)
+      .setOrigin(0.5).setScrollFactor(0).setDepth(1001).setAlpha(0);
+    const borderBottom = this.add.rectangle(cx, cy + 50 * scale, this.scale.width, 2 * scale, 0xff0000)
+      .setOrigin(0.5).setScrollFactor(0).setDepth(1001).setAlpha(0);
+    
+    const text = this.add.text(cx, cy, t('story.warningShmup') || 'WARNING: INDUSTRIAL DEFENSE ZONE DETECTED!\nAUTOSCROLL INITIATED', {
+      fontSize: `${Math.round(16 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#ff3333',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 3
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1002).setAlpha(0);
+
+    this.tweens.add({
+      targets: [bannerBg, borderTop, borderBottom, text],
+      alpha: 1,
+      duration: 300,
+      yoyo: true,
+      hold: 2500,
+      onComplete: () => {
+        bannerBg.destroy();
+        borderTop.destroy();
+        borderBottom.destroy();
+        text.destroy();
+
+        // Enable scrolling!
+        this.scrollX = this.cameras.main.scrollX;
+        this.playerScreenX = this.player.x - this.scrollX;
+        this.playerScreenY = this.player.y;
+        this.shmupStarted = true;
+      }
+    });
+  }
+
+  private transitionToLevel2(): void {
+    if (this.demoEnded) return;
+    this.demoEnded = true;
+
+    this.player.setVelocity(0, 0);
+    if (this.player.body) {
+      (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
+    }
+
+    this.cameras.main.fade(1000, 0, 0, 0);
+
+    this.time.delayedCall(1000, () => {
+      this.scene.start('TransitionScene23', {
+        startPos: { x: 720, y: 650 },
+        cardsCollected: this.tarotSystem?.collectedCards || [],
+        mechaUnlocked: this.player.formMachine.isMechaUnlocked(),
+        dragonUnlocked: this.player.formMachine.isDragonUnlocked()
+      });
+    });
+  }
+
   update(time: number, delta: number): void {
     if (this.isCutsceneActive) return;
 
@@ -457,66 +708,98 @@ export class GameScene3 extends Phaser.Scene {
       this.gameAudio?.update(this.player.x);
     }
 
-    if (this.player.active && this.player.alive && this.player.formMachine.state === FormState.DRAGON) {
-      const dt = delta / 1000;
-
-      // 1. Autoscroll horizontal camera
-      if (!this.bossActive) {
-        this.scrollX += this.scrollSpeed * dt;
-        if (this.scrollX >= 7200) {
-          this.scrollX = 7200;
-          this.activateBoss();
+    if (!this.shmupStarted) {
+      // Quiet transition room logic
+      if (this.player.active && this.player.alive) {
+        if (this.player.x <= 80) {
+          this.transitionToLevel2();
+        }
+        if (this.player.x >= 550) {
+          this.startShmupPhase();
         }
       }
-      this.cameras.main.scrollX = this.scrollX;
-      this.cameras.main.scrollY = 0;
-
-      // 2. Read input to shift screen-relative positions
-      const speed = 260; // fly speed
       
-      // Horizontal control
-      if (this.cursors.left.isDown || this.keyA.isDown) {
-        this.playerScreenX -= speed * dt;
-      } else if (this.cursors.right.isDown || this.keyD.isDown) {
-        this.playerScreenX += speed * dt;
-      }
+      // Let the camera follow them, keep scrollX bound
+      this.scrollX = this.cameras.main.scrollX;
+    } else {
+      // Active SHMUP autoscroller phase
+      if (this.player.active && this.player.alive && this.player.formMachine.state === FormState.DRAGON) {
+        const dt = delta / 1000;
 
-      // Vertical control
-      if (this.cursors.up.isDown || this.keyW.isDown) {
-        this.playerScreenY -= speed * dt;
-      } else if (this.cursors.down.isDown || this.keyS.isDown) {
-        this.playerScreenY += speed * dt;
-      }
+        // 1. Autoscroll horizontal camera
+        if (!this.bossActive) {
+          // Accelerate speed based on scrollX: starting at 210, ending at 280 near 7200
+          const progress = Math.min(this.scrollX / 7200, 1);
+          const currentSpeed = 210 + progress * 70; // 210 to 280 px/s
+          this.scrollX += currentSpeed * dt;
+          if (this.scrollX >= 7200) {
+            this.scrollX = 7200;
+            this.activateBoss();
+          }
+        }
+        this.cameras.main.scrollX = this.scrollX;
+        this.cameras.main.scrollY = 0;
 
-      // Constrain inside viewport boundaries
-      const cam = this.cameras.main;
-      this.playerScreenX = Phaser.Math.Clamp(this.playerScreenX, 50, cam.width - 50);
-      this.playerScreenY = Phaser.Math.Clamp(this.playerScreenY, 120, 680); // bound to corridor flight height
+        // 2. Read input to shift screen-relative positions
+        const speed = 380; // fly speed
+        
+        // Horizontal control
+        if (this.cursors.left.isDown || this.keyA.isDown) {
+          this.playerScreenX -= speed * dt;
+        } else if (this.cursors.right.isDown || this.keyD.isDown) {
+          this.playerScreenX += speed * dt;
+        }
 
-      // Force player position
-      this.player.x = this.scrollX + this.playerScreenX;
-      this.player.y = this.playerScreenY;
+        // Vertical control
+        if (this.cursors.up.isDown || this.keyW.isDown) {
+          this.playerScreenY -= speed * dt;
+        } else if (this.cursors.down.isDown || this.keyS.isDown) {
+          this.playerScreenY += speed * dt;
+        }
 
-      // enforce the pushback crush/off-screen death (bypass invincibility to prevent getting stuck)
-      if (this.playerScreenX <= 55) {
-        this.player.isInvincible = false;
-        this.player.takeDamage(100, 0);
-      }
+        // Constrain inside viewport boundaries
+        const cam = this.cameras.main;
+        this.playerScreenX = Phaser.Math.Clamp(this.playerScreenX, 50, cam.width - 50);
+        this.playerScreenY = Phaser.Math.Clamp(this.playerScreenY, 120, 680); // bound to corridor flight height
 
-      // Force zero velocity during controlled flight to avoid drift
-      const body = this.player.body as Phaser.Physics.Arcade.Body;
-      if (body) {
-        body.setVelocity(0, 0);
-      }
+        // Force player position
+        this.player.x = this.scrollX + this.playerScreenX;
+        this.player.y = this.playerScreenY;
 
+        // enforce the pushback crush/off-screen death (bypass invincibility to prevent getting stuck)
+        if (this.playerScreenX <= 55) {
+          this.player.isInvincible = false;
+          this.player.takeDamage(100, 0);
+        }
 
+        // Force zero velocity during controlled flight to avoid drift
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        if (body) {
+          body.setVelocity(0, 0);
+        }
 
-    } else if (this.player.active && this.player.alive) {
-      // Reverted to human/mecha form.
-      // Self-sabotage or energy loss! Let gravity drag player body down into the void.
-      // In Level 3, falling below the corridor (y > 690) is fatal.
-      if (this.player.y > 690) {
-        this.player.takeDamage(100, 0);
+        // Draw speed wind lines
+        this.windLines.clear();
+        if (!this.bossActive) {
+          this.windLines.lineStyle(1.5, 0xffffff, 0.15);
+          const wWidth = cam.width;
+          for (let i = 0; i < 15; i++) {
+            const seed = Math.sin(i * 452.12 + this.scrollX * 0.005) * 0.5 + 0.5;
+            const xOffset = ((this.scrollX * (2.2 + i * 0.15)) % wWidth);
+            const wx = this.scrollX + wWidth - xOffset;
+            const wy = 120 + seed * (680 - 120);
+            const wlen = 40 + seed * 80;
+            this.windLines.lineBetween(wx, wy, wx + wlen, wy);
+          }
+        }
+
+      } else if (this.player.active && this.player.alive) {
+        // Reverted to human/mecha form.
+        // Self-sabotage or energy loss! Let gravity drag player body down into the void.
+        // In Level 3, falling below the corridor (y > 690) is fatal.
+        if (this.player.y > 690) {
+          this.player.takeDamage(100, 0);
+        }
       }
     }
 
@@ -526,8 +809,38 @@ export class GameScene3 extends Phaser.Scene {
     this.updateBulletCleanup();
     this.updateEmbers(delta);
     
+    // Update active steam pipes & check steam hits
+    this.steamPipes.forEach((pipe) => {
+      pipe.update(time, delta);
+      if (pipe.isSteamActive() && this.player && this.player.active && this.player.alive && this.shmupStarted) {
+        const dx = Math.abs(this.player.x - pipe.x);
+        if (dx < 20) {
+          const inRange = pipe.isCeiling 
+            ? (this.player.y >= pipe.y && this.player.y <= pipe.y + 180)
+            : (this.player.y <= pipe.y && this.player.y >= pipe.y - 180);
+          if (inRange) {
+            if (this.time.now - this.lastSteamDamageTime > 300) {
+              this.lastSteamDamageTime = this.time.now;
+              this.playerScreenX -= 30;
+              this.player.takeDamage(5, -1);
+              // Spawn steam hit sparks
+              const spark = this.add.rectangle(this.player.x, this.player.y, 4, 4, 0xff7f50);
+              this.tweens.add({ targets: spark, alpha: 0, scale: 2, duration: 200, onComplete: () => spark.destroy() });
+            }
+          }
+        }
+      }
+    });
+
+    // Update laser gates
+    this.laserGates.forEach((gate) => {
+      gate.update();
+    });
+
     // Spawn SHMUP enemy waves
-    this.updateWaves();
+    if (this.shmupStarted) {
+      this.updateWaves();
+    }
   }
 
   private updateParallax(): void {
@@ -699,12 +1012,26 @@ export class GameScene3 extends Phaser.Scene {
         enemy = new SpitterEnemy(this, spawnX, spawnY, this.player);
         (enemy.body as Phaser.Physics.Arcade.Body).allowGravity = false;
         (enemy.body as Phaser.Physics.Arcade.Body).setImmovable(true);
+      } else if (def.type === 'seeker-drone') {
+        enemy = new SeekerDrone(this, spawnX, spawnY, this.player);
+      } else if (def.type === 'mine-dropper') {
+        enemy = new MineDropper(this, spawnX, spawnY, this.player);
+      } else if (def.type === 'gunship') {
+        enemy = new HeavyGunship(this, spawnX, spawnY, this.player);
       }
 
       if (enemy) {
         this.enemies.add(enemy);
       }
     });
+  }
+
+  public addEnemyObject(obj: Phaser.Physics.Arcade.Sprite): void {
+    this.enemies.add(obj);
+  }
+
+  public addPickupObject(obj: Phaser.Physics.Arcade.Sprite): void {
+    this.energyPickups.add(obj);
   }
 
   private activateBoss(): void {
@@ -1006,11 +1333,22 @@ export class GameScene3 extends Phaser.Scene {
         this.time.delayedCall(3000, () => {
           this.cameras.main.fade(1000, 6, 4, 12);
           this.time.delayedCall(1000, () => {
-            this.scene.restart({
-              cardsCollected: this.tarotSystem?.collectedCards || [],
-              mechaUnlocked: true,
-              dragonUnlocked: true
-            });
+            const saveData = loadGame();
+            if (saveData && saveData.currentScene && saveData.currentScene !== this.scene.key) {
+              this.scene.start(saveData.currentScene, {
+                startPos: { x: saveData.playerX, y: saveData.playerY },
+                cardsCollected: saveData.cardsCollected,
+                mechaUnlocked: saveData.mechaUnlocked,
+                dragonUnlocked: saveData.dragonUnlocked
+              });
+            } else {
+              this.scene.restart({
+                startPos: saveData ? { x: saveData.playerX, y: saveData.playerY } : undefined,
+                cardsCollected: saveData?.cardsCollected || [],
+                mechaUnlocked: saveData?.mechaUnlocked || false,
+                dragonUnlocked: saveData?.dragonUnlocked || false
+              });
+            }
           });
         });
       }
@@ -1047,6 +1385,497 @@ export class GameScene3 extends Phaser.Scene {
         yoyo: true,
         ease: 'Linear'
       });
+    }
+  }
+}
+
+class PistonHazard extends Phaser.Physics.Arcade.Sprite {
+  private rod: Phaser.GameObjects.TileSprite;
+  public isCeiling: boolean;
+  private startY: number;
+  private travelDist: number;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, isCeiling: boolean) {
+    super(scene, x, isCeiling ? y - 48 : y + 48, 'hazard-piston');
+    this.isCeiling = isCeiling;
+    this.startY = this.y;
+    this.travelDist = 200; // punch distance
+
+    this.rod = scene.add.tileSprite(x, isCeiling ? y - 96 : y + 96, 16, 192, 'hazard-piston-rod');
+    this.rod.setOrigin(0.5, isCeiling ? 0 : 1);
+    this.rod.setDepth(this.depth - 1);
+
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setImmovable(true);
+    body.allowGravity = false;
+
+    scene.tweens.add({
+      targets: [this],
+      y: isCeiling ? this.startY + this.travelDist : this.startY - this.travelDist,
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      hold: 800,
+      repeatDelay: 800,
+      ease: 'Quad.easeInOut',
+      onUpdate: () => {
+        if (!this.active) return;
+        if (this.isCeiling) {
+          this.rod.height = this.y - y;
+        } else {
+          this.rod.height = y - this.y;
+          this.rod.y = y;
+        }
+      }
+    });
+  }
+
+  destroy(fromScene?: boolean) {
+    if (this.rod && this.rod.active) this.rod.destroy();
+    super.destroy(fromScene);
+  }
+}
+
+class LaserGateNode extends Phaser.Physics.Arcade.Sprite {
+  public health = 40;
+  public maxHealth = 40;
+  private hpBar: Phaser.GameObjects.Graphics;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    super(scene, x, y, 'hazard-laser-node');
+    scene.add.existing(this);
+    scene.physics.add.existing(this); // dynamic body
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setImmovable(true);
+    body.allowGravity = false;
+    this.hpBar = scene.add.graphics();
+    this.updateHpBar();
+  }
+
+  takeDamage(amount: number): boolean {
+    if (this.health <= 0) return false;
+    this.health -= amount;
+    this.setTint(0xff0000);
+    this.scene.time.delayedCall(80, () => { if (this.active) this.clearTint(); });
+    this.updateHpBar();
+
+    if (this.health <= 0) {
+      this.explode();
+      return true;
+    }
+    return false;
+  }
+
+  private updateHpBar() {
+    this.hpBar.clear();
+    if (this.health <= 0) return;
+    const pct = this.health / this.maxHealth;
+    this.hpBar.fillStyle(0x000000, 0.7);
+    this.hpBar.fillRect(this.x - 12, this.y - 20, 24, 4);
+    this.hpBar.fillStyle(0xff3f34, 1.0);
+    this.hpBar.fillRect(this.x - 12, this.y - 20, 24 * pct, 4);
+  }
+
+  private explode() {
+    for (let i = 0; i < 8; i++) {
+      const spark = this.scene.add.rectangle(this.x, this.y, 4, 4, 0xff7f50);
+      this.scene.physics.add.existing(spark);
+      (spark.body as Phaser.Physics.Arcade.Body).setVelocity(
+        Phaser.Math.Between(-80, 80),
+        Phaser.Math.Between(-80, 80)
+      );
+      this.scene.tweens.add({
+        targets: spark,
+        alpha: 0,
+        scale: 0.1,
+        duration: 500,
+        onComplete: () => spark.destroy()
+      });
+    }
+    this.hpBar.destroy();
+    this.destroy();
+  }
+
+  destroy(fromScene?: boolean) {
+    this.hpBar.destroy();
+    super.destroy(fromScene);
+  }
+}
+
+class LaserGate extends Phaser.GameObjects.Container {
+  public nodeTop: LaserGateNode;
+  public nodeBottom: LaserGateNode;
+  public beam: Phaser.GameObjects.TileSprite;
+  public activeBeam = true;
+
+  constructor(scene: Phaser.Scene, x: number) {
+    super(scene, x, 0);
+    scene.add.existing(this);
+
+    this.nodeTop = new LaserGateNode(scene, x, 112);
+    this.nodeBottom = new LaserGateNode(scene, x, 688);
+
+    this.beam = scene.add.tileSprite(x, 400, 16, 544, 'hazard-laser-beam');
+    this.beam.setDepth(this.nodeTop.depth - 1);
+    this.beam.setBlendMode(Phaser.BlendModes.ADD);
+
+    scene.physics.add.existing(this.beam, true);
+    
+    scene.tweens.add({
+      targets: this.beam,
+      alpha: 0.4,
+      duration: 100,
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  update() {
+    if (this.activeBeam && (!this.nodeTop.active || !this.nodeBottom.active)) {
+      this.activeBeam = false;
+      this.beam.destroy();
+      (this.scene as any).gameAudio?.playDestruction();
+    }
+  }
+}
+
+class SteamPipeHazard extends Phaser.Physics.Arcade.Sprite {
+  public isCeiling: boolean;
+  private emitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private steamActive = false;
+  private timer = 0;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, isCeiling: boolean) {
+    super(scene, x, isCeiling ? y + 16 : y - 16, 'steam-vent');
+    this.isCeiling = isCeiling;
+    if (!isCeiling) {
+      this.setFlipY(true);
+    }
+    scene.add.existing(this);
+    scene.physics.add.existing(this, true); // static body
+
+    // Steam particle emitter
+    const particles = scene.add.particles(0, 0, 'bullet-fire', {
+      x: x,
+      y: isCeiling ? this.y + 16 : this.y - 16,
+      speed: { min: 180, max: 280 },
+      angle: isCeiling ? 90 : 270,
+      scale: { start: 0.8, end: 1.8 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 600,
+      frequency: -1, // manual explosion only
+      blendMode: 'ADD',
+      tint: 0xff7f50
+    });
+    this.emitter = particles;
+    this.emitter.setDepth(this.depth - 1);
+  }
+
+  update(time: number, delta: number) {
+    this.timer += delta;
+    if (this.timer > 2000) {
+      this.timer = 0;
+      this.steamActive = !this.steamActive;
+      if (this.steamActive) {
+        this.emitter?.start();
+      } else {
+        this.emitter?.stop();
+      }
+    }
+  }
+
+  isSteamActive(): boolean {
+    return this.steamActive;
+  }
+
+  destroy(fromScene?: boolean) {
+    this.emitter?.destroy();
+    super.destroy(fromScene);
+  }
+}
+
+class SeekerDrone extends FlyingEnemy {
+  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+    super(scene, x, y, player);
+    this.setTexture('enemy-seeker-drone');
+    this.setScale(1.0);
+    this.health = 25;
+    this.maxHealth = 25;
+    this.moveSpeed = 70;
+    this.detectRange = 550;
+    this.attackRange = 450;
+    this.attackDamage = 10;
+    this.attackCooldown = 2500;
+  }
+
+  protected doAttack(): void {
+    if (!this.active || this.health <= 0) return;
+    const missile = new HomingMissile(this.scene, this.x, this.y, this.player);
+    (this.scene as GameScene3).addEnemyObject(missile);
+  }
+}
+
+class HomingMissile extends Phaser.Physics.Arcade.Sprite {
+  public health = 1;
+  private player: Player;
+  private speed = 190;
+  private turnSpeed = 0.04;
+  private vx = 0;
+  private vy = 0;
+  private lifeTimer = 0;
+  public attackDamage = 10;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+    super(scene, x, y, 'bullet-homing');
+    this.player = player;
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+    (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+    (this.body as Phaser.Physics.Arcade.Body).setSize(12, 12);
+    
+    this.vx = -this.speed;
+    this.vy = 0;
+    this.setVelocity(this.vx, this.vy);
+  }
+
+  preUpdate(time: number, delta: number) {
+    super.preUpdate(time, delta);
+    if (!this.active) return;
+
+    this.lifeTimer += delta;
+    if (this.lifeTimer > 4000) {
+      this.explode();
+      return;
+    }
+
+    const dx = this.player.x - this.x;
+    const dy = this.player.y - this.y;
+    const targetAngle = Math.atan2(dy, dx);
+    const currentAngle = Math.atan2(this.vy, this.vx);
+    const newAngle = Phaser.Math.Angle.RotateTo(currentAngle, targetAngle, this.turnSpeed);
+    
+    this.vx = Math.cos(newAngle) * this.speed;
+    this.vy = Math.sin(newAngle) * this.speed;
+
+    this.setVelocity(this.vx, this.vy);
+    this.setRotation(newAngle);
+
+    if (Math.random() < 0.4) {
+      const smoke = this.scene.add.rectangle(this.x - Math.cos(newAngle) * 8, this.y - Math.sin(newAngle) * 8, 3, 3, 0xffa502);
+      this.scene.tweens.add({
+        targets: smoke,
+        alpha: 0,
+        scale: 0.1,
+        duration: 250,
+        onComplete: () => smoke.destroy()
+      });
+    }
+  }
+
+  takeDamage(amount: number) {
+    this.health -= amount;
+    if (this.health <= 0) {
+      this.explode();
+    }
+  }
+
+  public explode() {
+    for (let i = 0; i < 4; i++) {
+      const spark = this.scene.add.rectangle(this.x, this.y, 3, 3, 0xff7f50);
+      this.scene.physics.add.existing(spark);
+      (spark.body as Phaser.Physics.Arcade.Body).setVelocity(
+        Phaser.Math.Between(-50, 50),
+        Phaser.Math.Between(-50, 50)
+      );
+      this.scene.tweens.add({
+        targets: spark,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => spark.destroy()
+      });
+    }
+    this.destroy();
+  }
+}
+
+class MineDropper extends FlyingEnemy {
+  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+    super(scene, x, y, player);
+    this.setTexture('enemy-mine-dropper');
+    this.setScale(1.0);
+    this.health = 30;
+    this.maxHealth = 30;
+    this.moveSpeed = 40;
+    this.detectRange = 600;
+    this.attackRange = 500;
+    this.attackCooldown = 1800;
+  }
+
+  preUpdate(time: number, delta: number): void {
+    if (!this.active || this.health <= 0) return;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    
+    const targetY = 140;
+    const dy = targetY - this.y;
+    body.setVelocityY(dy * 2);
+    body.setVelocityX(-this.moveSpeed);
+
+    if (time - this.lastAttackTime > this.attackCooldown) {
+      this.lastAttackTime = time;
+      this.doAttack();
+    }
+  }
+
+  protected doAttack(): void {
+    if (!this.active || this.health <= 0) return;
+    const mine = new DriftMine(this.scene, this.x, this.y + 20, this.player);
+    (this.scene as GameScene3).addEnemyObject(mine);
+  }
+}
+
+class DriftMine extends Phaser.Physics.Arcade.Sprite {
+  public health = 1;
+  private player: Player;
+  private driftSpeed = 80;
+  private lifeTimer = 0;
+  public attackDamage = 15;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+    super(scene, x, y, 'bullet-mine');
+    this.player = player;
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+    (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+    this.setVelocity(-30, this.driftSpeed);
+    
+    scene.tweens.add({
+      targets: this,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      duration: 300,
+      yoyo: true,
+      repeat: -1
+    });
+  }
+
+  preUpdate(time: number, delta: number) {
+    super.preUpdate(time, delta);
+    if (!this.active) return;
+
+    this.lifeTimer += delta;
+    if (this.lifeTimer > 6000) {
+      this.destroy();
+    }
+  }
+
+  takeDamage(amount: number) {
+    this.health -= amount;
+    if (this.health <= 0) {
+      this.explode();
+    }
+  }
+
+  public explode() {
+    (this.scene as any).gameAudio?.playDestruction();
+    
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
+    if (dist < 80) {
+      this.player.takeDamage(this.attackDamage, this.player.x < this.x ? -1 : 1);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const spark = this.scene.add.rectangle(
+        this.x + Phaser.Math.Between(-8, 8),
+        this.y + Phaser.Math.Between(-8, 8),
+        4, 4, 0xfdcb6e
+      );
+      this.scene.physics.add.existing(spark);
+      (spark.body as Phaser.Physics.Arcade.Body).setVelocity(
+        Phaser.Math.Between(-120, 120),
+        Phaser.Math.Between(-120, 120)
+      );
+      this.scene.tweens.add({
+        targets: spark,
+        alpha: 0,
+        scale: 0.1,
+        duration: 400,
+        onComplete: () => spark.destroy()
+      });
+    }
+
+    this.destroy();
+  }
+}
+
+class HeavyGunship extends FlyingEnemy {
+  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+    super(scene, x, y, player);
+    this.setTexture('enemy-gunship');
+    this.setScale(1.0);
+    this.health = 110;
+    this.maxHealth = 110;
+    this.moveSpeed = 50;
+    this.detectRange = 600;
+    this.attackRange = 500;
+    this.attackCooldown = 2000;
+    this.attackDamage = 12;
+  }
+
+  preUpdate(time: number, delta: number): void {
+    if (!this.active || this.health <= 0) return;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+
+    body.setVelocityX(-this.moveSpeed);
+    body.setVelocityY(Math.sin(time * 0.002) * 40);
+
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
+    if (dist <= this.attackRange && time - this.lastAttackTime > this.attackCooldown) {
+      this.lastAttackTime = time;
+      this.doAttack();
+    }
+  }
+
+  protected doAttack(): void {
+    if (!this.active || this.health <= 0) return;
+
+    const bulletSpeed = 220;
+    const angles = [-0.2, 0, 0.2];
+
+    angles.forEach((angleOffset) => {
+      const bullet = this.scene.physics.add.sprite(this.x - 20, this.y, 'bullet-fire');
+      bullet.setTint(0xff3300);
+      bullet.setScale(1.2);
+      bullet.setBlendMode(Phaser.BlendModes.ADD);
+
+      const body = bullet.body as Phaser.Physics.Arcade.Body;
+      body.allowGravity = false;
+
+      const dx = this.player.x - this.x;
+      const dy = this.player.y - this.y;
+      const baseAngle = Math.atan2(dy, dx);
+      const angle = baseAngle + angleOffset;
+
+      bullet.setVelocity(Math.cos(angle) * bulletSpeed, Math.sin(angle) * bulletSpeed);
+
+      this.scene.physics.add.overlap(this.player, bullet, () => {
+        if (!bullet.active) return;
+        bullet.destroy();
+        this.player.takeDamage(this.attackDamage, this.player.x < this.x ? -1 : 1);
+      });
+
+      this.scene.time.delayedCall(3000, () => {
+        if (bullet.active) bullet.destroy();
+      });
+    });
+  }
+
+  die(): void {
+    super.die();
+    for (let i = 0; i < 3; i++) {
+      const pickup = new EnergyPickup(this.scene, this.x + Phaser.Math.Between(-30, 30), this.y + Phaser.Math.Between(-30, 30));
+      (this.scene as GameScene3).addPickupObject(pickup);
     }
   }
 }

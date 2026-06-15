@@ -6,6 +6,7 @@ export interface SaveData {
   dragonUnlocked: boolean;
   playerX: number;
   playerY: number;
+  currentScene?: string;
 }
 
 export function saveGame(data: SaveData): void {

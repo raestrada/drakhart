@@ -43,6 +43,14 @@ export class GameAudio {
     { drone: 61.74, notes: [123.47, 146.83, 185.00, 246.94, 293.66, 369.99] }
   ];
 
+  // Level 4: Mini-boss energetic heavy theme chords (F#m -> D -> Bm -> C#7)
+  private chordsBoss = [
+    { drone: 92.50, notes: [185.00, 220.00, 277.18, 369.99, 440.00, 554.37] },
+    { drone: 73.42, notes: [146.83, 185.00, 220.00, 293.66, 369.99, 440.00] },
+    { drone: 61.74, notes: [123.47, 146.83, 185.00, 246.94, 293.66, 369.99] },
+    { drone: 69.30, notes: [138.59, 174.61, 207.65, 277.18, 349.23, 415.30] }
+  ];
+
   private chords = this.chordsL1;
   private currentChordIndex = 0;
   private currentLevel = 1;
@@ -115,7 +123,7 @@ export class GameAudio {
     if (this.isPlaying || !this.ctx) return;
     this.isPlaying = true;
     this.currentLevel = level;
-    this.chords = level === 3 ? this.chordsL3 : (level === 2 ? this.chordsL2 : this.chordsL1);
+    this.chords = level === 4 ? this.chordsBoss : (level === 3 ? this.chordsL3 : (level === 2 ? this.chordsL2 : this.chordsL1));
 
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -131,7 +139,8 @@ export class GameAudio {
     // Level 1: 120 BPM -> 250ms
     // Level 2: 90 BPM -> 333ms (heavy industrial stomp)
     // Level 3: 150 BPM -> 200ms (fast shmup)
-    const interval = this.currentLevel === 3 ? 200 : (this.currentLevel === 2 ? 333 : 250);
+    // Level 4: 150 BPM -> 200ms (hyper intense boss)
+    const interval = this.currentLevel === 4 ? 200 : (this.currentLevel === 3 ? 200 : (this.currentLevel === 2 ? 333 : 250));
 
     // Start beat loop
     this.bgmTimer = setInterval(() => {
@@ -208,6 +217,25 @@ export class GameAudio {
         2, 3, 4, 5, 3, 2, 1, 0
       ];
       const noteIndex = fastPattern[step];
+      if (noteIndex !== -1) {
+        this.synthesizeSHMUPSynth(chord.notes[noteIndex % chord.notes.length]);
+      }
+    } else if (this.currentLevel === 4) {
+      // Level 4: Hyper intense mini-boss theme (Fast double kicks, snare rolls, rapid square synths)
+      if (step % 2 === 0) {
+        this.synthesizeHeavyKick();
+      }
+      if (step === 4 || step === 12 || step === 14) {
+        this.synthesizeSHMUPSnare();
+      }
+      if (step % 2 === 1) {
+        this.synthesizeBGMHiHat();
+      }
+      const bossPattern = [
+        0, 2, 1, 3, 2, 4, 3, 5,
+        4, 2, 3, 1, 2, 0, 1, -1
+      ];
+      const noteIndex = bossPattern[step];
       if (noteIndex !== -1) {
         this.synthesizeSHMUPSynth(chord.notes[noteIndex % chord.notes.length]);
       }
@@ -1446,5 +1474,138 @@ export class GameAudio {
       });
       this.currentDroneGains = [];
     }
+  }
+
+  private choirGains: { gainNode: GainNode; oscillators: OscillatorNode[]; filters?: BiquadFilterNode[]; lfo?: OscillatorNode }[] = [];
+
+  public playChoirSave(): void {
+    this.init();
+    if (!this.ctx) return;
+
+    // Stop normal BGM first
+    this.stopBGM();
+
+    const t = this.ctx.currentTime;
+    // Rich detuned A-minor cathedral chords (Low A, C, E, G#, high notes)
+    const notes = [110.00, 130.81, 164.81, 207.65, 261.63, 329.63];
+
+    // Create LFO for slow vocal vowel sweeping (vowel chanting "Ooo-Ah-Ooo")
+    const lfo = this.ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.15; // 6.7s full modulation cycle
+
+    notes.forEach((freq) => {
+      const oscillators: OscillatorNode[] = [];
+      
+      // Detuned sawtooth oscillators for rich choir ensemble
+      [-5, -2, 0, 2, 5].forEach((detune) => {
+        const osc = this.ctx!.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = freq;
+        osc.detune.value = detune;
+        oscillators.push(osc);
+      });
+
+      // Formant filters to shape vocal vowel resonances ("Ah" / "Oh" / "Oo")
+      const bp1 = this.ctx!.createBiquadFilter();
+      bp1.type = 'bandpass';
+      bp1.frequency.value = 550; // "Ah" center
+      bp1.Q.value = 4.0;
+
+      const bp2 = this.ctx!.createBiquadFilter();
+      bp2.type = 'bandpass';
+      bp2.frequency.value = 850; // higher overtone
+      bp2.Q.value = 3.5;
+
+      const lp = this.ctx!.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 1000; // cut harshness
+
+      // Connect LFO to modulate bandpass filter center frequencies
+      const lfoGain1 = this.ctx!.createGain();
+      lfoGain1.gain.value = 150; // sweeps bp1 freq by +/- 150Hz (400Hz to 700Hz)
+      lfo.connect(lfoGain1);
+      lfoGain1.connect(bp1.frequency);
+
+      const lfoGain2 = this.ctx!.createGain();
+      lfoGain2.gain.value = 250; // sweeps bp2 freq by +/- 250Hz (600Hz to 1100Hz)
+      lfo.connect(lfoGain2);
+      lfoGain2.connect(bp2.frequency);
+
+      const gain = this.ctx!.createGain();
+      gain.gain.setValueAtTime(0, t);
+      // Haunting cathedral volume swell
+      gain.gain.linearRampToValueAtTime(0.09 / notes.length, t + 1.5);
+
+      oscillators.forEach((osc) => {
+        const oscGain1 = this.ctx!.createGain();
+        oscGain1.gain.value = 0.65;
+        osc.connect(oscGain1);
+        oscGain1.connect(bp1);
+
+        const oscGain2 = this.ctx!.createGain();
+        oscGain2.gain.value = 0.35;
+        osc.connect(oscGain2);
+        oscGain2.connect(bp2);
+      });
+
+      bp1.connect(lp);
+      bp2.connect(lp);
+      lp.connect(gain);
+      
+      // Connect to master BGM channel AND echo delay line for massive reverb reflections
+      gain.connect(this.bgmGainNode);
+      gain.connect(this.echoNode);
+
+      oscillators.forEach(osc => osc.start(t));
+
+      this.choirGains.push({
+        gainNode: gain,
+        oscillators: oscillators,
+        filters: [bp1, bp2, lp],
+        lfo: lfo
+      });
+    });
+
+    // Start vowel LFO sweep
+    lfo.start(t);
+
+    // Deep cathedral organ sub-bass pedals (Low A1 + D2)
+    [55.00, 73.42].forEach((freq) => {
+      const subOsc = this.ctx!.createOscillator();
+      subOsc.type = 'sine';
+      subOsc.frequency.value = freq;
+      
+      const subGain = this.ctx!.createGain();
+      subGain.gain.setValueAtTime(0, t);
+      subGain.gain.linearRampToValueAtTime(0.06, t + 1.5);
+      
+      subOsc.connect(subGain);
+      subGain.connect(this.bgmGainNode);
+      subOsc.start(t);
+
+      this.choirGains.push({
+        gainNode: subGain,
+        oscillators: [subOsc]
+      });
+    });
+  }
+
+  public stopChoirSave(): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    
+    this.choirGains.forEach((active) => {
+      try {
+        active.gainNode.gain.setValueAtTime(active.gainNode.gain.value, t);
+        active.gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        setTimeout(() => {
+          active.oscillators.forEach(osc => { try { osc.stop(); } catch(e) {} });
+          if (active.lfo) { try { active.lfo.stop(); } catch(e) {} }
+        }, 550);
+      } catch (e) {}
+    });
+
+    this.choirGains = [];
   }
 }

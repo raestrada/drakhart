@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { t, setLanguage, getLanguage } from '../i18n';
 import { TitleAudio } from '../systems/TitleAudio';
-import { clearSave } from '../systems/SaveSystem';
+import { clearSave, loadGame } from '../systems/SaveSystem';
 
 export class BootScene extends Phaser.Scene {
   private titleAudio!: TitleAudio;
@@ -249,7 +249,7 @@ export class BootScene extends Phaser.Scene {
     let transitioning = false;
 
     // Start Cinematic Title Screen sequence
-    const startCinematicTitle = () => {
+    const startCinematicTitle = (targetScene: string = 'GameScene', transitionData: any = undefined) => {
       // 1. Hide main menu UI
       menuContainer.setVisible(false);
 
@@ -328,19 +328,27 @@ export class BootScene extends Phaser.Scene {
 
         this.time.delayedCall(1200, () => {
           this.titleAudio.stop();
-          this.scene.start('GameScene');
+          this.scene.start(targetScene, transitionData);
         });
       });
     };
 
     btnNewGame.on('pointerdown', () => {
       clearSave();
-      startCinematicTitle();
+      startCinematicTitle('GameScene');
     });
 
     if (hasSave) {
       btnContinue.on('pointerdown', () => {
-        startCinematicTitle();
+        const saveData = loadGame();
+        const targetScene = saveData?.currentScene || 'GameScene';
+        const transitionData = saveData ? {
+          startPos: { x: saveData.playerX, y: saveData.playerY },
+          cardsCollected: saveData.cardsCollected,
+          mechaUnlocked: saveData.mechaUnlocked,
+          dragonUnlocked: saveData.dragonUnlocked
+        } : undefined;
+        startCinematicTitle(targetScene, transitionData);
       });
     }
   }
@@ -514,6 +522,9 @@ export class BootScene extends Phaser.Scene {
     this.drawForegroundElements();
     this.drawBackgrounds();
     this.drawParticles();
+    this.drawZone3Hazards();
+    this.drawZone3Enemies();
+    this.drawAltarSave();
   }
 
   // ═══════════════════════════════════════
@@ -546,36 +557,40 @@ export class BootScene extends Phaser.Scene {
     const g = this.make.graphics({ x: 0, y: 0 });
     const P = this.P;
     const dx = 24;
-    const dy = 24 + 10;
+    const dyBody = 24 + 10; // 34 for head/torso (lower kneeling height)
+    const dyLegs = 24;      // 24 for legs/cape/blade tip (standard floor height)
 
+    // Cape (starts at torso, hangs down to ground)
     g.fillStyle(P.wCa1);
     g.beginPath();
-    g.moveTo(10 + dx, 22 + dy);
-    g.lineTo(2 + dx, 60 + dy);
-    g.lineTo(0 + dx, 66 + dy);
-    g.lineTo(16 + dx, 60 + dy);
+    g.moveTo(10 + dx, 22 + dyBody);
+    g.lineTo(2 + dx, 60 + dyLegs);
+    g.lineTo(0 + dx, 66 + dyLegs);
+    g.lineTo(16 + dx, 60 + dyLegs);
     g.closePath(); g.fillPath();
 
     g.fillStyle(P.wCa2);
     g.beginPath();
-    g.moveTo(11 + dx, 24 + dy);
-    g.lineTo(4 + dx, 58 + dy);
-    g.lineTo(2 + dx, 63 + dy);
-    g.lineTo(16 + dx, 57 + dy);
+    g.moveTo(11 + dx, 24 + dyBody);
+    g.lineTo(4 + dx, 58 + dyLegs);
+    g.lineTo(2 + dx, 63 + dyLegs);
+    g.lineTo(16 + dx, 57 + dyLegs);
     g.closePath(); g.fillPath();
 
+    // Kneeling legs
     g.lineStyle(5, P.wSt1);
-    g.beginPath(); g.moveTo(14 + dx, 38 + dy); g.lineTo(16 + dx, 48 + dy); g.lineTo(6 + dx, 56 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(14 + dx, 38 + dyLegs); g.lineTo(16 + dx, 48 + dyLegs); g.lineTo(6 + dx, 56 + dyLegs); g.strokePath();
     g.lineStyle(4, P.wSt2);
-    g.beginPath(); g.moveTo(6 + dx, 56 + dy); g.lineTo(0 + dx, 56 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(6 + dx, 56 + dyLegs); g.lineTo(0 + dx, 56 + dyLegs); g.strokePath();
 
     g.lineStyle(5, P.wSt2);
-    g.beginPath(); g.moveTo(18 + dx, 38 + dy); g.lineTo(22 + dx, 48 + dy); g.lineTo(10 + dx, 56 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(18 + dx, 38 + dyLegs); g.lineTo(22 + dx, 48 + dyLegs); g.lineTo(10 + dx, 56 + dyLegs); g.strokePath();
     g.lineStyle(4, P.wSt3);
-    g.beginPath(); g.moveTo(10 + dx, 56 + dy); g.lineTo(4 + dx, 56 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(10 + dx, 56 + dyLegs); g.lineTo(4 + dx, 56 + dyLegs); g.strokePath();
 
+    // Torso
     const torsoX = 12 + dx;
-    const torsoY = 22 + dy;
+    const torsoY = 22 + dyBody;
     const torsoW = 16;
     const torsoH = 18;
 
@@ -606,8 +621,9 @@ export class BootScene extends Phaser.Scene {
     g.lineTo(torsoX + 3, torsoY + torsoH - 3);
     g.closePath(); g.fillPath();
 
+    // Head
     const headX = 24 + dx;
-    const headY = 16 + dy;
+    const headY = 16 + dyBody;
 
     g.fillStyle(P.wH3);
     g.beginPath(); g.moveTo(headX - 6, headY - 4); g.lineTo(headX - 14, headY - 8); g.lineTo(headX - 8, headY - 2); g.closePath(); g.fillPath();
@@ -620,10 +636,24 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(P.wBr2);
     g.beginPath(); g.moveTo(headX + 2, headY); g.lineTo(headX + 5, headY + 2); g.lineTo(headX + 3, headY + 4); g.closePath(); g.fillPath();
 
+    // Sword (Grip & Guard shifted to match torso, blade sticking into ground at dyLegs)
+    g.fillStyle(P.wBr1);
+    g.fillRect(35 + dx, 22 + dyBody, 3, 10);
+    this.circ(g, 36.5 + dx, 22 + dyBody, 2.5, P.wSt1);
+    g.fillStyle(P.wSt1);
+    g.fillRect(29 + dx, 32 + dyBody, 15, 3);
+    
+    // Blade reaches the floor perfectly
+    g.fillStyle(0xdcdde1);
+    g.fillRect(34 + dx, 35 + dyBody, 5, 24);
+    g.fillStyle(0xffffff);
+    g.fillRect(36 + dx, 35 + dyBody, 1, 24);
+
+    // Arm reaching to grab hilt
     g.lineStyle(4, P.wSt1);
-    g.beginPath(); g.moveTo(18 + dx, 24 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(22 + dx, 48 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(16 + dx, 22 + dyBody); g.lineTo(28 + dx, 26 + dyBody); g.lineTo(36 + dx, 28 + dyBody); g.strokePath();
     g.lineStyle(3, P.wSt3);
-    g.beginPath(); g.moveTo(18 + dx, 24 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(22 + dx, 46 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(16 + dx, 22 + dyBody); g.lineTo(28 + dx, 26 + dyBody); g.lineTo(35 + dx, 28 + dyBody); g.strokePath();
 
     this.tex(g, key, 96, 96);
   }
@@ -967,6 +997,22 @@ export class BootScene extends Phaser.Scene {
     this.drawEnemyMecha('em-walk-3', 0, -1, false);
 
     this.drawEnemyMecha('em-charge', 0, 1, true);
+
+    // === Elite Mecha frames (Colossal mini-boss) ===
+    this.drawEliteMecha('elite-mecha', 0, 0, 'idle'); // fallback
+    this.drawEliteMecha('elm-idle-0', 0, 0, 'idle');
+    this.drawEliteMecha('elm-idle-1', 0, -1, 'idle');
+    this.drawEliteMecha('elm-idle-2', 0, -2, 'idle');
+
+    this.drawEliteMecha('elm-walk-0', 6, 0, 'walk');
+    this.drawEliteMecha('elm-walk-1', 0, -2, 'walk');
+    this.drawEliteMecha('elm-walk-2', -6, 0, 'walk');
+    this.drawEliteMecha('elm-walk-3', 0, -2, 'walk');
+
+    this.drawEliteMecha('elm-attack', 0, 0, 'attack');
+
+    // === Refinery Cauldron (background smelt effect) ===
+    this.drawCauldron('bg-cauldron');
   }
 
   private drawEnemyMecha(
@@ -1111,6 +1157,242 @@ export class BootScene extends Phaser.Scene {
     this.tex(g, key, W, H);
   }
 
+  private drawEliteMecha(
+    key: string,
+    legShift: number,
+    bodyBob: number,
+    state: 'idle' | 'walk' | 'attack'
+  ): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const W = 128, H = 128;
+    const b = bodyBob;
+    const ls = legShift;
+    const dx = 16;
+    const dy = 8;
+
+    // --- 1. Background Leg (slender dark jointed leg) ---
+    const bHipX = 42 + dx;
+    const bHipY = 56 + dy + b;
+    const bKneeX = 30 + dx - ls * 0.5;
+    const bKneeY = 74 + dy + b;
+    const bFootX = 38 + dx - ls;
+    const bFootY = 96 + dy;
+
+    g.lineStyle(8, 0x0a0d14);
+    g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
+    g.lineStyle(5, 0x141b24);
+    g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
+    this.circ(g, bKneeX, bKneeY, 3, 0x0a0d14);
+    g.fillStyle(0x0e131b); g.fillRect(bFootX - 6, bFootY - 2, 12, 4);
+
+    // --- 2. Spine Gears (Clockwork detail at back of chassis) ---
+    const rot = (ls * 10) * Math.PI / 180;
+    const gearColor = 0x8a7015;
+    const gearX = 36 + dx;
+    const gearY = 32 + dy + b;
+    this.circ(g, gearX, gearY, 10, 0x151c22);
+    this.circ(g, gearX, gearY, 8, gearColor);
+    g.lineStyle(3, gearColor);
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+      const ta = angle + rot;
+      g.beginPath();
+      g.moveTo(gearX + Math.cos(ta) * 8, gearY + Math.sin(ta) * 8);
+      g.lineTo(gearX + Math.cos(ta) * 12, gearY + Math.sin(ta) * 12);
+      g.strokePath();
+    }
+    this.circ(g, gearX, gearY, 3, 0x0a0d14);
+
+    // --- 3. Main Torso / Heavy Chassis ---
+    g.fillStyle(0x1a222d);
+    g.beginPath();
+    g.moveTo(30 + dx, 22 + dy + b);
+    g.lineTo(76 + dx, 22 + dy + b);
+    g.lineTo(70 + dx, 58 + dy + b);
+    g.lineTo(32 + dx, 58 + dy + b);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(0x131922);
+    g.beginPath();
+    g.moveTo(34 + dx, 26 + dy + b);
+    g.lineTo(58 + dx, 26 + dy + b);
+    g.lineTo(54 + dx, 54 + dy + b);
+    g.lineTo(36 + dx, 54 + dy + b);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(0x2f3c4e);
+    g.fillRect(32 + dx, 22 + dy + b, 42, 3);
+
+    // Visor Sensor
+    g.fillStyle(0x4a0a0a);
+    g.fillRect(66 + dx, 28 + dy + b, 10, 5);
+    g.fillStyle(0xff2200);
+    g.fillRect(68 + dx, 29 + dy + b, 8, 3);
+    g.fillStyle(0xffaa66);
+    g.fillRect(73 + dx, 30 + dy + b, 2, 1);
+
+    // Magma conduits
+    g.lineStyle(3, 0xcc3300);
+    g.beginPath();
+    g.moveTo(38 + dx, 44 + dy + b);
+    g.lineTo(50 + dx, 44 + dy + b);
+    g.lineTo(54 + dx, 50 + dy + b);
+    g.strokePath();
+    g.lineStyle(1.5, 0xff7700);
+    g.beginPath();
+    g.moveTo(38 + dx, 44 + dy + b);
+    g.lineTo(50 + dx, 44 + dy + b);
+    g.lineTo(54 + dx, 50 + dy + b);
+    g.strokePath();
+
+    // Central core
+    this.circ(g, 46 + dx, 40 + dy + b, 9, 0x8a7015);
+    this.circ(g, 46 + dx, 40 + dy + b, 7, 0x0a0d14);
+    this.circ(g, 46 + dx, 40 + dy + b, 5, 0xff4400);
+    this.circ(g, 46 + dx, 40 + dy + b, 2.5, 0xffff00);
+
+    // --- 4. Shoulder Railgun ---
+    g.fillStyle(0x0e131b); g.fillRect(36 + dx, 12 + dy + b, 24, 10);
+    g.fillStyle(0x1a222d); g.fillRect(40 + dx, 14 + dy + b, 16, 6);
+    g.fillStyle(0x131922); g.fillRect(56 + dx, 15 + dy + b, 36, 4);
+    g.fillStyle(0x2f3c4e); g.fillRect(92 + dx, 13 + dy + b, 4, 8);
+    g.fillStyle(0xff7700); g.fillRect(94 + dx, 16 + dy + b, 2, 2);
+
+    // --- 5. Weapon Arm / Shield Arm ---
+    let handX = 72 + dx;
+    let handY = 52 + dy + b;
+    if (state === 'attack') {
+      handX = 96 + dx;
+      handY = 40 + dy + b;
+    }
+
+    g.lineStyle(6, 0x0e131b);
+    g.beginPath(); g.moveTo(56 + dx, 38 + dy + b); g.lineTo(handX, handY); g.strokePath();
+    g.lineStyle(4, 0x1f272e);
+    g.beginPath(); g.moveTo(56 + dx, 38 + dy + b); g.lineTo(handX, handY); g.strokePath();
+
+    if (state === 'attack') {
+      g.fillStyle(0x131922);
+      g.fillRect(handX - 4, handY - 8, 28, 16);
+      g.fillStyle(0x1a222d);
+      g.fillRect(handX + 4, handY - 5, 20, 10);
+      g.fillStyle(0xff8800);
+      g.fillRect(handX + 24, handY - 3, 4, 6);
+      
+      this.circ(g, handX + 28, handY, 14, 0xff5500);
+      this.circ(g, handX + 28, handY, 8, 0xffaa00);
+      this.circ(g, handX + 28, handY, 4, 0xffffff);
+    } else {
+      g.fillStyle(0x131922);
+      g.beginPath();
+      g.moveTo(handX - 6, handY - 4);
+      g.lineTo(handX + 12, handY + 12);
+      g.lineTo(handX + 6, handY + 28);
+      g.lineTo(handX - 12, handY + 12);
+      g.closePath(); g.fillPath();
+
+      g.fillStyle(0x1a222d);
+      g.beginPath();
+      g.moveTo(handX - 3, handY - 1);
+      g.lineTo(handX + 9, handY + 11);
+      g.lineTo(handX + 4, handY + 25);
+      g.lineTo(handX - 8, handY + 11);
+      g.closePath(); g.fillPath();
+
+      g.lineStyle(3, 0x8a7015);
+      g.beginPath(); g.moveTo(handX - 4, handY + 6); g.lineTo(handX + 2, handY + 12); g.lineTo(handX - 2, handY + 16); g.strokePath();
+    }
+
+    // --- 6. Foreground Leg (massive jointed leg with gold plating) ---
+    const fHipX = 58 + dx;
+    const fHipY = 56 + dy + b;
+    const fKneeX = 72 + dx + ls * 0.5;
+    const fKneeY = 74 + dy + b;
+    const fFootX = 64 + dx + ls;
+    const fFootY = 96 + dy;
+
+    g.lineStyle(10, 0x0a0d14);
+    g.beginPath(); g.moveTo(fHipX, fHipY); g.lineTo(fKneeX, fKneeY); g.lineTo(fFootX, fFootY); g.strokePath();
+    g.lineStyle(7, 0x27354a);
+    g.beginPath(); g.moveTo(fHipX, fHipY); g.lineTo(fKneeX, fKneeY); g.lineTo(fFootX, fFootY); g.strokePath();
+    g.lineStyle(3, 0x3d5272);
+    g.beginPath(); g.moveTo(fHipX, fHipY + 1); g.lineTo(fKneeX - 1, fKneeY - 1); g.strokePath();
+
+    this.circ(g, fKneeX, fKneeY, 5, 0x8a7015);
+    this.circ(g, fKneeX, fKneeY, 2, 0x0a0d14);
+
+    g.fillStyle(0x0a0d14); g.fillRect(fFootX - 8, fFootY - 2, 16, 4);
+    g.fillStyle(0x8a7015); g.fillRect(fFootX + 4, fFootY - 2, 4, 3);
+    g.fillStyle(0x8a7015); g.fillRect(fFootX - 8, fFootY - 2, 3, 3);
+
+    this.tex(g, key, W, H);
+  }
+
+  private drawCauldron(key: string): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const W = 96, H = 96;
+
+    g.lineStyle(4, 0x1c1f24);
+    g.beginPath(); g.moveTo(28, 0); g.lineTo(34, 40); g.strokePath();
+    g.beginPath(); g.moveTo(68, 0); g.lineTo(62, 40); g.strokePath();
+
+    g.lineStyle(2, 0x2f363f);
+    g.beginPath(); g.moveTo(28, 0); g.lineTo(34, 40); g.strokePath();
+    g.beginPath(); g.moveTo(68, 0); g.lineTo(62, 40); g.strokePath();
+
+    this.circ(g, 34, 40, 5, 0x0f1215);
+    this.circ(g, 62, 40, 5, 0x0f1215);
+
+    const cx = 48, cy = 52;
+    g.fillStyle(0x181c22);
+    g.beginPath(); g.arc(cx, cy, 22, 0, Math.PI * 2); g.closePath(); g.fillPath();
+
+    g.lineStyle(3, 0x323b47);
+    g.beginPath(); g.arc(cx, cy, 22, 0, Math.PI * 2); g.strokePath();
+
+    g.fillStyle(0x0d0f13);
+    g.beginPath(); g.arc(cx, cy, 18, 0, Math.PI * 2); g.closePath(); g.fillPath();
+
+    g.fillStyle(0xff5500);
+    g.beginPath();
+    g.arc(cx, cy, 17, Math.PI * 0.1, Math.PI * 0.9);
+    g.lineTo(cx + 15, cy + 5);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(0xffaa00);
+    g.beginPath();
+    g.arc(cx, cy + 4, 12, Math.PI * 0.1, Math.PI * 0.9);
+    g.lineTo(cx + 10, cy + 6);
+    g.closePath(); g.fillPath();
+
+    g.fillStyle(0x181c22);
+    g.beginPath();
+    g.moveTo(cx + 16, cy - 6);
+    g.lineTo(cx + 26, cy + 4);
+    g.lineTo(cx + 16, cy + 12);
+    g.closePath(); g.fillPath();
+
+    g.lineStyle(2, 0x323b47);
+    g.beginPath();
+    g.moveTo(cx + 16, cy - 6); g.lineTo(cx + 26, cy + 4); g.lineTo(cx + 16, cy + 12);
+    g.strokePath();
+
+    const streamLeft = cx + 18;
+    const streamWidth = 8;
+    g.fillStyle(0xff5500);
+    g.fillRect(streamLeft, cy + 2, streamWidth, H - (cy + 2));
+    g.fillStyle(0xffaa00);
+    g.fillRect(streamLeft + 2, cy + 2, streamWidth - 4, H - (cy + 2));
+    g.fillStyle(0xffffff);
+    g.fillRect(streamLeft + 3, cy + 6, 2, H - (cy + 6));
+
+    g.fillStyle(0x0a0c0e);
+    this.circ(g, cx - 12, cy + 12, 1.5, 0x0a0c0e);
+    this.circ(g, cx,      cy + 16, 1.5, 0x0a0c0e);
+    this.circ(g, cx + 12, cy + 12, 1.5, 0x0a0c0e);
+
+    this.tex(g, key, W, H);
+  }
+
   private drawMechaKneeling(key: string): void {
     const g = this.make.graphics({ x: 0, y: 0 });
     const P = this.P;
@@ -1176,10 +1458,37 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0x0e4428);
     g.beginPath(); g.moveTo(headX + 2, headY - 1); g.lineTo(headX + 6, headY + 1); g.lineTo(headX + 3, headY + 3); g.closePath(); g.fillPath();
 
+    // Dramatic pose: Mecha puts the massive claymore tip in the ground and holds the hilt
+    // 1. Draw the Colossal Claymore
+    // Claymore Grip/Hilt
+    g.fillStyle(P.mJo);
+    g.fillRect(38 + dx, 14 + dy, 4, 12);
+    // Pommel
+    this.circ(g, 40 + dx, 14 + dy, 3.5, P.mPl3);
+    // Guard (wide mechanical cross-guard)
+    g.fillStyle(P.mPl3);
+    g.fillRect(28 + dx, 26 + dy, 24, 4);
+    // Guard mecha runes
+    g.fillStyle(0xff0055);
+    g.fillRect(34 + dx, 27 + dy, 3, 2);
+    g.fillRect(43 + dx, 27 + dy, 3, 2);
+
+    // Colossal Blade (vertical, sticking into the ground)
+    g.fillStyle(P.mPl1); // metal body
+    g.fillRect(36 + dx, 30 + dy, 8, 42);
+    // White-hot center line
+    g.fillStyle(0xffffff);
+    g.fillRect(39 + dx, 30 + dy, 2, 42);
+    // Glowing pink energy runes on the blade
+    g.fillStyle(0xff0055);
+    g.fillRect(39 + dx, 40 + dy, 2, 6);
+    g.fillRect(39 + dx, 54 + dy, 2, 6);
+
+    // 2. Draw the heavy arm reaching to grab the hilt
     g.lineStyle(5, P.mJo);
-    g.beginPath(); g.moveTo(16 + dx, 22 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(20 + dx, 48 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(16 + dx, 20 + dy); g.lineTo(28 + dx, 22 + dy); g.lineTo(38 + dx, 22 + dy); g.strokePath();
     g.lineStyle(4, P.mPl1);
-    g.beginPath(); g.moveTo(16 + dx, 22 + dy); g.lineTo(24 + dx, 36 + dy); g.lineTo(20 + dx, 46 + dy); g.strokePath();
+    g.beginPath(); g.moveTo(16 + dx, 20 + dy); g.lineTo(28 + dx, 22 + dy); g.lineTo(37 + dx, 22 + dy); g.strokePath();
 
     this.tex(g, key, 96, 96);
   }
@@ -1767,57 +2076,45 @@ export class BootScene extends Phaser.Scene {
   private drawShadowWraith(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
 
-    // Dark amorphous body — wraith form
-    g.fillStyle(0x0a0a12, 0.9);
+    // 1. Back exhaust pipe (facing right, pipe is on the left)
+    g.fillStyle(0x1e272e);
+    g.fillRect(2, 13, 5, 4);
+
+    // Engine exhaust soot/sparks (orange flame trail)
+    g.fillStyle(0xff5500);
     g.beginPath();
-    g.moveTo(16, 2);
-    g.lineTo(28, 8);
-    g.lineTo(30, 16);
-    g.lineTo(28, 24);
-    g.lineTo(22, 30);
-    g.lineTo(16, 32);
-    g.lineTo(10, 30);
-    g.lineTo(4, 24);
-    g.lineTo(2, 16);
-    g.lineTo(4, 8);
+    g.moveTo(2, 13);
+    g.lineTo(-2, 15);
+    g.lineTo(2, 17);
     g.closePath();
     g.fillPath();
 
-    // Inner dark glow
-    g.fillStyle(0x15152a, 0.7);
-    g.beginPath();
-    g.moveTo(16, 6);
-    g.lineTo(24, 10);
-    g.lineTo(26, 16);
-    g.lineTo(24, 22);
-    g.lineTo(19, 28);
-    g.lineTo(16, 29);
-    g.lineTo(13, 28);
-    g.lineTo(8, 22);
-    g.lineTo(6, 16);
-    g.lineTo(8, 10);
-    g.closePath();
-    g.fillPath();
+    // 2. Main metal fuselage (dark steel, elongated boxy capsule)
+    g.fillStyle(0x2f3542);
+    g.fillRoundedRect(6, 8, 18, 14, 2);
 
-    // Twin glowing red eyes — Draconus style
+    // Upper structural plating
+    g.fillStyle(0x57606f);
+    g.fillRoundedRect(8, 9, 12, 3, 1);
+
+    // 3. Side stabilization wing/propeller on top
+    g.fillStyle(0x747d8c);
+    g.fillRect(12, 4, 6, 2);
+    g.fillStyle(0xa4b0be);
+    g.fillRect(9, 2, 12, 2); // rotor blade
+
+    // 4. Front optical targeting sensor/visor (facing right)
     g.fillStyle(0x000000);
-    g.fillCircle(11, 16, 3);
-    g.fillCircle(21, 16, 3);
-    g.fillStyle(0xff2200);
-    g.fillCircle(11, 16, 2);
-    g.fillCircle(21, 16, 2);
-    g.fillStyle(0xff6600);
-    g.fillCircle(11, 16, 1);
-    g.fillCircle(21, 16, 1);
+    g.fillRect(21, 11, 4, 7); // visor frame
+    g.fillStyle(0xff1e00);
+    g.fillRect(22, 12, 2, 5); // glowing red camera lens
     g.fillStyle(0xffffff);
-    g.fillCircle(12, 15, 0.4);
-    g.fillCircle(22, 15, 0.4);
+    g.fillCircle(23, 13.5, 0.5); // reflection glint
 
-    // Wispy tendrils at bottom
-    g.fillStyle(0x0a0a12, 0.5);
-    g.fillRect(8, 30, 3, 6);
-    g.fillRect(14, 31, 4, 5);
-    g.fillRect(21, 30, 3, 6);
+    // 5. Mechanical panel rivet details
+    g.fillStyle(0x1e272e);
+    g.fillCircle(10, 18, 1);
+    g.fillCircle(16, 18, 1);
 
     this.tex(g, 'enemy-sentry', 32, 32);
   }
@@ -1825,84 +2122,71 @@ export class BootScene extends Phaser.Scene {
   private drawShieldEnemy(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
 
-    // Dark amorphous body (dark steel plate color for heavy sentry)
-    g.fillStyle(0x121220, 0.95);
+    // 1. Jointed mechanical bipedal leg (side-view chicken leg)
+    // Hip joint
+    g.fillStyle(0x1e272e);
+    g.fillCircle(12, 21, 2);
+    // Thigh
+    g.lineStyle(2, 0x57606f);
     g.beginPath();
-    g.moveTo(16, 2);
-    g.lineTo(28, 8);
-    g.lineTo(30, 16);
-    g.lineTo(28, 24);
-    g.lineTo(22, 30);
-    g.lineTo(16, 32);
-    g.lineTo(10, 30);
-    g.lineTo(4, 24);
-    g.lineTo(2, 16);
-    g.lineTo(4, 8);
-    g.closePath();
-    g.fillPath();
-
-    // Inner glow - steel blue
-    g.fillStyle(0x223355, 0.7);
+    g.moveTo(12, 21);
+    g.lineTo(8, 26);
+    g.strokePath();
+    // Shin
+    g.lineStyle(2, 0x57606f);
     g.beginPath();
-    g.moveTo(16, 6);
-    g.lineTo(24, 10);
-    g.lineTo(26, 16);
-    g.lineTo(24, 22);
-    g.lineTo(19, 28);
-    g.lineTo(16, 29);
-    g.lineTo(13, 28);
-    g.lineTo(8, 22);
-    g.lineTo(6, 16);
-    g.lineTo(8, 10);
-    g.closePath();
-    g.fillPath();
+    g.moveTo(8, 26);
+    g.lineTo(14, 32);
+    g.strokePath();
+    // Foot plate
+    g.fillStyle(0x1e272e);
+    g.fillRect(10, 31, 6, 2);
 
-    // Twin glowing steel blue/white eyes
+    // 2. Torso (boxy dark iron, facing right)
+    g.fillStyle(0x2f3542);
+    g.fillRoundedRect(7, 6, 15, 15, 2);
+    
+    // Front visor targeting slit (facing right)
     g.fillStyle(0x000000);
-    g.fillCircle(11, 16, 3);
-    g.fillCircle(21, 16, 3);
-    g.fillStyle(0x33aaff);
-    g.fillCircle(11, 16, 2);
-    g.fillCircle(21, 16, 2);
-    g.fillStyle(0xffffff);
-    g.fillCircle(11, 16, 1);
-    g.fillCircle(21, 16, 1);
+    g.fillRect(16, 9, 6, 3);
+    g.fillStyle(0xff1e00);
+    g.fillRect(17, 10, 5, 1.2); // red sensor slit
 
-    // Wispy tendrils at bottom
-    g.fillStyle(0x121220, 0.5);
-    g.fillRect(8, 30, 3, 6);
-    g.fillRect(14, 31, 4, 5);
-    g.fillRect(21, 30, 3, 6);
+    // Back exhaust vents
+    g.fillStyle(0x1e272e);
+    g.fillRect(5, 8, 2, 4);
 
-    // DRAW THE HEAVY METAL SHIELD ON THE FRONT (assuming facing right, i.e. x-coords 23 to 30)
-    g.fillStyle(0x556677); // Metallic dark steel
+    // 3. Spiky drill/pike weapon protruding forward
+    g.fillStyle(0x747d8c);
+    g.fillRect(18, 14, 6, 3);
+    g.fillStyle(0xa4b0be);
     g.beginPath();
-    g.moveTo(24, 4);
-    g.lineTo(30, 6);
-    g.lineTo(31, 16);
-    g.lineTo(30, 26);
-    g.lineTo(24, 28);
-    g.lineTo(26, 16);
+    g.moveTo(24, 13);
+    g.lineTo(31, 15);
+    g.lineTo(24, 17);
     g.closePath();
     g.fillPath();
 
-    // Shield edge highlight
-    g.lineStyle(1.5, 0x8899aa);
+    // 4. Heavy Shield on the front-right (protects front)
+    g.fillStyle(0x57606f); // dark metal shield plate
+    g.fillRect(23, 2, 6, 28);
+    g.lineStyle(1, 0x8899aa); // shield bevel highlight
+    g.strokeRect(23, 2, 6, 28);
+
+    // Hazard warning stripes on the shield
+    g.lineStyle(2, 0xeccc68); // industrial yellow stripes
     g.beginPath();
-    g.moveTo(24, 4);
-    g.lineTo(30, 6);
-    g.lineTo(31, 16);
-    g.lineTo(30, 26);
-    g.lineTo(24, 28);
-    g.lineTo(26, 16);
-    g.closePath();
+    g.moveTo(23, 8); g.lineTo(29, 14);
+    g.moveTo(23, 14); g.lineTo(29, 20);
+    g.moveTo(23, 20); g.lineTo(29, 26);
     g.strokePath();
 
-    // Glowing energy core/rune on the shield
-    g.fillStyle(0x33aaff);
-    g.fillRect(27, 12, 3, 8);
-    g.fillStyle(0xffffff);
-    g.fillRect(28, 14, 1, 4);
+    // Corner rivets on shield
+    g.fillStyle(0x1e272e);
+    g.fillCircle(25, 4, 0.8);
+    g.fillCircle(27, 4, 0.8);
+    g.fillCircle(25, 28, 0.8);
+    g.fillCircle(27, 28, 0.8);
 
     this.tex(g, 'enemy-shield', 32, 32);
   }
@@ -1910,62 +2194,45 @@ export class BootScene extends Phaser.Scene {
   private drawSpitterEnemy(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
 
-    // Deep purple body
-    g.fillStyle(0x1a0a24, 0.95);
+    // 1. Tank tracks base (facing right, bottom layer)
+    g.fillStyle(0x1e272e); // black rubber/steel tracks casing
+    g.fillRoundedRect(4, 25, 24, 7, 2.5);
+
+    // Track wheel bolts inside
+    g.fillStyle(0x57606f);
+    g.fillCircle(8, 28, 2);
+    g.fillCircle(16, 28, 2);
+    g.fillCircle(24, 28, 2);
+
+    // 2. Main chassis (industrial military green, boxy)
+    g.fillStyle(0x383b2a);
+    g.fillRect(6, 12, 16, 13);
+    
+    // Armored panel trim
+    g.lineStyle(1, 0x5c5e4f);
+    g.strokeRect(6, 12, 16, 13);
+
+    // Rivet dots on chassis panel
+    g.fillStyle(0x1e272e);
+    g.fillCircle(9, 15, 0.8);
+    g.fillCircle(9, 21, 0.8);
+
+    // 3. Physical mortar gun barrel mounted on top (angled up-right)
+    g.lineStyle(5, 0x57606f); // dark steel thick barrel
     g.beginPath();
-    g.moveTo(16, 2);
-    g.lineTo(28, 8);
-    g.lineTo(30, 16);
-    g.lineTo(28, 24);
-    g.lineTo(22, 30);
-    g.lineTo(16, 32);
-    g.lineTo(10, 30);
-    g.lineTo(4, 24);
-    g.lineTo(2, 16);
-    g.lineTo(4, 8);
-    g.closePath();
-    g.fillPath();
+    g.moveTo(12, 12);
+    g.lineTo(25, 5);
+    g.strokePath();
 
-    // Inner glow - toxic violet
-    g.fillStyle(0x380b4d, 0.7);
-    g.beginPath();
-    g.moveTo(16, 6);
-    g.lineTo(24, 10);
-    g.lineTo(26, 16);
-    g.lineTo(24, 22);
-    g.lineTo(19, 28);
-    g.lineTo(16, 29);
-    g.lineTo(13, 28);
-    g.lineTo(8, 22);
-    g.lineTo(6, 16);
-    g.lineTo(8, 10);
-    g.closePath();
-    g.fillPath();
+    // Open barrel muzzle (facing right)
+    g.fillStyle(0x1e272e);
+    g.fillCircle(25, 5, 2);
 
-    // Acidic green glowing eyes
-    g.fillStyle(0x000000);
-    g.fillCircle(11, 14, 3);
-    g.fillCircle(21, 14, 3);
-    g.fillStyle(0x00ff88);
-    g.fillCircle(11, 14, 2);
-    g.fillCircle(21, 14, 2);
-    g.fillStyle(0xffffff);
-    g.fillCircle(11, 14, 0.8);
-    g.fillCircle(21, 14, 0.8);
-
-    // Glowing toxic throat/mouth opening (front-center of the body)
-    g.fillStyle(0x00ff66);
-    g.fillCircle(16, 22, 4);
-    g.fillStyle(0x000000);
-    g.fillCircle(16, 22, 2.5);
-    g.fillStyle(0xaaffd4);
-    g.fillCircle(16, 22, 1.2);
-
-    // Wispy purple tendrils
-    g.fillStyle(0x1a0a24, 0.5);
-    g.fillRect(8, 30, 3, 6);
-    g.fillRect(14, 31, 4, 5);
-    g.fillRect(21, 30, 3, 6);
+    // 4. Optical targeting lens/scope on the barrel
+    g.fillStyle(0xff7700);
+    g.fillCircle(18, 9, 2);
+    g.fillStyle(0xffff00);
+    g.fillCircle(18, 9, 0.8);
 
     this.tex(g, 'enemy-spitter', 32, 32);
   }
@@ -1973,62 +2240,58 @@ export class BootScene extends Phaser.Scene {
   private drawLeaperEnemy(): void {
     const g = this.make.graphics({ x: 0, y: 0 });
 
-    // Crimson/dark orange body
-    g.fillStyle(0x2d0a05, 0.95);
+    // 1. Rocket booster tank on the back (facing right, backpack is on left)
+    g.fillStyle(0x1e272e);
+    g.fillRect(2, 7, 6, 10);
+    g.fillStyle(0x57606f); // metallic casing bands
+    g.fillRect(2, 10, 6, 1.5);
+    
+    // Thruster nozzle & ignition spark (blue flame)
+    g.fillStyle(0x33aaff);
     g.beginPath();
-    g.moveTo(16, 2);
-    g.lineTo(28, 8);
-    g.lineTo(30, 16);
-    g.lineTo(28, 24);
-    g.lineTo(22, 30);
-    g.lineTo(16, 32);
-    g.lineTo(10, 30);
-    g.lineTo(4, 24);
-    g.lineTo(2, 16);
-    g.lineTo(4, 8);
+    g.moveTo(5, 17);
+    g.lineTo(2, 23);
+    g.lineTo(7, 21);
     g.closePath();
     g.fillPath();
 
-    // Inner glow - fire orange
-    g.fillStyle(0x5a1805, 0.7);
-    g.beginPath();
-    g.moveTo(16, 6);
-    g.lineTo(24, 10);
-    g.lineTo(26, 16);
-    g.lineTo(24, 22);
-    g.lineTo(19, 28);
-    g.lineTo(16, 29);
-    g.lineTo(13, 28);
-    g.lineTo(8, 22);
-    g.lineTo(6, 16);
-    g.lineTo(8, 10);
-    g.closePath();
-    g.fillPath();
+    // 2. Torso (compact dark steel plating)
+    g.fillStyle(0x2f3542);
+    g.fillRoundedRect(7, 5, 12, 14, 2);
 
-    // Fiery orange/yellow glowing eyes
+    // Front targeting visor lens (facing right)
     g.fillStyle(0x000000);
-    g.fillCircle(11, 15, 3);
-    g.fillCircle(21, 15, 3);
-    g.fillStyle(0xff8800);
-    g.fillCircle(11, 15, 2);
-    g.fillCircle(21, 15, 2);
-    g.fillStyle(0xffff00);
-    g.fillCircle(11, 15, 1);
-    g.fillCircle(21, 15, 1);
+    g.fillCircle(15, 9, 3);
+    g.fillStyle(0xff1e00);
+    g.fillCircle(15, 9, 2); // glowing red optical eye
+    g.fillStyle(0xffffff);
+    g.fillCircle(16, 8, 0.6); // lens highlight
 
-    // Spiky/spring-like coils at the bottom
-    g.lineStyle(1.5, 0xff5500);
+    // 3. Side-view mechanical springy shock leg (Z-joint)
+    // Hip joint
+    g.fillStyle(0x1e272e);
+    g.fillCircle(12, 19, 2);
+    // Thigh (jointed back)
+    g.lineStyle(2, 0x57606f);
     g.beginPath();
-    g.moveTo(10, 26);
-    g.lineTo(8, 32);
-    g.lineTo(12, 30);
-    g.moveTo(16, 26);
-    g.lineTo(16, 33);
-    g.lineTo(18, 30);
-    g.moveTo(22, 26);
-    g.lineTo(24, 32);
-    g.lineTo(20, 30);
+    g.moveTo(12, 19);
+    g.lineTo(6, 25);
     g.strokePath();
+    // Shin (jointed forward)
+    g.lineStyle(2.5, 0x57606f);
+    g.beginPath();
+    g.moveTo(6, 25);
+    g.lineTo(14, 31);
+    g.strokePath();
+    // Shock absorber spring indicator on the shin joint
+    g.lineStyle(1.2, 0xff5500);
+    g.beginPath();
+    g.moveTo(8, 23); g.lineTo(11, 26);
+    g.strokePath();
+
+    // Foot landing pad
+    g.fillStyle(0x1e272e);
+    g.fillRect(11, 31, 5, 2);
 
     this.tex(g, 'enemy-leaper', 32, 32);
   }
@@ -4301,4 +4564,311 @@ export class BootScene extends Phaser.Scene {
     g.fillRect(8, 9, 4, 1.5);
     this.tex(g, 'prop-debris-2', 20, 20);
   }
+
+  private drawZone3Hazards(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // 1. hazard-piston (48x48) - heavy iron plate crusher
+    g.fillStyle(0x1a1d24); g.fillRect(0, 0, 48, 48); // dark background structure
+    g.fillStyle(0x2c303c); g.fillRect(4, 4, 40, 40); // inner plate
+    // draw diagonal hazard stripes
+    g.fillStyle(0xd35400); // orange warning stripes
+    for (let offset = -40; offset < 80; offset += 16) {
+      g.beginPath();
+      g.moveTo(offset, 0);
+      g.lineTo(offset + 8, 0);
+      g.lineTo(offset - 8, 48);
+      g.lineTo(offset - 16, 48);
+      g.closePath();
+      g.fillPath();
+    }
+    // border & rivets
+    g.lineStyle(3, 0x5e6a75);
+    g.strokeRect(2, 2, 44, 44);
+    // rivets
+    g.fillStyle(0x7f8c8d);
+    g.fillCircle(6, 6, 2.5);
+    g.fillCircle(42, 6, 2.5);
+    g.fillCircle(6, 42, 2.5);
+    g.fillCircle(42, 42, 2.5);
+    this.tex(g, 'hazard-piston', 48, 48);
+
+    // 2. hazard-piston-rod (16x48) - steel piston shaft
+    g.fillStyle(0x2d3436); g.fillRect(0, 0, 16, 48); // dark base
+    g.fillStyle(0x636e72); g.fillRect(4, 0, 8, 48); // chrome highlight center
+    g.fillStyle(0xdfe6e9); g.fillRect(6, 0, 2, 48); // bright white shine
+    this.tex(g, 'hazard-piston-rod', 16, 48);
+
+    // 3. hazard-laser-node (32x32) - circular generator node
+    g.fillStyle(0x1e272e); g.fillCircle(16, 16, 15); // outer rim
+    g.lineStyle(2, 0xd2dae2); g.strokeCircle(16, 16, 15);
+    g.fillStyle(0x485460); g.fillCircle(16, 16, 11); // inner shield
+    // red generator core
+    g.fillStyle(0xff3f34); g.fillCircle(16, 16, 7);
+    g.fillStyle(0xffffff); g.fillCircle(16, 16, 3);
+    this.tex(g, 'hazard-laser-node', 32, 32);
+
+    // 4. hazard-laser-beam (16x16) - pulsing electric beam
+    g.fillStyle(0xff3f34, 0.4); g.fillRect(0, 0, 16, 16); // red outer glow
+    g.fillStyle(0xff7f50); g.fillRect(0, 4, 16, 8); // orange inner
+    g.fillStyle(0xffffff); g.fillRect(0, 6, 16, 4); // white hot core
+    this.tex(g, 'hazard-laser-beam', 16, 16);
+  }
+
+  private drawZone3Enemies(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // 1. enemy-seeker-drone (32x32) - Iron Empire scout drone
+    // Octagonal boxy body
+    g.fillStyle(0x2f3542);
+    g.beginPath();
+    g.moveTo(10, 2); g.lineTo(22, 2);
+    g.lineTo(30, 10); g.lineTo(30, 22);
+    g.lineTo(22, 30); g.lineTo(10, 30);
+    g.lineTo(2, 22); g.lineTo(2, 10);
+    g.closePath();
+    g.fillPath();
+
+    // Rivets
+    g.fillStyle(0x0f141d);
+    g.fillRect(10, 4, 2, 2);
+    g.fillRect(20, 4, 2, 2);
+    g.fillRect(26, 10, 2, 2);
+    g.fillRect(26, 20, 2, 2);
+
+    // Glowing red center sensor
+    g.fillStyle(0xff4757); g.fillRect(8, 12, 16, 8);
+    g.fillStyle(0xffffff); g.fillRect(14, 14, 4, 4);
+
+    // Back stabilizer fins / side plates
+    g.fillStyle(0x1e272e);
+    g.fillRect(0, 12, 2, 8);
+    g.fillRect(30, 12, 2, 8);
+    this.tex(g, 'enemy-seeker-drone', 32, 32);
+
+    // 2. enemy-mine-dropper (40x40) - crane mecha drone
+    g.fillStyle(0x2f3542); g.fillRect(6, 6, 28, 20); // main box body
+    g.fillStyle(0x1e272e); g.fillRect(2, 12, 4, 12); // left thruster
+    g.fillRect(34, 12, 4, 12); // right thruster
+    // yellow flame sparks under thrusters
+    g.fillStyle(0xffa502); g.fillRect(3, 24, 2, 6); g.fillRect(35, 24, 2, 6);
+    // bottom deployment clamp/arm
+    g.fillStyle(0x747d8c); g.fillRect(14, 26, 12, 8);
+    g.fillStyle(0x57606f); g.fillRect(12, 34, 4, 6); g.fillRect(24, 34, 4, 6);
+    // hazard stripe panel
+    g.fillStyle(0xeccc68); g.fillRect(10, 10, 20, 8);
+    g.fillStyle(0x2f3542);
+    g.beginPath();
+    g.moveTo(10, 10); g.lineTo(14, 10); g.lineTo(10, 18); g.closePath(); g.fillPath();
+    g.beginPath();
+    g.moveTo(18, 10); g.lineTo(22, 10); g.lineTo(18, 18); g.closePath(); g.fillPath();
+    g.beginPath();
+    g.moveTo(26, 10); g.lineTo(30, 10); g.lineTo(26, 18); g.closePath(); g.fillPath();
+    this.tex(g, 'enemy-mine-dropper', 40, 40);
+
+    // 3. enemy-gunship (64x48) - heavy militarized jet fighter
+    g.fillStyle(0x2f3542); // main body
+    g.fillRect(16, 8, 32, 32);
+    // cockpit / glowing visor
+    g.fillStyle(0xff3838); g.fillRect(12, 16, 6, 16);
+    g.fillStyle(0xffffff); g.fillRect(12, 22, 2, 4);
+
+    // wings
+    g.fillStyle(0x1e272e);
+    g.beginPath();
+    g.moveTo(32, 8); g.lineTo(56, 0); g.lineTo(44, 24); g.closePath(); g.fillPath();
+    g.beginPath();
+    g.moveTo(32, 40); g.lineTo(56, 48); g.lineTo(44, 24); g.closePath(); g.fillPath();
+
+    // engine thrusters on the back
+    g.fillStyle(0x57606f);
+    g.fillRect(48, 12, 12, 8);
+    g.fillRect(48, 28, 12, 8);
+    g.fillStyle(0xff7f50); // fire exhaust
+    g.fillRect(60, 14, 4, 4); g.fillRect(60, 30, 4, 4);
+
+    // bottom cannons
+    g.fillStyle(0x747d8c);
+    g.fillRect(8, 30, 10, 4);
+    g.fillRect(8, 14, 10, 4);
+    this.tex(g, 'enemy-gunship', 64, 48);
+
+    // 4. bullet-homing (16x16) - homing rocket
+    g.fillStyle(0xced6e0); g.fillRect(4, 5, 8, 6); // missile body
+    g.fillStyle(0xff4757); g.beginPath(); g.moveTo(4, 5); g.lineTo(0, 8); g.lineTo(4, 11); g.closePath(); g.fillPath(); // red nose
+    g.fillStyle(0x2f3542); g.fillRect(12, 4, 2, 8); // tail fins
+    g.fillStyle(0xffa502); g.fillRect(14, 6, 2, 4); // small exhaust fire
+    this.tex(g, 'bullet-homing', 16, 16);
+
+    // 5. bullet-mine (24x24) - hazard spike mine
+    g.fillStyle(0x2f3542); g.fillCircle(12, 12, 8); // core
+    g.lineStyle(1.5, 0xeccc68); g.strokeCircle(12, 12, 8); // yellow safety boundary
+    // red spikes
+    g.fillStyle(0xff4757);
+    g.fillRect(11, 0, 2, 4);
+    g.fillRect(11, 20, 2, 4);
+    g.fillRect(0, 11, 4, 2);
+    g.fillRect(20, 11, 4, 2);
+    // diagonal spikes
+    g.fillRect(3, 3, 3, 3);
+    g.fillRect(18, 3, 3, 3);
+    g.fillRect(3, 18, 3, 3);
+    g.fillRect(18, 18, 3, 3);
+    // center red blinking led
+    g.fillStyle(0xff3838); g.fillCircle(12, 12, 2.5);
+    g.fillStyle(0xffffff); g.fillCircle(12, 12, 1);
+    this.tex(g, 'bullet-mine', 24, 24);
+  }
+
+  private drawAltarSave(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // 1. Pedestal steps (stone blocks)
+    // Bottom step: Y = 124 to 144 (height 20). Width = 112, centered (X from 8 to 120). Slate-grey.
+    g.fillStyle(0x1e272e);
+    g.fillRect(8, 124, 112, 20);
+    g.fillStyle(0x2d3436);
+    g.fillRect(12, 126, 104, 16);
+    
+    // Crack lines on bottom step
+    g.lineStyle(1.5, 0x1e272e);
+    g.lineBetween(30, 126, 35, 142);
+    g.lineBetween(90, 126, 95, 138);
+
+    // Middle step: Y = 104 to 124 (height 20). Width = 96, centered (X from 16 to 112).
+    g.fillStyle(0x2d3436);
+    g.fillRect(16, 104, 96, 20);
+    g.fillStyle(0x57606f);
+    g.fillRect(20, 106, 88, 16);
+    
+    // Crack lines on middle step
+    g.lineBetween(50, 106, 52, 122);
+    g.lineBetween(75, 106, 78, 118);
+
+    // Top step / Altar table: Y = 84 to 104 (height 20). Width = 80, centered (X from 24 to 104).
+    g.fillStyle(0x747d8c);
+    g.fillRect(24, 84, 80, 20);
+    g.fillStyle(0xdcdde1);
+    g.fillRect(28, 86, 72, 16);
+
+    // 2. Pillars at the sides (gothic/biomechanical columns)
+    // Left pillar base: X from 12 to 28, Y from 84 to 104
+    g.fillStyle(0x1e272e);
+    g.fillRect(12, 80, 16, 24);
+    g.fillStyle(0x2d3436);
+    g.fillRect(14, 82, 12, 20);
+
+    // Right pillar base: X from 100 to 116, Y from 84 to 104
+    g.fillStyle(0x1e272e);
+    g.fillRect(100, 80, 16, 24);
+    g.fillStyle(0x2d3436);
+    g.fillRect(102, 82, 12, 20);
+
+    // Left pillar shaft: X from 14 to 26, Y from 36 to 80 (height = 44)
+    g.fillStyle(0x2d3436);
+    g.fillRect(14, 36, 12, 44);
+    // Left pillar highlights / pipes wrap
+    g.fillStyle(0x57606f);
+    g.fillRect(16, 36, 4, 44); // pipe 1
+    g.fillStyle(0xdcdde1);
+    g.fillRect(17, 36, 1, 44); // pipe highlight
+    g.fillStyle(0x747d8c);
+    g.fillRect(22, 36, 3, 44); // pipe 2
+
+    // Right pillar shaft: X from 102 to 114, Y from 36 to 80 (height = 44)
+    g.fillStyle(0x2d3436);
+    g.fillRect(102, 36, 12, 44);
+    // Right pillar highlights / pipes wrap
+    g.fillStyle(0x57606f);
+    g.fillRect(104, 36, 4, 44); // pipe 1
+    g.fillStyle(0xdcdde1);
+    g.fillRect(105, 36, 1, 44); // pipe highlight
+    g.fillStyle(0x747d8c);
+    g.fillRect(110, 36, 3, 44); // pipe 2
+
+    // Horizontal metal collars on pillars
+    g.fillStyle(0x1e272e);
+    g.fillRect(12, 46, 16, 4);
+    g.fillRect(12, 66, 16, 4);
+    g.fillRect(100, 46, 16, 4);
+    g.fillRect(100, 66, 16, 4);
+
+    // Left pillar cap: X from 12 to 28, Y from 32 to 36
+    g.fillStyle(0x1e272e);
+    g.fillRect(12, 32, 16, 4);
+    // Right pillar cap: X from 100 to 116, Y from 32 to 36
+    g.fillStyle(0x1e272e);
+    g.fillRect(100, 32, 16, 4);
+
+    // 3. Gothic Arch connecting the pillars at the top: Y from 0 to 32
+    g.fillStyle(0x1e272e);
+    g.beginPath();
+    g.moveTo(14, 32);
+    g.lineTo(64, 0); // Pointy gothic peak at top center
+    g.lineTo(114, 32);
+    g.lineTo(98, 32);
+    g.lineTo(64, 8); // Inner arch peak
+    g.lineTo(30, 32);
+    g.closePath();
+    g.fillPath();
+
+    // Arch outline highlight
+    g.lineStyle(2, 0x57606f, 1);
+    g.beginPath();
+    g.moveTo(14, 32);
+    g.lineTo(64, 0);
+    g.lineTo(114, 32);
+    g.strokePath();
+
+    // 4. Glowing mecha-pink runes on steps and pillars
+    g.fillStyle(0xff0055);
+    // steps runes
+    g.fillRect(36, 112, 6, 3);
+    g.fillRect(86, 112, 6, 3);
+    g.fillRect(45, 132, 8, 3);
+    g.fillRect(75, 132, 8, 3);
+    // pillars runes
+    g.fillRect(15, 52, 2, 8);
+    g.fillRect(111, 52, 2, 8);
+    g.fillRect(23, 40, 2, 6);
+    g.fillRect(103, 40, 2, 6);
+
+    // 5. Giant floating crystal core (Draconel Heart) in the center chamber
+    // Float chamber: X from 28 to 100, Y from 32 to 84 (Center is X=64, Y=58)
+    
+    // Biomechanical tubes connecting the core area to the pillars
+    g.lineStyle(2, 0x2f3542, 1);
+    g.lineBetween(20, 58, 44, 58);
+    g.lineBetween(108, 58, 84, 58);
+    
+    g.fillStyle(0xff0055);
+    // Giant crystal core
+    g.beginPath();
+    g.moveTo(64, 36);  // top peak
+    g.lineTo(46, 58);  // left corner
+    g.lineTo(64, 80);  // bottom peak
+    g.lineTo(82, 58);  // right corner
+    g.closePath();
+    g.fillPath();
+
+    // Inner glowing white core
+    g.fillStyle(0xffffff);
+    g.beginPath();
+    g.moveTo(64, 44);
+    g.lineTo(54, 58);
+    g.lineTo(64, 72);
+    g.lineTo(74, 58);
+    g.closePath();
+    g.fillPath();
+
+    // Small floating pink diamond embers around the core
+    g.fillStyle(0xff0055);
+    g.fillRect(40, 42, 4, 4);
+    g.fillRect(84, 42, 4, 4);
+    g.fillRect(40, 70, 4, 4);
+    g.fillRect(84, 70, 4, 4);
+
+    this.tex(g, 'altar-save', 128, 144);
+  }
 }
+
