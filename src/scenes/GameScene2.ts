@@ -248,10 +248,23 @@ export class GameScene2 extends Phaser.Scene {
     this.coolingValves = this.physics.add.staticGroup();
 
     // Barricades that require heavy mecha claymore slashes
+    // Ground blockades
     const b1 = new Barricade(this, 800, 704);
     const b2 = new Barricade(this, 4200, 704);
     const b3 = new Barricade(this, 6500, 704);
-    this.barricades.addMultiple([b1, b2, b3]);
+
+    // Upper platform blockades (Warrior cannot pass since sword damage is 25, below the 75 threshold)
+    const bPlatform1 = new Barricade(this, 780, 488);  // Platform at x:700, y:520
+    const bPlatform2 = new Barricade(this, 1380, 488); // Platform at x:1300, y:520
+    const bPlatform3 = new Barricade(this, 2864, 348); // Platform at x:2800, y:380 (floating in lava)
+    const bPlatform4 = new Barricade(this, 5300, 328); // Platform at x:5200, y:360
+    const bPlatform5 = new Barricade(this, 6300, 448); // Platform at x:6200, y:480
+    const bPlatform6 = new Barricade(this, 7160, 588); // Platform at x:7100, y:620
+
+    this.barricades.addMultiple([
+      b1, b2, b3,
+      bPlatform1, bPlatform2, bPlatform3, bPlatform4, bPlatform5, bPlatform6
+    ]);
 
     // Steam vents for launching mecha and increasing heat
     const v1 = new SteamVent(this, 1400, 720);
@@ -286,13 +299,32 @@ export class GameScene2 extends Phaser.Scene {
     const m3 = new MechaEnemy(this, 4800, 680, this.player, { patrolMinX: 4600, patrolMaxX: 5200 });
     const m4 = new MechaEnemy(this, 5800, 680, this.player, { patrolMinX: 5600, patrolMaxX: 6200 });
     const m5 = new MechaEnemy(this, 7150, 680, this.player, { patrolMinX: 6900, patrolMaxX: 7300 });
-    this.enemies.addMultiple([m1, m2, m3, m4, m5]);
 
-    // Spitters & Shield sentries
+    // Upper platform Rogue Mechas (completely block/penalize warrior form)
+    const mPlatform1 = new MechaEnemy(this, 1700, 544, this.player, { patrolMinX: 1620, patrolMaxX: 1780 }); // Platform at 1600, y:600
+    const mPlatform2 = new MechaEnemy(this, 4800, 544, this.player, { patrolMinX: 4720, patrolMaxX: 4880 }); // Platform at 4700, y:600
+    const mPlatform3 = new MechaEnemy(this, 6000, 544, this.player, { patrolMinX: 5920, patrolMaxX: 6080 }); // Platform at 5900, y:600
+
+    this.enemies.addMultiple([
+      m1, m2, m3, m4, m5,
+      mPlatform1, mPlatform2, mPlatform3
+    ]);
+
+    // Spitters & Shield sentries on ground & upper platforms
     const s1 = new SpitterEnemy(this, 600, 680, this.player);
     const s2 = new SpitterEnemy(this, 1700, 680, this.player);
     const sh1 = new ShieldEnemy(this, 1500, 680, this.player);
-    this.enemies.addMultiple([s1, s2, sh1]);
+
+    // Upper platform Spitters
+    const sPlatform1 = new SpitterEnemy(this, 1100, 584, this.player); // Platform at 1000, y:600
+    const sPlatform2 = new SpitterEnemy(this, 2600, 444, this.player); // Platform at 2550, y:460 (lava zone)
+    const sPlatform3 = new SpitterEnemy(this, 3150, 484, this.player); // Platform at 3100, y:500 (lava zone)
+    const sPlatform4 = new SpitterEnemy(this, 5600, 484, this.player); // Platform at 5500, y:500
+
+    this.enemies.addMultiple([
+      s1, s2, sh1,
+      sPlatform1, sPlatform2, sPlatform3, sPlatform4
+    ]);
 
     // Flying Sentinels (crucial shmup style hazards in lava lake)
     const f1 = new FlyingEnemy(this, 2450, 320, this.player);
