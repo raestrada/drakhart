@@ -19,6 +19,7 @@ import {
   spawnTransformParticles,
   spawnDeathExplosion,
 } from '../effects/Particles';
+import { BloomSystem } from '../effects/BloomSystem';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -82,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private crumblingPlatforms: CrumblingPlatform[] = [];
   private fogWall: Phaser.GameObjects.Graphics | null = null;
   private ashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private bloom!: BloomSystem;
 
   private pendingMechaUnlock = false;
   private pendingDragonUnlock = false;
@@ -125,11 +127,15 @@ export class GameScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
     });
+
+    this.bloom = new BloomSystem(this);
 
     this.createParallax();
     this.createLevel();
@@ -1429,6 +1435,7 @@ export class GameScene extends Phaser.Scene {
     this.updateBulletCleanup();
     this.checkCrumblingPlatforms();
     this.updateEmbers(delta);
+    this.updateBloom();
     this.updateShmupZone(delta, time);
 
     if (this.player.active) {
@@ -1735,6 +1742,29 @@ export class GameScene extends Phaser.Scene {
         onComplete: () => ember.destroy(),
       });
     }
+  }
+
+  private updateBloom(): void {
+    // Dragon Core glow
+    if (this.dragonCore && this.dragonCore.active) {
+      this.bloom.add(this.dragonCore.x, this.dragonCore.y, 18, 0xff6600, 1.2);
+    }
+
+    // Player fire bullets glow
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        this.bloom.add(bullet.x, bullet.y, 8, 0xff4400, 0.6);
+      }
+    });
+
+    // Player energy glow (subtle, only when mecha/dragon)
+    const state = this.player.formMachine.state;
+    if (state === FormState.MECHA || state === FormState.DRAGON) {
+      this.bloom.add(this.player.x, this.player.y - 10, 10, state === FormState.DRAGON ? 0xff0066 : 0xff5ea2, 0.3);
+    }
+
+    this.bloom.update();
   }
 
   private updateSwordVsEnemies(): void {

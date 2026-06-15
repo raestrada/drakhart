@@ -10,6 +10,7 @@ import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
+import { BloomSystem } from '../effects/BloomSystem';
 import { SaveAltar } from '../entities/SaveAltar';
 import {
   LEVEL_WIDTH,
@@ -65,6 +66,7 @@ export class GameScene3 extends Phaser.Scene {
   private bgReactor!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
+  private bloom!: BloomSystem;
 
   // Autoscroll & coordinates
   private scrollX = 0;
@@ -135,11 +137,15 @@ export class GameScene3 extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
     });
+
+    this.bloom = new BloomSystem(this);
 
     // Initialize groups & arrays before creating levels
     this.enemies = this.physics.add.group();
@@ -811,6 +817,7 @@ export class GameScene3 extends Phaser.Scene {
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
+    this.updateBloom();
     
     // Update active steam pipes & check steam hits
     this.steamPipes.forEach((pipe) => {
@@ -970,6 +977,26 @@ export class GameScene3 extends Phaser.Scene {
       duration: Phaser.Math.Between(1500, 3000),
       onComplete: () => ember.destroy()
     });
+  }
+
+  private updateBloom(): void {
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        this.bloom.add(bullet.x, bullet.y, 8, 0xff4400, 0.6);
+      }
+    });
+
+    const state = this.player.formMachine.state;
+    if (state === FormState.DRAGON) {
+      this.bloom.add(this.player.x, this.player.y - 10, 14, 0xff0066, 0.4);
+    }
+
+    if (this.boss && this.boss.active) {
+      this.bloom.add(this.boss.x, this.boss.y, 24, 0xff1166, 0.7);
+    }
+
+    this.bloom.update();
   }
 
   private updateWaves(): void {

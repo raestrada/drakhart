@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { t } from '../../i18n';
+import { spawnDeathExplosion } from '../../effects/Particles';
 
 type BossPhase = 'phase1' | 'phase2' | 'dead';
 
@@ -85,6 +86,16 @@ export class Boss extends BaseEnemy {
 
     if (this.phase === 'phase2') {
       this.nameText.setText(t('boss.phase2'));
+      this.nameText.setColor('#ff4466');
+      const pulse = 0.8 + 0.2 * Math.sin(Date.now() * 0.015);
+      this.healthBarFill.setFillStyle(0xff2244, pulse);
+    } else {
+      const pulse = 0.85 + 0.15 * Math.sin(Date.now() * 0.006);
+      this.healthBarFill.setFillStyle(0xcc3333, pulse);
+    }
+
+    if (ratio < 0.3) {
+      this.healthBarFill.setFillStyle(0xff1111, 0.7 + 0.3 * Math.sin(Date.now() * 0.02));
     }
   }
 
@@ -168,6 +179,7 @@ export class Boss extends BaseEnemy {
 
     this.scene.cameras.main.shake(1000, 0.015);
     this.scene.cameras.main.flash(500, 255, 100, 0);
+    spawnDeathExplosion(this.scene, this.x, this.y);
 
     if (this.healthBarBg) this.healthBarBg.destroy();
     if (this.healthBarFill) this.healthBarFill.destroy();
