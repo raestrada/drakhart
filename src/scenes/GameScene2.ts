@@ -781,9 +781,29 @@ export class GameScene2 extends Phaser.Scene {
           borderBottom.destroy();
           unlockText.destroy();
 
-          // After showing unlock banner, end the prototype with final completion banner
-          this.triggerPrototypeComplete();
+          // After showing unlock banner, transition to Level 3 autoscroller
+          this.transitionToLevel3();
         }
+      });
+    });
+  }
+
+  private transitionToLevel3(): void {
+    if (this.demoEnded) return;
+    this.demoEnded = true;
+
+    this.player.setVelocity(0, 0);
+    if (this.player.body) {
+      (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
+    }
+
+    this.cameras.main.fade(1000, 0, 0, 0);
+
+    this.time.delayedCall(1000, () => {
+      this.scene.start('GameScene3', {
+        cardsCollected: this.tarotSystem.collectedCards,
+        mechaUnlocked: true,
+        dragonUnlocked: true
       });
     });
   }

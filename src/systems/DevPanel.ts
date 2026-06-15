@@ -62,6 +62,10 @@ export class DevPanel {
       if (scene2 && scene2.sys && scene2.sys.isActive()) {
         return scene2;
       }
+      const scene3 = game.scene.keys.GameScene3;
+      if (scene3 && scene3.sys && scene3.sys.isActive()) {
+        return scene3;
+      }
     }
     return null;
   }
@@ -123,6 +127,9 @@ export class DevPanel {
     this.addButton('L2: Smelting Vats (Lava)', () => this.teleportToScene('GameScene2', 2500, 400));
     this.addButton('L2: Overcharge Chamber', () => this.teleportToScene('GameScene2', 4800, 450));
     this.addButton('L2: Dragon Shrine (X: 7478)', () => this.teleportToScene('GameScene2', 7400, 400));
+    this.addButton('L3: Start Gorge', () => this.teleportToScene('GameScene3', 100, 400));
+    this.addButton('L3: Mid Gorge (Obstacles)', () => this.teleportToScene('GameScene3', 3200, 400));
+    this.addButton('L3: Boss Arena (X: 7200)', () => this.teleportToScene('GameScene3', 7100, 400));
 
     // Section 2: Form & Progression
     this.addSectionHeader('🔄 Form Unlock & Control');
@@ -306,7 +313,8 @@ export class DevPanel {
         activeScene.scene.start(sceneKey, {
           startPos: { x, y },
           cardsCollected: activeScene.tarotSystem?.collectedCards || [],
-          mechaUnlocked: true
+          mechaUnlocked: true,
+          dragonUnlocked: true
         });
         this.logMessage(`Transitioning to ${sceneKey} at X:${x}, Y:${y}`);
       } else {

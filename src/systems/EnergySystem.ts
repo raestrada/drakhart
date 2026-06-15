@@ -42,6 +42,10 @@ export class EnergySystem {
     this.current = Math.max(0, this.current - ENERGY_DRAIN_DAMAGED);
   }
 
+  addEnergy(amount: number): void {
+    this.current = Math.min(this.max, this.current + amount);
+  }
+
   update(delta: number, state: FormState, isFlyingUp: boolean, onGround: boolean): void {
     const dt = delta / 1000;
 

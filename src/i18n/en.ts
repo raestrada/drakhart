@@ -38,6 +38,8 @@ export const en = {
     hintDragonCore: '> > >  DRAGON CORE  > > >',
     hintSeekAltar: '>>  Seek the altar to the right  >>',
     introSkip: 'ENTER / CLICK TO CONTINUE',
+    level3Intro: 'THE ASHEN GORGE\n\nFly through the canyon in Dragon form!\nCollect Energy Cells to stay airborne.\nTaking damage or hitting walls drags you back.',
+    bossAlert: 'BOSS DETECTED: CORRUPTED DRACONEL',
   },
   boss: {
     name: 'CORRUPTED DRACONEL',

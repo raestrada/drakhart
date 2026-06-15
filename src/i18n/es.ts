@@ -40,6 +40,8 @@ export const es: typeof en = {
     hintDragonCore: '> > > NÚCLEO DRAGÓN > > >',
     hintSeekAltar: '>> Busca el altar a la derecha >>',
     introSkip: 'ENTER / CLIC PARA CONTINUAR',
+    level3Intro: 'EL DESFILADERO DE CENIZAS\n\n¡Vuela por el cañón en forma de Dragón!\nRecoge Células de Energía para mantenerte en el aire.\nRecibir daño o chocar contra las paredes te arrastra hacia atrás.',
+    bossAlert: 'JEFE DETECTADO: DRACONEL CORRUPTO',
   },
   boss: {
     name: 'DRACONEL CORRUPTO',

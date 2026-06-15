@@ -74,9 +74,17 @@ export class FormStateMachine {
   requestTransform(): void {
     if (!this.canTransform) return;
 
-    if (this.currentState === FormState.HUMAN && this.transformUnlocked) {
-      this.beginTransformToMecha();
+    if (this.currentState === FormState.HUMAN) {
+      if (this.transformUnlocked) {
+        this.beginTransformToMecha();
+      }
     } else if (this.currentState === FormState.MECHA) {
+      if (this.dragonUnlocked) {
+        this.beginTransformToDragon();
+      } else {
+        this.startRevert();
+      }
+    } else if (this.currentState === FormState.DRAGON) {
       this.startRevert();
     }
   }

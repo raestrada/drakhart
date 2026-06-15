@@ -16,6 +16,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-refinery-sun-raw', `assets/bg_refinery_sun.png?${v}`);
     this.load.image('bg-furnace-raw', `assets/bg_furnace.png?${v}`);
     this.load.image('bg-furnace-pipes-raw', `assets/bg_furnace_pipes.png?${v}`);
+    this.load.image('bg-gorge-sky-raw', `assets/bg_gorge_sky.png?${v}`);
+    this.load.image('bg-gorge-walls-raw', `assets/bg_gorge_walls.png?${v}`);
+    this.load.image('bg-gorge-structures-raw', `assets/bg_gorge_structures.png?${v}`);
     this.load.image('title-splash', `marketing/drakhart_splash.png`);
     this.load.image('cinematic-gem-1', `assets/cinematic_gem_1.png`);
     this.load.image('cinematic-gem-2', `assets/cinematic_gem_2.png`);
@@ -483,7 +486,18 @@ export class BootScene extends Phaser.Scene {
       this.drawBackgrounds();
     }
 
+    if (this.textures.exists('bg-gorge-sky-raw')) {
+      this.keyOutBlackAndScale('bg-gorge-sky-raw', 'bg-gorge-sky', 240, 240);
+    }
+    if (this.textures.exists('bg-gorge-walls-raw')) {
+      this.keyOutBlackAndScale('bg-gorge-walls-raw', 'bg-gorge-walls', 384, 384);
+    }
+    if (this.textures.exists('bg-gorge-structures-raw')) {
+      this.keyOutBlackAndScale('bg-gorge-structures-raw', 'bg-gorge-structures', 384, 384);
+    }
+
     this.drawDragonCore();
+    this.drawEnergyPickup();
     this.drawSkyCore();
     this.drawBarricade();
     this.drawFireBullet();
@@ -3201,5 +3215,20 @@ export class BootScene extends Phaser.Scene {
     g.fillRect(23, 29, 4, 3);
 
     this.tex(g, 'enemy-mecha', 32, 32);
+  }
+
+  private drawEnergyPickup(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    // metallic bracket/base
+    this.rect(g, 2, 6, 12, 4, 1, 0x3a4a5a);
+    this.rect(g, 4, 4, 8, 8, 1, 0x4a5a6a);
+    // glowing blue capsule
+    this.circ(g, 8, 8, 3.5, 0x00d2d3);
+    this.circ(g, 8, 8, 2.0, 0x00ffff);
+    this.circ(g, 8, 8, 0.8, 0xffffff);
+    // rings / side wings
+    this.rect(g, 0, 7, 2, 2, 0, 0x00d2d3);
+    this.rect(g, 14, 7, 2, 2, 0, 0x00d2d3);
+    this.tex(g, 'energy-pickup', 16, 16);
   }
 }
