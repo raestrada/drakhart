@@ -468,24 +468,24 @@ export class BootScene extends Phaser.Scene {
       this.drawCastleSilhouette();
     }
 
-    // Refinery backgrounds
+    // Refinery support images (un-tiled backdrops)
     if (this.textures.exists('bg-refinery-sun-raw')) {
-      this.keyOutBlackAndScale('bg-refinery-sun-raw', 'bg-refinery-sun', 240, 240);
-    } else {
-      this.drawRedMoon();
+      this.keyOutBlackAndScale('bg-refinery-sun-raw', 'image-refinery-sun', 240, 240);
     }
-
     if (this.textures.exists('bg-furnace-raw')) {
-      this.keyOutBlackAndScale('bg-furnace-raw', 'bg-furnace', 384, 384);
-    } else {
-      this.drawCastleSilhouette();
+      this.keyOutBlackAndScale('bg-furnace-raw', 'image-furnace', 384, 384);
+    }
+    if (this.textures.exists('bg-furnace-pipes-raw')) {
+      this.keyOutBlackAndScale('bg-furnace-pipes-raw', 'image-furnace-pipes', 384, 384);
     }
 
-    if (this.textures.exists('bg-furnace-pipes-raw')) {
-      this.keyOutBlackAndScale('bg-furnace-pipes-raw', 'bg-furnace-pipes', 384, 384);
-    } else {
-      this.drawBackgrounds();
-    }
+    // Procedural background layers for Level 2 (Smelting Refinery)
+    this.drawRefinerySky();
+    this.drawRefineryFurnaces();
+    this.drawRefineryStructures();
+
+    // Procedural decorative props for Level 1, 2, and 3
+    this.drawVisualProps();
 
     // Level 3 Gorge background layers (rendered procedurally)
     this.drawGorgeWalls();
@@ -3375,5 +3375,295 @@ export class BootScene extends Phaser.Scene {
     g.strokePath();
 
     this.tex(g, 'bg-gorge-structures', tw, th);
+  }
+
+  private drawRefinerySky(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const w = 960;
+    const h = 1200;
+
+    // Volcanic gradient
+    for (let y = 0; y < h; y++) {
+      const t = y / h;
+      const r = Math.floor(11 * (1 - t) + 80 * t);
+      const gr = Math.floor(7 * (1 - t) + 20 * t);
+      const bl = Math.floor(18 * (1 - t) + 18 * t);
+      g.fillStyle((r << 16) | (gr << 8) | bl);
+      g.fillRect(0, y, w, 1);
+    }
+
+    // Soot/smoke clouds
+    const drawSmokeCloud = (cx: number, cy: number, radius: number, color: number, alpha: number) => {
+      g.fillStyle(color, alpha);
+      g.fillCircle(cx, cy, radius);
+    };
+
+    for (let j = 0; j < 30; j++) {
+      const t = j / 30;
+      const lx = t * w + Phaser.Math.Between(-50, 50);
+      const ly = h * 0.4 + t * 400 + Phaser.Math.Between(-100, 100);
+      drawSmokeCloud(lx, ly, Phaser.Math.Between(120, 240), 0x110707, 0.25); // black soot
+      drawSmokeCloud(lx + 40, ly - 20, Phaser.Math.Between(80, 180), 0x2d0b11, 0.15); // dark red smoke
+    }
+
+    // Glowing embers in sky
+    for (let i = 0; i < 40; i++) {
+      const ex = Phaser.Math.Between(0, w - 1);
+      const ey = Phaser.Math.Between(0, h - 1);
+      const size = Phaser.Math.Between(2, 4);
+      g.fillStyle(Math.random() > 0.5 ? 0xff5500 : 0xffaa00, 0.6);
+      g.fillRect(ex, ey, size, size);
+    }
+
+    this.tex(g, 'bg-refinery-sky', w, h);
+  }
+
+  private drawRefineryFurnaces(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const w = 960;
+    const h = 800;
+
+    // Background of smelting chimneys/towers
+    // Drawn as dark silhouettes with hot glowing points
+    for (let x = 0; x < w; x++) {
+      // Periodic jagged roofline of towers and furnace stacks
+      const angle = x * (2 * Math.PI / w);
+      let chimneyY = 220;
+
+      // Add a couple of distinct chimney stacks
+      const dx1 = Math.abs(x - 240);
+      const dx2 = Math.abs(x - 680);
+
+      if (dx1 < 32) {
+        chimneyY = 100;
+      } else if (dx2 < 40) {
+        chimneyY = 80;
+      } else {
+        chimneyY = 240 + Math.sin(angle * 3) * 35 
+                           + Math.cos(angle * 7) * 12;
+      }
+
+      const peakY = Math.floor(chimneyY);
+      
+      // Draw structure body (very dark maroon/grey gradient)
+      for (let y = peakY; y < h; y++) {
+        const t = (y - peakY) / (h - peakY || 1);
+        const r = Math.floor(18 * (1 - t) + 10 * t);
+        const gr = Math.floor(12 * (1 - t) + 8 * t);
+        const bl = Math.floor(18 * (1 - t) + 12 * t);
+        g.fillStyle((r << 16) | (gr << 8) | bl);
+        g.fillRect(x, y, 1, 1);
+      }
+
+      // Highlight on right edge of chimneys
+      if (dx1 === 31 || dx2 === 39 || (x % 96 === 0 && x > peakY)) {
+        g.fillStyle(0x4c1b22);
+        g.fillRect(x, peakY, 1, h - peakY);
+      }
+    }
+
+    // Draw a couple of glowing background windows/slits in the towers
+    const drawGlowingSlit = (cx: number, cy: number, cw: number, ch: number) => {
+      g.fillStyle(0x7f1105);
+      g.fillRect(cx, cy, cw, ch);
+      g.fillStyle(0xff4400);
+      g.fillRect(cx + 1, cy + 1, cw - 2, ch - 2);
+      g.fillStyle(0xffaa00);
+      g.fillRect(cx + 2, cy + 2, cw - 4, ch - 4);
+    };
+
+    drawGlowingSlit(224, 180, 8, 40);
+    drawGlowingSlit(234, 180, 8, 40);
+    drawGlowingSlit(664, 160, 10, 50);
+    drawGlowingSlit(678, 160, 10, 50);
+
+    drawGlowingSlit(110, 320, 24, 14);
+    drawGlowingSlit(530, 310, 32, 16);
+    drawGlowingSlit(820, 330, 20, 12);
+
+    this.tex(g, 'bg-refinery-furnaces', w, h);
+  }
+
+  private drawRefineryStructures(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const w = 480;
+    const h = 800;
+
+    // Draw medium-parallax industrial pipes and steel frameworks
+    // Vertical beam at x = 120 and x = 360
+    const beamW = 24;
+    [120, 360].forEach(bx => {
+      g.fillStyle(0x0a0c14);
+      g.fillRect(bx, 0, beamW, h);
+
+      g.fillStyle(0x2d3440); // highlights
+      g.fillRect(bx + 4, 0, 4, h);
+      g.fillRect(bx + 18, 0, 2, h);
+
+      // cross trusses
+      for (let y = 0; y < h; y += 160) {
+        g.lineStyle(2.5, 0x1f2733);
+        g.beginPath();
+        g.moveTo(bx + beamW, y);
+        g.lineTo(bx - 40, y + 80);
+        g.moveTo(bx - 40, y);
+        g.lineTo(bx + beamW, y + 80);
+        g.strokePath();
+
+        // horizontal beam
+        g.fillRect(bx - 40, y + 80, 40, 6);
+      }
+    });
+
+    // Horizontal glowing coolant pipes
+    const pipeY1 = 280;
+    const pipeY2 = 540;
+    const pipeH = 16;
+    [pipeY1, pipeY2].forEach(py => {
+      // Pipe dark body
+      g.fillStyle(0x161c28);
+      g.fillRect(0, py, w, pipeH);
+      
+      // Glowing liquid strip in center
+      g.fillStyle(0xff3300);
+      g.fillRect(0, py + 5, w, 6);
+      g.fillStyle(0xffaa00);
+      g.fillRect(0, py + 7, w, 2);
+
+      // Pipe rims
+      for (let px = 40; px < w; px += 160) {
+        g.fillStyle(0x0d121c);
+        g.fillRect(px, py - 2, 8, pipeH + 4);
+        g.fillStyle(0x3e4a5e);
+        g.fillRect(px + 2, py - 2, 2, pipeH + 4);
+      }
+    });
+
+    this.tex(g, 'bg-refinery-structures', w, h);
+  }
+
+  private drawVisualProps(): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+
+    // 1. Glowing Crystals (prop-crystal, 16x24)
+    g.clear();
+    g.fillStyle(0x9b59b6, 0.22);
+    g.fillCircle(8, 12, 10);
+    g.fillStyle(0x8e44ad, 0.45);
+    g.fillCircle(8, 14, 6);
+    g.fillStyle(0xbe2edd);
+    g.beginPath();
+    g.moveTo(8, 2);
+    g.lineTo(13, 12);
+    g.lineTo(8, 22);
+    g.lineTo(3, 12);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0xe056fd);
+    g.beginPath();
+    g.moveTo(8, 2);
+    g.lineTo(13, 12);
+    g.lineTo(8, 22);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0xffffff);
+    g.fillRect(7, 10, 2, 4);
+    this.tex(g, 'prop-crystal', 16, 24);
+
+    // 2. Iron Chain (prop-chain, 8x48)
+    g.clear();
+    const linkH = 12;
+    for (let y = 0; y < 48; y += linkH) {
+      g.lineStyle(1.5, 0x1e272e);
+      g.strokeRoundedRect(1, y, 6, linkH, 3);
+      g.fillStyle(0x2f3640);
+      g.fillRoundedRect(1.5, y + 0.5, 5, linkH - 1, 2.5);
+      g.fillStyle(0x8c5064);
+      g.fillRect(4, y + 2, 2, 6);
+      g.fillStyle(0xdff9fb);
+      g.fillRect(2, y + 2, 1, 3);
+    }
+    this.tex(g, 'prop-chain', 8, 48);
+
+    // 3. Refinery Console (prop-console, 24x32)
+    g.clear();
+    g.fillStyle(0x1e272e);
+    g.fillRect(2, 6, 20, 26);
+    g.fillStyle(0x2f3640);
+    g.fillRect(2, 6, 10, 26);
+    g.fillStyle(0x0a3d62);
+    g.fillRect(4, 8, 16, 12);
+    g.lineStyle(1, 0x00d2d3, 0.85);
+    g.beginPath();
+    g.moveTo(5, 14);
+    g.lineTo(9, 14);
+    g.lineTo(11, 10);
+    g.lineTo(13, 18);
+    g.lineTo(15, 14);
+    g.lineTo(19, 14);
+    g.strokePath();
+    g.fillStyle(0xff3f34);
+    g.fillCircle(6, 24, 1.5);
+    g.fillStyle(0xffc048);
+    g.fillCircle(12, 24, 1.5);
+    g.fillStyle(0x05c46b);
+    g.fillCircle(18, 24, 1.5);
+    g.fillStyle(0x718093);
+    g.fillRect(2, 6, 20, 1.5);
+    g.fillRect(21, 6, 1, 26);
+    this.tex(g, 'prop-console', 24, 32);
+
+    // 4. Warning Light (prop-warning-light, 16x16)
+    g.clear();
+    g.fillStyle(0x2c3e50);
+    g.fillRect(2, 11, 12, 5);
+    g.lineStyle(1, 0x7f8c8d);
+    g.strokeRect(4, 2, 8, 9);
+    g.fillStyle(0xff2200, 0.45);
+    g.fillCircle(8, 6, 5);
+    g.fillStyle(0xff8833);
+    g.fillCircle(8, 6, 2.5);
+    g.fillStyle(0xffffff);
+    g.fillCircle(8, 6, 1);
+    this.tex(g, 'prop-warning-light', 16, 16);
+
+    // 5. Floating Gorge Debris 1 (prop-debris-1, 24x24)
+    g.clear();
+    g.fillStyle(0x1e1e24);
+    g.beginPath();
+    g.moveTo(12, 2);
+    g.lineTo(22, 8);
+    g.lineTo(18, 20);
+    g.lineTo(6, 18);
+    g.lineTo(3, 10);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0x3e3e4a);
+    g.beginPath();
+    g.moveTo(12, 2);
+    g.lineTo(22, 8);
+    g.lineTo(18, 12);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0xff4400);
+    g.fillRect(8, 10, 6, 2);
+    g.fillRect(10, 8, 2, 6);
+    g.fillStyle(0xffaa00);
+    g.fillCircle(10, 10, 1);
+    this.tex(g, 'prop-debris-1', 24, 24);
+
+    // 6. Floating Gorge Debris 2 (prop-debris-2, 20x20)
+    g.clear();
+    g.fillStyle(0x18181f);
+    g.beginPath();
+    g.moveTo(10, 3);
+    g.lineTo(18, 9);
+    g.lineTo(14, 17);
+    g.lineTo(5, 14);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0xff3300);
+    g.fillRect(8, 9, 4, 1.5);
+    this.tex(g, 'prop-debris-2', 20, 20);
   }
 }

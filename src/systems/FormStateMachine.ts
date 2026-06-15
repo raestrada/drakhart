@@ -197,7 +197,13 @@ export class FormStateMachine {
       (this.currentState === FormState.DRAGON || this.currentState === FormState.MECHA) &&
       this.energySystem.isDepleted()
     ) {
-      this.startRevert();
+      if (this.scene.scene.key === 'GameScene3') {
+        if (this.player.alive) {
+          this.player.takeDamage(100, 0);
+        }
+      } else {
+        this.startRevert();
+      }
     }
 
     if (this.currentState === FormState.DRAGON) {

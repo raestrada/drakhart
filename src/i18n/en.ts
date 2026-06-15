@@ -40,6 +40,7 @@ export const en = {
     introSkip: 'ENTER / CLICK TO CONTINUE',
     level3Intro: 'THE ASHEN GORGE\n\nFly through the canyon in Dragon form!\nCollect Energy Cells to stay airborne.\nTaking damage or hitting walls drags you back.',
     bossAlert: 'BOSS DETECTED: CORRUPTED DRACONEL',
+    extremeHeat: 'EXTREME HEAT: WARRIOR BURNS - FIND ENERGY',
   },
   boss: {
     name: 'CORRUPTED DRACONEL',

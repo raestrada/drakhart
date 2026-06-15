@@ -30,8 +30,7 @@ export class ShmupSystem {
   private waves: WaveDefinition[];
   private spawnedWaves = new Set<number>();
   private shmupEnemies: Phaser.Physics.Arcade.Group;
-  private autoFireTimer = 0;
-  private autoFireInterval = 120;
+
 
   private scrollX = 0;
 
@@ -101,12 +100,7 @@ export class ShmupSystem {
       (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = 0;
     }
 
-    // Auto-fire
-    this.autoFireTimer += delta;
-    if (this.autoFireTimer >= this.autoFireInterval) {
-      this.autoFireTimer = 0;
-    this.player.combatSystem.fireBreathAuto(true);
-    }
+
 
     // Spawn waves
     this.waves.forEach((wave) => {

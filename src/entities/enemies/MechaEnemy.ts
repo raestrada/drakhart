@@ -22,17 +22,19 @@ export class MechaEnemy extends BaseEnemy {
     }
   ) {
     super(scene, x, y, 'enemy-mecha', player, {
-      health: config?.health ?? 120, // High health
+      health: config?.health ?? 300, // Increased health for longer fights
       speed: config?.speed ?? 40,   // Slow moving heavy unit
       detectRange: config?.detectRange ?? 240,
-      attackRange: config?.attackRange ?? 60,
-      damage: config?.damage ?? 20,   // High contact damage
-      attackCooldown: config?.attackCooldown ?? 1600,
+      attackRange: config?.attackRange ?? 70, // Slightly longer range for larger sprite
+      damage: config?.damage ?? 30,   // Increased contact damage
+      attackCooldown: config?.attackCooldown ?? 1800,
       patrolMinX: config?.patrolMinX,
       patrolMaxX: config?.patrolMaxX,
     });
 
-    (this.body as Phaser.Physics.Arcade.Body).setSize(32, 32);
+    this.setScale(1.6); // Scale up to look heavy and threatening
+    (this.body as Phaser.Physics.Arcade.Body).setSize(28, 32);
+    (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 0);
   }
 
   takeDamage(amount: number): void {
@@ -94,7 +96,7 @@ export class MechaEnemy extends BaseEnemy {
       (this.scene as any).gameAudio?.playLand?.(); // Heavy smash sound
 
       // Spawn shockwave dust rings on ground
-      const dust = this.scene.add.rectangle(this.x, this.y + 16, 8, 4, 0x555555);
+      const dust = this.scene.add.rectangle(this.x, this.y + 24, 8, 4, 0x555555);
       this.scene.tweens.add({
         targets: dust,
         scaleX: 6.0,

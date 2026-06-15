@@ -127,6 +127,7 @@ export class GameScene extends Phaser.Scene {
     this.createCrumblingPlatforms();
     this.createForeground();
     this.createDestructibles();
+    this.createDecorations();
     this.createFogWall();
     this.createAshParticles();
     this.tarotSystem = new TarotSystem();
@@ -694,6 +695,76 @@ export class GameScene extends Phaser.Scene {
     this.addDestructible(7420, 460, 'rock-large');
     this.addDestructible(7500, 460, 'bush');
     this.addDestructible(7540, 460, 'rock-destructible');
+  }
+
+  private createDecorations(): void {
+    // Spawn glowing crystals on solid ground/platforms
+    const crystalSpots = [
+      { x: 300, y: 736 },
+      { x: 550, y: 736 },
+      { x: 920, y: 640 },
+      { x: 1250, y: 520 },
+      { x: 1550, y: 736 },
+      { x: 2150, y: 650 },
+      { x: 2500, y: 736 },
+      { x: 2900, y: 620 },
+      { x: 3450, y: 520 },
+      { x: 3800, y: 736 },
+      { x: 4200, y: 640 },
+      { x: 4650, y: 640 },
+      { x: 5150, y: 736 },
+      { x: 5500, y: 550 },
+      { x: 6050, y: 480 },
+      { x: 6500, y: 736 },
+      { x: 7000, y: 660 },
+      { x: 7420, y: 460 },
+    ];
+
+    crystalSpots.forEach((spot) => {
+      const crystal = this.add.image(spot.x, spot.y, 'prop-crystal');
+      crystal.setOrigin(0.5, 1);
+      crystal.setDepth(-1);
+      crystal.setScale(Phaser.Math.FloatBetween(0.85, 1.15));
+      if (Math.random() > 0.5) crystal.setFlipX(true);
+
+      this.tweens.add({
+        targets: crystal,
+        alpha: { from: 0.75, to: 1.0 },
+        scaleY: crystal.scaleY * 1.06,
+        duration: Phaser.Math.Between(1600, 2600),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
+
+    // Spawn hanging chains from ceilings/under platforms
+    const chainSpots = [
+      { x: 240, y: 96, length: 3 },
+      { x: 450, y: 96, length: 4 },
+      { x: 850, y: 96, length: 3 },
+      { x: 1200, y: 96, length: 5 },
+      { x: 1750, y: 96, length: 4 },
+      { x: 2300, y: 96, length: 3 },
+      { x: 2750, y: 220, length: 2 },
+      { x: 3100, y: 220, length: 3 },
+      { x: 3600, y: 96, length: 4 },
+      { x: 4100, y: 96, length: 5 },
+      { x: 4800, y: 96, length: 3 },
+      { x: 5350, y: 96, length: 4 },
+      { x: 5900, y: 96, length: 4 },
+      { x: 6450, y: 96, length: 3 },
+      { x: 7100, y: 96, length: 5 },
+    ];
+
+    chainSpots.forEach((spot) => {
+      for (let i = 0; i < spot.length; i++) {
+        const link = this.add.image(spot.x, spot.y + i * 20, 'prop-chain');
+        link.setOrigin(0.5, 0);
+        link.setDepth(-2);
+        link.setAngle(Math.sin(i * 0.5) * 4);
+      }
+    });
   }
 
   private checkBushDestruction(): void {

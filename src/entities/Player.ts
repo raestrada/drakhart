@@ -36,6 +36,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyW!: Phaser.Input.Keyboard.Key;
   private keyA!: Phaser.Input.Keyboard.Key;
+  private keyS!: Phaser.Input.Keyboard.Key;
   private keyD!: Phaser.Input.Keyboard.Key;
   private facingRight = true;
   private jumpPressed = false;
@@ -98,6 +99,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.cursors = kb.createCursorKeys();
     this.keyW = kb.addKey(Phaser.Input.Keyboard.KeyCodes.W);
     this.keyA = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.keyS = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keyD = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     const keyTransform = kb.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     const keyAttack = kb.addKey(Phaser.Input.Keyboard.KeyCodes.X);
@@ -107,9 +109,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
 
     keyAttack.on(Phaser.Input.Keyboard.Events.DOWN, () => {
-      if (this.formMachine.state !== FormState.DRAGON) {
-        this.combatSystem.attack(this.formMachine.state, this.facingRight);
-      }
+      this.combatSystem.attack(this.formMachine.state, this.facingRight);
     });
 
     // Jump Buffering listeners
@@ -375,11 +375,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setFlipX(false);
     }
 
-    // Shmup continuous firing: check if attack key (X) is held down
-    const keyAttack = this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.X);
-    if (keyAttack.isDown) {
-      this.combatSystem.attack(FormState.DRAGON, this.facingRight);
-    }
+
   }
 
   private updateAnimation(delta: number): void {
@@ -387,12 +383,30 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.formMachine.state === FormState.DRAGON) {
       const body = this.body as Phaser.Physics.Arcade.Body;
-      const flightSpeed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+      let vx = body.velocity.x;
+      let vy = body.velocity.y;
+
+      // If physical velocity is zero (autoscroll scene overrides it), simulate velocity for tilt & particles
+      if (vx === 0 && vy === 0) {
+        const left = this.cursors.left?.isDown || this.keyA?.isDown;
+        const right = this.cursors.right?.isDown || this.keyD?.isDown;
+        const up = this.cursors.up?.isDown || this.keyW?.isDown;
+        const down = this.cursors.down?.isDown || this.keyS?.isDown;
+
+        const speed = 260; // fly speed
+        if (left) vx = -speed;
+        else if (right) vx = speed;
+
+        if (up) vy = -speed;
+        else if (down) vy = speed;
+      }
+
+      const flightSpeed = Math.sqrt(vx * vx + vy * vy);
 
       // 1. Aerodynamic tilting
       const targetAngle = this.facingRight
-        ? body.velocity.y * 0.04 + body.velocity.x * 0.015
-        : -(body.velocity.y * 0.04 - body.velocity.x * 0.015);
+        ? vy * 0.04 + vx * 0.015
+        : -(vy * 0.04 - vx * 0.015);
       this.angle = Phaser.Math.Linear(this.angle, Phaser.Math.Clamp(targetAngle, -25, 25), 0.12);
 
       // 2. Dynamic flap speed
@@ -405,7 +419,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
       // 3. Flight core particles
       if (flightSpeed > 50) {
-        this.spawnFlightParticles(body);
+        this.spawnFlightParticles(body, vx, vy);
       }
       return;
     }
@@ -652,7 +666,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  private spawnFlightParticles(body: Phaser.Physics.Arcade.Body): void {
+  private spawnFlightParticles(body: Phaser.Physics.Arcade.Body, virtualVx?: number, virtualVy?: number): void {
     const dir = this.facingRight ? -1 : 1;
     // Align starting point at the base of the tail/rear thruster.
     // The dragon sprite is 96x72, and since it rotates, we apply rotation offsets.
@@ -683,8 +697,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       const angleRad = rad + (dir === -1 ? 0 : Math.PI);
       const spread = Phaser.Math.FloatBetween(-0.25, 0.25);
       const speedVal = Phaser.Math.Between(160, 320);
-      const vx = Math.cos(angleRad + spread) * speedVal + body.velocity.x * 0.25;
-      const vy = Math.sin(angleRad + spread) * speedVal + body.velocity.y * 0.25;
+      const currentVx = virtualVx !== undefined ? virtualVx : body.velocity.x;
+      const currentVy = virtualVy !== undefined ? virtualVy : body.velocity.y;
+      const vx = Math.cos(angleRad + spread) * speedVal + currentVx * 0.25;
+      const vy = Math.sin(angleRad + spread) * speedVal + currentVy * 0.25;
 
       this.scene.tweens.add({
         targets: p,

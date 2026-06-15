@@ -50,43 +50,7 @@ export class CombatSystem {
     }
   }
 
-  fireBreathAuto(facingRight: boolean): void {
-    if (this.fireCooldown) return;
-    if (!this.player.formMachine.energy.canShoot()) return;
 
-    this.fireCooldown = true;
-    this.player.formMachine.energy.consumeShoot();
-    (this.scene as any).gameAudio?.playFireball();
-
-    const dir = facingRight ? 1 : -1;
-    const bullet = this.fireBullets.get(
-      this.player.x + dir * 44,
-      this.player.y - 4,
-      'bullet-fire'
-    ) as Phaser.Physics.Arcade.Sprite;
-
-    if (!bullet) {
-      this.fireCooldown = false;
-      return;
-    }
-
-    bullet.setActive(true);
-    bullet.setVisible(true);
-    bullet.setVelocityX(FIRE_SPEED * dir);
-    bullet.setFlipX(!facingRight);
-    bullet.setBlendMode(Phaser.BlendModes.ADD);
-
-    this.scene.time.delayedCall(FIRE_LIFETIME, () => {
-      if (bullet.active) {
-        bullet.setActive(false);
-        bullet.setVisible(false);
-      }
-    });
-
-    this.scene.time.delayedCall(FIRE_COOLDOWN, () => {
-      this.fireCooldown = false;
-    });
-  }
 
   private swordAttack(facingRight: boolean): void {
     if (this.swordCooldown || this.swordActive) return;
@@ -266,16 +230,33 @@ export class CombatSystem {
     (this.scene as any).gameAudio?.playFireball();
 
     const dir = facingRight ? 1 : -1;
-    const spawnX = this.player.x + dir * 44;
-    const spawnY = this.player.y - 4;
+    
+    // Rotate offset to match current dragon angle
+    const rad = Phaser.Math.DegToRad(this.player.angle);
+    const offsetX = dir * 44;
+    const offsetY = -4;
+
+    const spawnX = this.player.x + (offsetX * Math.cos(rad) - offsetY * Math.sin(rad));
+    const spawnY = this.player.y + (offsetX * Math.sin(rad) + offsetY * Math.cos(rad));
 
     const bullet = this.fireBullets.get(spawnX, spawnY, 'bullet-fire') as Phaser.Physics.Arcade.Sprite;
 
-    if (!bullet) return;
+    // fireBreathAuto removed – manual fire handled by fireBreath()
+
+    if (!bullet) {
+      this.fireCooldown = false;
+      return;
+    }
 
     bullet.enableBody(true, spawnX, spawnY, true, true);
-    bullet.setVelocityX(FIRE_SPEED * dir);
-    bullet.setFlipX(!facingRight);
+    
+    // Calculate polar angle for bullet velocity
+    const angleDeg = facingRight ? this.player.angle : (180 + this.player.angle);
+    const bulletAngleRad = Phaser.Math.DegToRad(angleDeg);
+
+    bullet.setVelocity(FIRE_SPEED * Math.cos(bulletAngleRad), FIRE_SPEED * Math.sin(bulletAngleRad));
+    bullet.setRotation(bulletAngleRad);
+    bullet.setFlipX(false);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.time.delayedCall(FIRE_LIFETIME, () => {

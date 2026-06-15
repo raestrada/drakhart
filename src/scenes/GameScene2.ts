@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { GameAudio } from '../systems/GameAudio';
 import { SkyCore } from '../entities/SkyCore';
+import { EnergyPickup } from '../entities/EnergyPickup';
 import { TarotCard } from '../entities/TarotCard';
 import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { MechaEnemy } from '../entities/enemies/MechaEnemy';
@@ -40,13 +41,19 @@ export class GameScene2 extends Phaser.Scene {
   private hazards!: Phaser.Physics.Arcade.StaticGroup;
   private steamVents!: Phaser.Physics.Arcade.StaticGroup;
   private coolingValves!: Phaser.Physics.Arcade.StaticGroup;
+  private energyPickups!: Phaser.Physics.Arcade.StaticGroup;
   private skyCore!: SkyCore;
   private tarotSystem!: TarotSystem;
 
   private bgRefinerySun!: Phaser.GameObjects.TileSprite;
   private bgFurnace!: Phaser.GameObjects.TileSprite;
   private bgFurnacePipes!: Phaser.GameObjects.TileSprite;
+  private refinerySunImage!: Phaser.GameObjects.Image;
+  private furnaceImage!: Phaser.GameObjects.Image;
+  private pipesImage!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Image;
+  private heatWarningText!: Phaser.GameObjects.Text;
+  private lastHeatDamageSoundTime = 0;
   private emberTimer = 0;
 
   private pendingMechaUnlock = true;
@@ -90,6 +97,7 @@ export class GameScene2 extends Phaser.Scene {
     });
 
     this.createParallax();
+    this.createDecorations();
     this.createLevel();
     this.createInteractiveObjects();
     this.tarotSystem = new TarotSystem();
@@ -112,6 +120,18 @@ export class GameScene2 extends Phaser.Scene {
     this.setupCollisions();
     this.createVignette();
 
+    const cx = this.scale.width / 2;
+    this.heatWarningText = this.add.text(cx, 120, '', {
+      fontSize: '13px',
+      fontFamily: 'monospace',
+      color: '#ff2200',
+      stroke: '#000000',
+      strokeThickness: 3,
+    })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(500);
+
     this.scene.launch('UIScene', {
       player: this.player,
       tarotSystem: this.tarotSystem,
@@ -121,26 +141,50 @@ export class GameScene2 extends Phaser.Scene {
   private createParallax(): void {
     this.cameras.main.setBackgroundColor('#0b0712');
 
-    // 1. Refinery Sun Sky background (static with minimal drift)
-    this.bgRefinerySun = this.add.tileSprite(0, 0, LEVEL_WIDTH, 1200, 'bg-refinery-sun')
+    // 1. Refinery Sky background (procedural gradient + soot)
+    this.bgRefinerySun = this.add.tileSprite(0, 0, LEVEL_WIDTH, 1200, 'bg-refinery-sky')
       .setOrigin(0, 0)
       .setScrollFactor(0.01, 0)
       .setDepth(-30);
-    this.bgRefinerySun.setTint(0xbb6655, 0xbb6655, 0x442222, 0x442222);
+    this.bgRefinerySun.setTint(0xcc6655, 0xcc6655, 0x442222, 0x442222);
 
-    // 2. Smelting Furnace background (slow parallax scrolling)
-    this.bgFurnace = this.add.tileSprite(0, 180, this.scale.width * 1.5, 800, 'bg-furnace')
+    // 1.1 Refinery Sun single support image (non-tiled)
+    if (this.textures.exists('image-refinery-sun')) {
+      this.refinerySunImage = this.add.image(0, 0, 'image-refinery-sun')
+        .setOrigin(0.5, 0.5)
+        .setDepth(-29);
+      this.refinerySunImage.setTint(0xffaa99, 0xff8877, 0x552222, 0x442222);
+    }
+
+    // 2. Smelting Furnace background (procedural silhouette towers, slow scroll)
+    this.bgFurnace = this.add.tileSprite(0, 180, this.scale.width * 1.5, 800, 'bg-refinery-furnaces')
       .setOrigin(0, 0)
       .setScrollFactor(0.06, 0)
       .setDepth(-20);
     this.bgFurnace.setTint(0xff8866, 0xff88aa, 0x66222c, 0x883344);
 
-    // 3. Furnace Pipes background (medium parallax scrolling)
-    this.bgFurnacePipes = this.add.tileSprite(0, 240, this.scale.width * 1.5, 800, 'bg-furnace-pipes')
+    // 2.1 Smelting Furnace Reactor single support image (non-tiled)
+    if (this.textures.exists('image-furnace')) {
+      this.furnaceImage = this.add.image(0, 0, 'image-furnace')
+        .setOrigin(0.5, 0.5)
+        .setDepth(-19);
+      this.furnaceImage.setTint(0xff8866, 0xff88aa, 0x66222c, 0x883344);
+    }
+
+    // 3. Furnace Pipes background (procedural girders & pipes, medium scroll)
+    this.bgFurnacePipes = this.add.tileSprite(0, 240, this.scale.width * 1.5, 800, 'bg-refinery-structures')
       .setOrigin(0, 0)
       .setScrollFactor(0.18, 0)
       .setDepth(-10);
     this.bgFurnacePipes.setTint(0xbb5544, 0xdd6644, 0x221111, 0x331111);
+
+    // 3.1 Refinery Pipes detail single support image (non-tiled)
+    if (this.textures.exists('image-furnace-pipes')) {
+      this.pipesImage = this.add.image(0, 0, 'image-furnace-pipes')
+        .setOrigin(0.5, 0.5)
+        .setDepth(-9);
+      this.pipesImage.setTint(0xbb5544, 0xdd6644, 0x221111, 0x331111);
+    }
   }
 
   private updateParallax(): void {
@@ -175,6 +219,33 @@ export class GameScene2 extends Phaser.Scene {
       this.bgFurnacePipes.setScale(1.0 / cam.zoom);
       this.bgFurnacePipes.y = (240 - cam.centerY) / cam.zoom + cam.centerY;
     }
+
+    // Scroll Refinery Sun support image slowly
+    if (this.refinerySunImage) {
+      const targetScreenX = w * 0.70 - camX * 0.015;
+      const targetScreenY = h * 0.22;
+      this.refinerySunImage.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      this.refinerySunImage.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      this.refinerySunImage.setScale(1.25 / cam.zoom);
+    }
+
+    // Scroll Smelting Furnace support image
+    if (this.furnaceImage) {
+      const targetScreenX = w * 0.40 - camX * 0.06;
+      const targetScreenY = h * 0.45;
+      this.furnaceImage.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      this.furnaceImage.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      this.furnaceImage.setScale(1.1 / cam.zoom);
+    }
+
+    // Scroll Refinery Pipes support image
+    if (this.pipesImage) {
+      const targetScreenX = w * 0.85 - camX * 0.18;
+      const targetScreenY = h * 0.55;
+      this.pipesImage.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      this.pipesImage.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      this.pipesImage.setScale(1.05 / cam.zoom);
+    }
   }
 
   private createLevel(): void {
@@ -195,12 +266,11 @@ export class GameScene2 extends Phaser.Scene {
       // Lava Lake from 2200 to 3800
       { x: 3800, y: 736, width: 700, height: 64, texture: 'tile-lava-ground' },
 
-      // Floating platforms in the lava zone:
-      { x: 2300, y: 580, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 2550, y: 460, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 2800, y: 380, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 3100, y: 500, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 3450, y: 580, width: 160, height: 16, texture: 'tile-refinery' },
+      // Floating platforms in the lava zone (widened gaps):
+      { x: 2350, y: 560, width: 96, height: 16, texture: 'tile-refinery' },
+      { x: 2750, y: 460, width: 96, height: 16, texture: 'tile-refinery' },
+      { x: 3150, y: 420, width: 96, height: 16, texture: 'tile-refinery' },
+      { x: 3500, y: 540, width: 96, height: 16, texture: 'tile-refinery' },
 
       // === SECTION 3: Overcharge Chamber (4500-6800) ===
       { x: 4500, y: 736, width: 2300, height: 64, texture: 'tile-lava-ground' },
@@ -246,6 +316,7 @@ export class GameScene2 extends Phaser.Scene {
     this.barricades = this.physics.add.staticGroup();
     this.steamVents = this.physics.add.staticGroup();
     this.coolingValves = this.physics.add.staticGroup();
+    this.energyPickups = this.physics.add.staticGroup();
 
     // Barricades that require heavy mecha claymore slashes
     // Ground blockades
@@ -256,7 +327,7 @@ export class GameScene2 extends Phaser.Scene {
     // Upper platform blockades (Warrior cannot pass since sword damage is 25, below the 75 threshold)
     const bPlatform1 = new Barricade(this, 780, 488);  // Platform at x:700, y:520
     const bPlatform2 = new Barricade(this, 1380, 488); // Platform at x:1300, y:520
-    const bPlatform3 = new Barricade(this, 2864, 348); // Platform at x:2800, y:380 (floating in lava)
+    const bPlatform3 = new Barricade(this, 2798, 428); // Platform 2 at x:2750, y:460
     const bPlatform4 = new Barricade(this, 5300, 328); // Platform at x:5200, y:360
     const bPlatform5 = new Barricade(this, 6300, 448); // Platform at x:6200, y:480
     const bPlatform6 = new Barricade(this, 7160, 588); // Platform at x:7100, y:620
@@ -268,16 +339,36 @@ export class GameScene2 extends Phaser.Scene {
 
     // Steam vents for launching mecha and increasing heat
     const v1 = new SteamVent(this, 1400, 720);
-    const v2 = new SteamVent(this, 2364, 564);
-    const v3 = new SteamVent(this, 2964, 484);
+    const v2 = new SteamVent(this, 2398, 544); // Platform 1 at x:2350, y:560
+    const v3 = new SteamVent(this, 3198, 404); // Platform 3 at x:3150, y:420
     const v4 = new SteamVent(this, 4800, 720);
     this.steamVents.addMultiple([v1, v2, v3, v4]);
 
     // Cooling valves for heat dumping and freezing enemies
     const c1 = new CoolingValve(this, 1800, 704);
-    const c2 = new CoolingValve(this, 3530, 564);
+    const c2 = new CoolingValve(this, 3530, 524); // Adjust slightly for Platform 4
     const c3 = new CoolingValve(this, 5000, 704);
     this.coolingValves.addMultiple([c1, c2, c3]);
+
+    // Scatter Energy Pickups across Level 2 to sustain Mecha and help Warrior recover
+    const pickupSpots = [
+      { x: 900, y: 540 },
+      { x: 1450, y: 460 },
+      { x: 2150, y: 680 },
+      { x: 2550, y: 440 }, // floating in gap 1-2
+      { x: 2950, y: 340 }, // floating in gap 2-3
+      { x: 3350, y: 380 }, // floating in gap 3-4
+      { x: 4000, y: 680 },
+      { x: 5100, y: 300 },
+      { x: 5700, y: 440 },
+      { x: 6355, y: 420 },
+      { x: 7000, y: 560 },
+    ];
+
+    pickupSpots.forEach((spot) => {
+      const pickup = new EnergyPickup(this, spot.x, spot.y);
+      this.energyPickups.add(pickup);
+    });
 
     // The Flight Core (SkyCore) Altar
     this.skyCore = new SkyCore(this, 7478, 450);
@@ -317,8 +408,8 @@ export class GameScene2 extends Phaser.Scene {
 
     // Upper platform Spitters
     const sPlatform1 = new SpitterEnemy(this, 1100, 584, this.player); // Platform at 1000, y:600
-    const sPlatform2 = new SpitterEnemy(this, 2600, 444, this.player); // Platform at 2550, y:460 (lava zone)
-    const sPlatform3 = new SpitterEnemy(this, 3150, 484, this.player); // Platform at 3100, y:500 (lava zone)
+    const sPlatform2 = new SpitterEnemy(this, 2800, 444, this.player); // Platform 2 at x:2750, y:460 (lava zone)
+    const sPlatform3 = new SpitterEnemy(this, 3170, 404, this.player); // Platform 3 at x:3150, y:420 (lava zone)
     const sPlatform4 = new SpitterEnemy(this, 5600, 484, this.player); // Platform at 5500, y:500
 
     this.enemies.addMultiple([
@@ -369,6 +460,12 @@ export class GameScene2 extends Phaser.Scene {
       }
     });
 
+    // Overlap with Energy Crystals in Level 2
+    this.physics.add.overlap(this.player, this.energyPickups, (_player, _pickup) => {
+      const pickup = _pickup as EnergyPickup;
+      pickup.collect(this.player);
+    });
+
     // Overlap with Flight Core (SkyCore) triggers the final cutscene
     this.physics.add.overlap(this.player, this.skyCore, (_player, core) => {
       (core as SkyCore).collect(_player as Player);
@@ -397,6 +494,51 @@ export class GameScene2 extends Phaser.Scene {
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
+
+    // Apply extreme heat environmental damage to Warrior form
+    if (this.player.active && this.player.alive) {
+      const state = this.player.formMachine.state;
+      if (state === FormState.HUMAN || state === FormState.EXHAUSTED) {
+        this.heatWarningText.setText(t('story.extremeHeat') || 'EXTREME HEAT: WARRIOR BURNS - FIND ENERGY');
+        this.heatWarningText.setAlpha(0.6 + Math.sin(time * 0.01) * 0.4);
+
+        // Health drain: 8 HP per second
+        this.player.health -= 8 * (delta / 1000);
+
+        if (time - this.lastHeatDamageSoundTime > 700) {
+          this.lastHeatDamageSoundTime = time;
+          this.gameAudio?.playDamage?.();
+          this.player.setTint(0xff5500);
+          this.time.delayedCall(150, () => {
+            if (this.player.active) this.player.clearTint();
+          });
+        }
+
+        if (Math.random() > 0.4) {
+          const ember = this.add.rectangle(
+            this.player.x + Phaser.Math.Between(-16, 16),
+            this.player.y + Phaser.Math.Between(-24, 24),
+            Phaser.Math.Between(2, 4),
+            Phaser.Math.Between(2, 4),
+            0xffaa00
+          );
+          ember.setDepth(this.player.depth + 1);
+          this.tweens.add({
+            targets: ember,
+            y: ember.y - 45,
+            alpha: 0,
+            duration: 450,
+            onComplete: () => ember.destroy()
+          });
+        }
+
+        if (this.player.health <= 0) {
+          (this.player as any).die();
+        }
+      } else {
+        this.heatWarningText.setText('');
+      }
+    }
 
     // Apply Steam Vents overlap boost checks
     this.steamVents.getChildren().forEach((vent) => {
@@ -846,6 +988,83 @@ export class GameScene2 extends Phaser.Scene {
         alpha: 1,
         duration: 2000,
         ease: 'Power2',
+      });
+    });
+  }
+
+  private createDecorations(): void {
+    // Spawn refinery consoles on platforms
+    const consoleSpots = [
+      { x: 300, y: 736 },
+      { x: 500, y: 600 },
+      { x: 800, y: 520 },
+      { x: 1100, y: 600 },
+      { x: 1400, y: 520 },
+      { x: 1700, y: 600 },
+      { x: 2350, y: 580 },
+      { x: 2600, y: 460 },
+      { x: 3000, y: 520 },
+      { x: 3350, y: 400 },
+      { x: 3650, y: 460 },
+      { x: 4000, y: 736 },
+      { x: 4400, y: 520 },
+      { x: 4800, y: 600 },
+      { x: 5350, y: 460 },
+      { x: 5700, y: 520 },
+      { x: 6150, y: 600 },
+      { x: 6600, y: 400 },
+      { x: 7050, y: 520 },
+      { x: 7350, y: 736 },
+    ];
+
+    consoleSpots.forEach((spot) => {
+      const console = this.add.image(spot.x, spot.y, 'prop-console');
+      console.setOrigin(0.5, 1);
+      console.setDepth(-1);
+      if (Math.random() > 0.5) console.setFlipX(true);
+    });
+
+    // Spawn blinking warning lights on background walls / ceilings
+    const lightSpots = [
+      { x: 150, y: 150 },
+      { x: 420, y: 180 },
+      { x: 680, y: 140 },
+      { x: 950, y: 160 },
+      { x: 1250, y: 180 },
+      { x: 1520, y: 150 },
+      { x: 1880, y: 170 },
+      { x: 2150, y: 130 },
+      { x: 2480, y: 160 },
+      { x: 2820, y: 140 },
+      { x: 3150, y: 150 },
+      { x: 3520, y: 170 },
+      { x: 3900, y: 150 },
+      { x: 4250, y: 140 },
+      { x: 4620, y: 160 },
+      { x: 4950, y: 150 },
+      { x: 5280, y: 130 },
+      { x: 5620, y: 160 },
+      { x: 5950, y: 140 },
+      { x: 6280, y: 150 },
+      { x: 6650, y: 170 },
+      { x: 7020, y: 140 },
+      { x: 7450, y: 150 },
+    ];
+
+    lightSpots.forEach((spot) => {
+      const wLight = this.add.image(spot.x, spot.y, 'prop-warning-light');
+      wLight.setOrigin(0.5, 0.5);
+      wLight.setDepth(-15);
+      wLight.setScrollFactor(0.06);
+
+      this.tweens.add({
+        targets: wLight,
+        alpha: { from: 0.2, to: 1.0 },
+        scale: { from: 0.9, to: 1.25 },
+        duration: Phaser.Math.Between(400, 800),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Cubic.easeInOut'
       });
     });
   }

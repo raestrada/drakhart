@@ -61,8 +61,7 @@ export class GameScene3 extends Phaser.Scene {
   private scrollSpeed = 165; // speed of autoscroll
   private playerScreenX = 200; // start 200px from left
   private playerScreenY = 400; // start center vertical
-  private autoFireTimer = 0;
-  private autoFireInterval = 110; // dragon fire speed
+
 
   private waves: WaveDef[] = [];
   private spawnedWaves = new Set<number>();
@@ -121,6 +120,7 @@ export class GameScene3 extends Phaser.Scene {
     this.createParallax();
     this.createLevel();
     this.createInteractiveObjects();
+    this.createDecorations();
     this.tarotSystem = new TarotSystem();
 
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
@@ -509,17 +509,13 @@ export class GameScene3 extends Phaser.Scene {
         body.setVelocity(0, 0);
       }
 
-      // 3. Shmup auto-fire
-      this.autoFireTimer += delta;
-      if (this.autoFireTimer >= this.autoFireInterval) {
-        this.autoFireTimer = 0;
-        this.player.combatSystem.fireBreathAuto(true);
-      }
+
 
     } else if (this.player.active && this.player.alive) {
-      // Reverted to human/mecha form (or dead).
-      // Self-sabotage or energy loss! Let gravity drag player body down into the void
-      if (this.player.y > LEVEL_HEIGHT + 60) {
+      // Reverted to human/mecha form.
+      // Self-sabotage or energy loss! Let gravity drag player body down into the void.
+      // In Level 3, falling below the corridor (y > 690) is fatal.
+      if (this.player.y > 690) {
         this.player.takeDamage(100, 0);
       }
     }
@@ -837,10 +833,18 @@ export class GameScene3 extends Phaser.Scene {
       osc.stop(t + 1.6);
     }
 
+    // Force player texture, scale, and state to Dragon for the death sequence
+    player.formMachine.unlockTransform();
+    player.formMachine.unlockDragon();
+    (player.formMachine as any).currentState = FormState.DRAGON;
+    player.setTexture('player-dragon');
+    player.setScale(1.45);
+    player.angle = 0;
+
     const cam = this.cameras.main;
-    // Crash targets: pull the player back to the screen (around 220px from left) and fall down
-    const targetScreenX = 220;
-    const targetScreenY = Phaser.Math.Clamp(player.y + 120, 150, 700);
+    // Pull the player into the center X-wise and visible Y-wise
+    const targetScreenX = cam.width * 0.45;
+    const targetScreenY = Phaser.Math.Clamp(player.y + 80, 240, 500);
     const targetWorldX = this.scrollX + targetScreenX;
 
     // 2. Crash flight tween (derribo)
@@ -1002,10 +1006,47 @@ export class GameScene3 extends Phaser.Scene {
         this.time.delayedCall(3000, () => {
           this.cameras.main.fade(1000, 6, 4, 12);
           this.time.delayedCall(1000, () => {
-            this.scene.restart();
+            this.scene.restart({
+              cardsCollected: this.tarotSystem?.collectedCards || [],
+              mechaUnlocked: true,
+              dragonUnlocked: true
+            });
           });
         });
       }
     });
+  }
+
+  private createDecorations(): void {
+    // Spawn floating gorge debris drifting in the background
+    // Since it's a shmup, these represent volcanic ejecta and rubble floating in the gorge
+    const count = 35;
+    for (let i = 0; i < count; i++) {
+      const rx = Phaser.Math.Between(100, LEVEL_WIDTH - 200);
+      const ry = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
+      const texture = Math.random() > 0.5 ? 'prop-debris-1' : 'prop-debris-2';
+      
+      const debris = this.add.image(rx, ry, texture);
+      debris.setDepth(Phaser.Math.Between(-25, -5)); // scatter depths
+      
+      // Determine scroll factor depending on depth (closer debris moves faster)
+      const depthFactor = (debris.depth + 30) / 30; // 0.16 to 0.83
+      const scrollFactorX = 0.05 + depthFactor * 0.15; // 0.07 to 0.17
+      debris.setScrollFactor(scrollFactorX, 0);
+      
+      debris.setScale(0.5 + depthFactor * 0.8); // closer is larger
+      debris.setAlpha(0.3 + depthFactor * 0.6); // closer is more opaque
+
+      // Slow drift & spin
+      this.tweens.add({
+        targets: debris,
+        angle: 360 * (Math.random() > 0.5 ? 1 : -1),
+        y: ry + Phaser.Math.Between(-30, 30),
+        duration: Phaser.Math.Between(10000, 30000),
+        repeat: -1,
+        yoyo: true,
+        ease: 'Linear'
+      });
+    }
   }
 }

@@ -28,12 +28,14 @@ export class EnergyPickup extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  collect(player: Player, onCollectBoost: () => void): void {
+  collect(player: Player, onCollectBoost?: () => void): void {
     // Add energy to player
     player.formMachine.energy.addEnergy(35);
 
     // Apply forward push callback
-    onCollectBoost();
+    if (onCollectBoost) {
+      onCollectBoost();
+    }
 
     // Floating text feedback
     const text = this.scene.add.text(
