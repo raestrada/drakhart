@@ -954,6 +954,161 @@ export class BootScene extends Phaser.Scene {
 
     this.drawMecha('player-mecha', 0, 0, 0, 'none');
     this.drawMechaKneeling('m-kneeling');
+
+    // === Enemy Mecha frames (Side-view/profile animated) ===
+    this.drawEnemyMecha('enemy-mecha', 0, 0, false); // default static fallback
+    this.drawEnemyMecha('em-idle-0', 0, 0, false);
+    this.drawEnemyMecha('em-idle-1', 0, -1, false);
+    this.drawEnemyMecha('em-idle-2', 0, -2, false);
+
+    this.drawEnemyMecha('em-walk-0', 3, 0, false);
+    this.drawEnemyMecha('em-walk-1', 0, -1, false);
+    this.drawEnemyMecha('em-walk-2', -3, 0, false);
+    this.drawEnemyMecha('em-walk-3', 0, -1, false);
+
+    this.drawEnemyMecha('em-charge', 0, 1, true);
+  }
+
+  private drawEnemyMecha(
+    key: string,
+    legShift: number,
+    bodyBob: number,
+    isCharging: boolean
+  ): void {
+    const g = this.make.graphics({ x: 0, y: 0 });
+    const W = 48, H = 36;
+    const b = bodyBob;
+    const ls = legShift;
+
+    // === 1. Background Leg (Dark shaded reverse-jointed) ===
+    const bHipX = 18;
+    const bHipY = 22 + b;
+    const bKneeX = 12 - ls * 0.5;
+    const bKneeY = 28 + b;
+    const bFootX = 16 - ls;
+    const bFootY = 35;
+
+    g.lineStyle(4, 0x0f121a); // joint backing
+    g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
+    g.lineStyle(3, 0x19212e); // thigh/shin
+    g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
+    g.fillStyle(0x0f121a); g.fillCircle(bKneeX, bKneeY, 1.8);
+    // foot claw
+    g.fillStyle(0x131922); g.fillRect(bFootX - 3, bFootY - 1, 6, 2);
+
+    // === 2. Thruster Flame (Left side, pointing backward) ===
+    if (isCharging) {
+      // Large double flame for charge-dash
+      g.fillStyle(0xff3300);
+      g.beginPath(); g.moveTo(10, 14 + b); g.lineTo(1, 16 + b); g.lineTo(10, 18 + b); g.closePath(); g.fillPath();
+      g.fillStyle(0xffaa00);
+      g.beginPath(); g.moveTo(10, 15 + b); g.lineTo(3, 16 + b); g.lineTo(10, 17 + b); g.closePath(); g.fillPath();
+      g.fillStyle(0xffffff);
+      g.beginPath(); g.moveTo(10, 16 + b); g.lineTo(5, 16 + b); g.lineTo(10, 16 + b); g.closePath(); g.fillPath();
+    } else if (Math.abs(ls) > 0) {
+      // Tiny puff of flame while walking
+      g.fillStyle(0xffaa00);
+      g.fillRect(7, 15 + b, 3, 2);
+      g.fillStyle(0xffffff);
+      g.fillRect(8, 16 + b, 2, 1);
+    }
+
+    // === 3. Main Torso / Chassis (Side-view, facing right) ===
+    // Main armor block
+    g.fillStyle(0x18202b);
+    g.beginPath();
+    g.moveTo(10, 10 + b);
+    g.lineTo(34, 10 + b);
+    g.lineTo(30, 24 + b);
+    g.lineTo(12, 24 + b);
+    g.closePath();
+    g.fillPath();
+
+    // Side flank plates
+    g.fillStyle(0x141b24);
+    g.beginPath();
+    g.moveTo(10, 10 + b);
+    g.lineTo(26, 10 + b);
+    g.lineTo(24, 24 + b);
+    g.lineTo(12, 24 + b);
+    g.closePath();
+    g.fillPath();
+
+    // Highlights (metallic edges)
+    g.fillStyle(0x32435c);
+    g.fillRect(11, 10 + b, 22, 2); // top edge highlight
+    g.beginPath(); g.moveTo(10, 10 + b); g.lineTo(12, 24 + b); g.lineTo(13, 24 + b); g.lineTo(11, 10 + b); g.closePath(); g.fillPath();
+
+    // Sloped cockpit/face plate at the front (right side)
+    g.fillStyle(0x0e131b);
+    g.beginPath();
+    g.moveTo(28, 11 + b);
+    g.lineTo(34, 11 + b);
+    g.lineTo(31, 23 + b);
+    g.lineTo(26, 23 + b);
+    g.closePath();
+    g.fillPath();
+
+    // Menacing visor slit (glowing red)
+    g.fillStyle(0x6b0a0a); // dark red back
+    g.fillRect(29, 13 + b, 5, 3);
+    g.fillStyle(0xcc1111); // bright red
+    g.fillRect(29, 14 + b, 5, 1);
+    g.fillStyle(0xffaa66); // optic sensor glow
+    g.fillRect(32, 14 + b, 1, 1);
+
+    // Central core bezel (Energist core on side)
+    this.circ(g, 18, 17 + b, 4, 0x8a7015);
+    this.circ(g, 18, 17 + b, 3, 0x0f121a);
+    this.circ(g, 18, 17 + b, 2, 0xcc2200);
+    this.circ(g, 18, 17 + b, 1, 0xff8800);
+
+    // === 4. Mounted Weapons (Top-mounted) ===
+    // Back shoulder missile pod
+    g.fillStyle(0x131922); g.fillRect(11, 4 + b, 10, 7);
+    g.fillStyle(0x283548); g.fillRect(12, 5 + b, 8, 5);
+    // Missile tips (front-facing right)
+    g.fillStyle(0x07090d); g.fillRect(18, 6 + b, 2, 3);
+    g.fillStyle(0xff3300); g.fillRect(19, 7 + b, 1, 1);
+
+    // Main heavy shoulder auto-cannon (protrudes far forward to the right)
+    g.fillStyle(0x131922); g.fillRect(22, 6 + b, 8, 5);
+    g.fillStyle(0x1b2430); g.fillRect(28, 7 + b, 14, 3); // long barrel
+    g.fillStyle(0x0f131a); g.fillRect(41, 6 + b, 2, 5); // muzzle cap
+    // Muzzle heat glow tip
+    g.fillStyle(0xff8800); g.fillRect(42, 8 + b, 1, 1);
+
+    // === 5. Foreground Leg (Lighter reverse-jointed) ===
+    const fHipX = 26;
+    const fHipY = 22 + b;
+    const fKneeX = 32 + ls * 0.5;
+    const fKneeY = 28 + b;
+    const fFootX = 28 + ls;
+    const fFootY = 35;
+
+    g.lineStyle(5, 0x0f121a); // joint backing
+    g.beginPath(); g.moveTo(fHipX, fHipY); g.lineTo(fKneeX, fKneeY); g.lineTo(fFootX, fFootY); g.strokePath();
+    g.lineStyle(4, 0x232e40); // thigh/shin
+    g.beginPath(); g.moveTo(fHipX, fHipY); g.lineTo(fKneeX, fKneeY); g.lineTo(fFootX, fFootY); g.strokePath();
+    g.lineStyle(2, 0x32435c); // thigh highlight
+    g.beginPath(); g.moveTo(fHipX, fHipY + 1); g.lineTo(fKneeX - 1, fKneeY - 1); g.strokePath();
+
+    this.circ(g, fKneeX, fKneeY, 2.2, 0x8a7015); // gold knee cap
+    this.circ(g, fKneeX, fKneeY, 1.0, 0x0f121a);
+
+    // Heavy foot claw
+    g.fillStyle(0x131922); g.fillRect(fFootX - 4, fFootY - 1, 8, 2);
+    g.fillStyle(0x8a7015); g.fillRect(fFootX + 2, fFootY - 1, 2, 1); // gold front claw
+
+    // === 6. Gold Trim & Details ===
+    g.fillStyle(0x8a7015);
+    g.fillRect(13, 9 + b, 18, 1); // gold trim line
+    // Rivets
+    g.fillStyle(0x07090d);
+    g.fillRect(14, 13 + b, 1, 1);
+    g.fillRect(23, 13 + b, 1, 1);
+
+    this.tex(g, key, W, H);
   }
 
   private drawMechaKneeling(key: string): void {

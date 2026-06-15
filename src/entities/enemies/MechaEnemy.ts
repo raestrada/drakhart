@@ -7,6 +7,8 @@ import { spawnHitParticles } from '../../effects/Particles';
 export class MechaEnemy extends BaseEnemy {
   private chargeCooldown = false;
   private chargeTimer = 0;
+  private animTimer = 0;
+  private animFrame = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -39,6 +41,35 @@ export class MechaEnemy extends BaseEnemy {
     this.setScale(1.4);
     (this.body as Phaser.Physics.Arcade.Body).setSize(44, 30);
     (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 6);
+  }
+
+  preUpdate(time: number, delta: number): void {
+    super.preUpdate(time, delta);
+    if (!this.active || !this.isActive || this.health <= 0) return;
+
+    this.animTimer += delta;
+
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const isMoving = Math.abs(body.velocity.x) > 10;
+    const isCharging = Math.abs(body.velocity.x) > 150;
+
+    if (isCharging) {
+      this.setTexture('em-charge');
+    } else if (isMoving) {
+      const frameMs = 120; // brisk walk speed
+      if (this.animTimer >= frameMs) {
+        this.animTimer = 0;
+        this.animFrame = (this.animFrame + 1) % 4;
+        this.setTexture(`em-walk-${this.animFrame}`);
+      }
+    } else {
+      const frameMs = 280; // slow idle breath
+      if (this.animTimer >= frameMs) {
+        this.animTimer = 0;
+        this.animFrame = (this.animFrame + 1) % 3;
+        this.setTexture(`em-idle-${this.animFrame}`);
+      }
+    }
   }
 
   takeDamage(amount: number): void {
