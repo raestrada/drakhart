@@ -109,7 +109,7 @@ export class GameScene3 extends Phaser.Scene {
 
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
-    this.gameAudio.playBGM();
+    this.gameAudio.playBGM(3);
 
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
@@ -457,7 +457,7 @@ export class GameScene3 extends Phaser.Scene {
       this.gameAudio?.update(this.player.x);
     }
 
-    if (this.player.active && this.player.formMachine.state === FormState.DRAGON) {
+    if (this.player.active && this.player.alive && this.player.formMachine.state === FormState.DRAGON) {
       const dt = delta / 1000;
 
       // 1. Autoscroll horizontal camera
@@ -515,13 +515,11 @@ export class GameScene3 extends Phaser.Scene {
         this.player.combatSystem.fireBreathAuto(true);
       }
 
-    } else {
+    } else if (this.player.active && this.player.alive) {
       // Reverted to human/mecha form (or dead).
       // Self-sabotage or energy loss! Let gravity drag player body down into the void
-      if (this.player.active) {
-        if (this.player.y > LEVEL_HEIGHT + 60) {
-          this.player.takeDamage(100, 0);
-        }
+      if (this.player.y > LEVEL_HEIGHT + 60) {
+        this.player.takeDamage(100, 0);
       }
     }
 
@@ -803,6 +801,147 @@ export class GameScene3 extends Phaser.Scene {
         alpha: 1,
         duration: 2500,
         ease: 'Power2',
+      });
+    });
+  }
+
+  triggerDramaticDeath(player: Player): void {
+    // 1. Stop all normal BGM and play tragic death theme
+    this.gameAudio?.stopBGM();
+    this.gameAudio?.playDeathTheme();
+
+    // 2. Play chest core shatter explosion
+    this.gameAudio?.playCoreShatter();
+    
+    // 3. Spawns mecha-core shatter particles
+    for (let i = 0; i < 35; i++) {
+      const px = player.x;
+      const py = player.y;
+      const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
+      const size = Phaser.Math.Between(4, 10);
+      const spark = this.add.rectangle(px, py, size, size, sparkColor);
+      spark.setBlendMode(Phaser.BlendModes.ADD);
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Phaser.Math.Between(50, 250);
+      const targetX = px + Math.cos(angle) * speed * 0.6;
+      const targetY = py + Math.sin(angle) * speed * 0.6;
+
+      this.tweens.add({
+        targets: spark,
+        x: targetX,
+        y: targetY,
+        alpha: 0,
+        scale: 0.2,
+        angle: Phaser.Math.Between(-180, 180),
+        duration: Phaser.Math.Between(600, 1200),
+        ease: 'Quad.easeOut',
+        onComplete: () => spark.destroy()
+      });
+    }
+
+    // Plummet downward while spinning slowly (tragic anime dragon fall)
+    this.tweens.add({
+      targets: player,
+      y: player.y + 400,
+      angle: player.angle - 45,
+      alpha: 0,
+      duration: 3500,
+      ease: 'Quad.easeIn',
+      onComplete: () => player.setVisible(false)
+    });
+
+    // 4. Lightning Strike (400ms delay)
+    this.time.delayedCall(400, () => {
+      if (!player.active) return;
+
+      this.gameAudio?.playLightningStrike();
+      this.cameras.main.flash(450, 220, 240, 255);
+      this.cameras.main.shake(600, 0.015);
+
+      const lightning = this.add.graphics();
+      lightning.setDepth(player.depth + 10);
+
+      const startX = player.x + Phaser.Math.Between(-60, 60);
+      const startY = this.cameras.main.scrollY;
+      const endX = player.x;
+      const endY = player.y;
+
+      const drawBolt = (g: Phaser.GameObjects.Graphics, styleColor: number, width: number, alpha: number) => {
+        g.lineStyle(width, styleColor, alpha);
+        g.beginPath();
+        g.moveTo(startX, startY);
+
+        let currentX = startX;
+        let currentY = startY;
+        const steps = 12;
+        const distY = (endY - startY) / steps;
+
+        for (let j = 1; j < steps; j++) {
+          const targetY = startY + j * distY;
+          const targetX = currentX + Phaser.Math.Between(-35, 35) + (endX - currentX) * 0.15;
+          g.lineTo(targetX, targetY);
+          currentX = targetX;
+          currentY = targetY;
+        }
+
+        g.lineTo(endX, endY);
+        g.strokePath();
+      };
+
+      const style = { color1: 0xffffff, color2: 0x90d0ff };
+      drawBolt(lightning, style.color2, 10, 0.45);
+      drawBolt(lightning, style.color1, 4, 1.0);
+
+      this.tweens.add({
+        targets: lightning,
+        alpha: 0,
+        duration: 350,
+        onComplete: () => lightning.destroy()
+      });
+    });
+
+    // Spawn ash/ember streams
+    this.time.addEvent({
+      delay: 50,
+      repeat: 60,
+      callback: () => {
+        if (!player.active) return;
+
+        const px = player.x + Phaser.Math.Between(-20, 20);
+        const py = player.y + Phaser.Math.Between(-20, 20);
+
+        const targetX = px - Phaser.Math.Between(30, 90);
+        const targetY = py - Phaser.Math.Between(40, 100);
+
+        const isEmber = Math.random() < 0.25;
+        const color = isEmber ? 0xff4411 : 0x2e2e30;
+        const size = Phaser.Math.Between(3, 8);
+
+        const particle = this.add.rectangle(px, py, size, size, color);
+        if (isEmber) {
+          particle.setBlendMode(Phaser.BlendModes.ADD);
+        }
+
+        this.tweens.add({
+          targets: particle,
+          x: targetX,
+          y: targetY,
+          alpha: 0,
+          scale: 0.1,
+          angle: Phaser.Math.Between(-90, 90),
+          duration: Phaser.Math.Between(1200, 2200),
+          ease: 'Sine.easeOut',
+          onComplete: () => particle.destroy()
+        });
+      }
+    });
+
+    // 5. Final Fade out and Restart (4.5s total delay)
+    this.time.delayedCall(4500, () => {
+      this.cameras.main.fade(1000, 6, 4, 12);
+      this.time.delayedCall(1000, () => {
+        this.scene.restart();
       });
     });
   }

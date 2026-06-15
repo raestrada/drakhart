@@ -19,18 +19,33 @@ export class GameAudio {
   // BGM timer loop
   private bgmTimer: any = null;
 
-  // Cinematic gothic progression (Dm -> Bb -> Gm -> A7)
-  private chords = [
-    // Dm: D2 drone (73.42Hz), notes: D3 (146.83Hz), F3 (174.61Hz), A3 (220.00Hz), D4 (293.66Hz), F4 (349.23Hz)
+  // Level 1: Gothic platformer chords (Dm -> Bb -> Gm -> A7)
+  private chordsL1 = [
     { drone: 73.42, notes: [146.83, 174.61, 220.00, 293.66, 349.23, 440.00] },
-    // Bb: Bb1 drone (58.27Hz), notes: Bb2 (116.54Hz), D3 (146.83Hz), F3 (174.61Hz), Bb3 (233.08Hz), D4 (293.66Hz)
     { drone: 58.27, notes: [116.54, 146.83, 174.61, 233.08, 293.66, 349.23] },
-    // Gm: G1 drone (49.00Hz), notes: G2 (98.00Hz), Bb2 (116.54Hz), D3 (146.83Hz), G3 (196.00Hz), Bb3 (233.08Hz)
     { drone: 49.00, notes: [98.00, 116.54, 146.83, 196.00, 233.08, 293.66] },
-    // A7: A1 drone (55.00Hz), notes: A2 (110.00Hz), C#3 (138.59Hz), E3 (164.81Hz), A3 (220.00Hz), C#4 (277.18Hz)
     { drone: 55.00, notes: [110.00, 138.59, 164.81, 220.00, 277.18, 329.63] }
   ];
+
+  // Level 2: Heavy Industrial refinery chords (Gm -> Eb -> Cm -> D7)
+  private chordsL2 = [
+    { drone: 49.00, notes: [98.00, 116.54, 146.83, 196.00, 233.08, 293.66] },
+    { drone: 38.89, notes: [77.78, 98.00, 116.54, 155.56, 196.00, 233.08] },
+    { drone: 65.41, notes: [130.81, 155.56, 196.00, 261.63, 311.13, 392.00] },
+    { drone: 73.42, notes: [146.83, 185.00, 220.00, 293.66, 369.99, 440.00] }
+  ];
+
+  // Level 3: Fast energetic SHMUP chords (Em -> C -> D -> Bm)
+  private chordsL3 = [
+    { drone: 82.41, notes: [164.81, 196.00, 246.94, 329.63, 392.00, 493.88] },
+    { drone: 65.41, notes: [130.81, 164.81, 196.00, 261.63, 329.63, 392.00] },
+    { drone: 73.42, notes: [146.83, 185.00, 220.00, 293.66, 369.99, 440.00] },
+    { drone: 61.74, notes: [123.47, 146.83, 185.00, 246.94, 293.66, 369.99] }
+  ];
+
+  private chords = this.chordsL1;
   private currentChordIndex = 0;
+  private currentLevel = 1;
   private totalBeats = 0;
 
   constructor() {}
@@ -95,10 +110,12 @@ export class GameAudio {
     return buffer;
   }
 
-  public playBGM(): void {
+  public playBGM(level: number = 1): void {
     this.init();
     if (this.isPlaying || !this.ctx) return;
     this.isPlaying = true;
+    this.currentLevel = level;
+    this.chords = level === 3 ? this.chordsL3 : (level === 2 ? this.chordsL2 : this.chordsL1);
 
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -110,7 +127,13 @@ export class GameAudio {
     // Trigger initial low string drone
     this.triggerCelloDrone();
 
-    // Start 250ms beat loop (eighth notes at 120 BPM, where 1 beat = 500ms)
+    // Variable tempo intervals:
+    // Level 1: 120 BPM -> 250ms
+    // Level 2: 90 BPM -> 333ms (heavy industrial stomp)
+    // Level 3: 150 BPM -> 200ms (fast shmup)
+    const interval = this.currentLevel === 3 ? 200 : (this.currentLevel === 2 ? 333 : 250);
+
+    // Start beat loop
     this.bgmTimer = setInterval(() => {
       if (!this.isPlaying || !this.ctx) return;
 
@@ -121,38 +144,73 @@ export class GameAudio {
 
       this.totalBeats++;
 
-      // Change chords every 16 subdivisions (4 seconds)
+      // Change chords every 16 subdivisions
       if (this.totalBeats % 16 === 0) {
         this.currentChordIndex = (this.currentChordIndex + 1) % this.chords.length;
         this.triggerCelloDrone();
       }
-    }, 250);
+    }, interval);
   }
 
   private scheduleBGMStep(chord: { drone: number; notes: number[] }, step: number): void {
     if (!this.ctx) return;
 
-    // Kick drum on beats 1 and 3 (subdivisions 0 and 8)
-    if (step === 0 || step === 8) {
-      this.synthesizeBGMKick();
-    }
-
-    // Hi-hat on subdivisions 4 and 12, shaker on 0 and 8
-    if (step === 4 || step === 12) {
-      this.synthesizeBGMHiHat();
-    } else if (step === 0 || step === 8 || step === 2 || step === 10) {
-      this.synthesizeBGMShaker();
-    }
-
-    // Plucky piano melody notes on syncopated divisions
-    const melodyPattern = [
-      -1,  0,  1, -1,  2, -1,  3,  1, // bar 1
-      -1,  4,  3, -1,  5,  2,  1, -1  // bar 2
-    ];
-
-    const noteIndex = melodyPattern[step];
-    if (noteIndex !== -1) {
-      this.synthesizeBGMPiano(chord.notes[noteIndex % chord.notes.length]);
+    if (this.currentLevel === 1) {
+      // Level 1: Standard Gothic Platformer
+      if (step === 0 || step === 8) {
+        this.synthesizeBGMKick();
+      }
+      if (step === 4 || step === 12) {
+        this.synthesizeBGMHiHat();
+      } else if (step === 0 || step === 8 || step === 2 || step === 10) {
+        this.synthesizeBGMShaker();
+      }
+      const melodyPattern = [
+        -1,  0,  1, -1,  2, -1,  3,  1,
+        -1,  4,  3, -1,  5,  2,  1, -1
+      ];
+      const noteIndex = melodyPattern[step];
+      if (noteIndex !== -1) {
+        this.synthesizeBGMPiano(chord.notes[noteIndex % chord.notes.length]);
+      }
+    } else if (this.currentLevel === 2) {
+      // Level 2: Heavy Industrial Refinery (Four-on-the-floor kick, clangs, heavy synths)
+      if (step === 0 || step === 4 || step === 8 || step === 12) {
+        this.synthesizeHeavyKick();
+      }
+      if (step === 4 || step === 12) {
+        this.synthesizeIndustrialClang();
+      }
+      if (step % 2 === 1) {
+        this.synthesizeBGMShaker();
+      }
+      const heavyPattern = [
+        0, -1, 1, -1, 2, 1, -1, 0,
+        3, -1, 2, -1, 4, 3, 1, -1
+      ];
+      const noteIndex = heavyPattern[step];
+      if (noteIndex !== -1) {
+        this.synthesizeHeavySynth(chord.notes[noteIndex % chord.notes.length]);
+      }
+    } else if (this.currentLevel === 3) {
+      // Level 3: Fast energetic SHMUP (high tempo, offbeat hat, arpeggiated lead)
+      if (step % 4 === 0 || step % 8 === 2) {
+        this.synthesizeBGMKick();
+      }
+      if (step === 4 || step === 12) {
+        this.synthesizeSHMUPSnare();
+      }
+      if (step % 2 === 1) {
+        this.synthesizeBGMHiHat();
+      }
+      const fastPattern = [
+        0, 1, 2, 3, 4, 5, 4, 3,
+        2, 3, 4, 5, 3, 2, 1, 0
+      ];
+      const noteIndex = fastPattern[step];
+      if (noteIndex !== -1) {
+        this.synthesizeSHMUPSynth(chord.notes[noteIndex % chord.notes.length]);
+      }
     }
   }
 
@@ -188,7 +246,7 @@ export class GameAudio {
 
     const stringFilter = this.ctx.createBiquadFilter();
     stringFilter.type = 'lowpass';
-    stringFilter.frequency.value = 220; // Warm string resonance
+    stringFilter.frequency.value = this.currentLevel === 3 ? 380 : (this.currentLevel === 2 ? 130 : 220); // Resonances
 
     droneGain.gain.setValueAtTime(0, t);
     droneGain.gain.linearRampToValueAtTime(0.12, t + 1.2); // 1.2s smooth attack
@@ -308,6 +366,174 @@ export class GameAudio {
 
     oscTri.stop(t + 0.9);
     oscSine.stop(t + 0.9);
+  }
+
+  private synthesizeHeavyKick(): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(100, t);
+    osc.frequency.exponentialRampToValueAtTime(25, t + 0.22);
+
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.55, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+
+    osc.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    osc.start(t);
+    osc.stop(t + 0.32);
+  }
+
+  private synthesizeIndustrialClang(): void {
+    if (!this.ctx || !this.noiseBuffer) return;
+    const t = this.ctx.currentTime;
+
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc1.frequency.value = 320;
+    osc2.type = 'sawtooth';
+    osc2.frequency.value = 475;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 800;
+
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.15, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = this.noiseBuffer;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 600;
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.18, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+    noiseSource.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.bgmGainNode);
+
+    osc1.start(t);
+    osc2.start(t);
+    noiseSource.start(t);
+
+    osc1.stop(t + 0.25);
+    osc2.stop(t + 0.25);
+    noiseSource.stop(t + 0.2);
+  }
+
+  private synthesizeHeavySynth(freq: number): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const oscSaw = this.ctx.createOscillator();
+    const oscSqu = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    oscSaw.type = 'sawtooth';
+    oscSaw.frequency.value = freq * 0.5;
+    oscSqu.type = 'square';
+    oscSqu.frequency.value = freq * 0.5;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(450, t);
+    filter.frequency.exponentialRampToValueAtTime(180, t + 0.3);
+
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+    oscSaw.connect(filter);
+    oscSqu.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    oscSaw.start(t);
+    oscSqu.start(t);
+    oscSaw.stop(t + 0.45);
+    oscSqu.stop(t + 0.45);
+  }
+
+  private synthesizeSHMUPSnare(): void {
+    if (!this.ctx || !this.noiseBuffer) return;
+    const t = this.ctx.currentTime;
+
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = this.noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 1200;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+    noiseSource.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, t);
+    oscGain.gain.setValueAtTime(0.1, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.bgmGainNode);
+
+    noiseSource.start(t);
+    noiseSource.stop(t + 0.12);
+    osc.start(t);
+    osc.stop(t + 0.08);
+  }
+
+  private synthesizeSHMUPSynth(freq: number): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'square';
+    osc.frequency.value = freq;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(freq * 1.5, t);
+    filter.frequency.exponentialRampToValueAtTime(freq * 0.8, t + 0.18);
+    filter.Q.value = 3.0;
+
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.14, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    osc.start(t);
+    osc.stop(t + 0.25);
   }
 
   public setBGMVolume(volume: number): void {

@@ -80,7 +80,7 @@ export class GameScene2 extends Phaser.Scene {
 
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
-    this.gameAudio.playBGM();
+    this.gameAudio.playBGM(2);
 
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
