@@ -32,7 +32,7 @@ export class TransitionScene12 extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 800, H = 800;
+    const W = 1200, H = 800;
     const vw = this.scale.width;
     const vh = this.scale.height;
     this.physics.world.setBounds(0, 0, W, H);
@@ -57,7 +57,7 @@ export class TransitionScene12 extends Phaser.Scene {
     const groundY = 736;
     this.platforms = this.physics.add.staticGroup();
     for (let tx = 0; tx < W; tx += 128) {
-      const isRefinery = tx >= 600;
+      const isRefinery = tx >= 940;
       const tex = isRefinery ? 'tile-refinery' : 'tile-ground';
       const b1 = this.platforms.create(tx + 64, groundY + 16, tex) as Phaser.Physics.Arcade.Sprite;
       b1.setDisplaySize(128, 48); b1.refreshBody(); b1.setDepth(3);
@@ -83,7 +83,7 @@ export class TransitionScene12 extends Phaser.Scene {
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.5);
 
     // Altar
-    this.saveAltar = new SaveAltar(this, 400, groundY, 'TransitionScene12');
+    this.saveAltar = new SaveAltar(this, 600, groundY, 'TransitionScene12');
 
     this.physics.add.collider(this.player, this.platforms);
 
@@ -95,7 +95,7 @@ export class TransitionScene12 extends Phaser.Scene {
 
   private drawFactoryEntrance(W: number, groundY: number): void {
     const g = this.add.graphics().setDepth(-10);
-    const gateX = 580;
+    const gateX = 940;
     g.fillStyle(0x151d25, 1);
     g.fillRect(gateX, 400, W - gateX, 400);
     g.fillStyle(0x1c2834, 0.6);
@@ -141,7 +141,7 @@ export class TransitionScene12 extends Phaser.Scene {
     if (this.saveAltar?.active) this.saveAltar.updatePrompt(this.player);
     if (this.player.active && !this.hasTransitioned) {
       if (this.player.x <= 40) this.transitionToLevel1();
-      if (this.player.x >= 760) this.transitionToLevel2();
+      if (this.player.x >= 1160) this.transitionToLevel2();
     }
   }
 

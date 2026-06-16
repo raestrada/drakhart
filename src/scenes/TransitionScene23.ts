@@ -33,7 +33,7 @@ export class TransitionScene23 extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 800, H = 800;
+    const W = 1200, H = 800;
     const vw = this.scale.width;
     const vh = this.scale.height;
     this.physics.world.setBounds(0, 0, W, H);
@@ -57,10 +57,10 @@ export class TransitionScene23 extends Phaser.Scene {
     const groundY = 736;
     this.platforms = this.physics.add.staticGroup();
     for (let tx = 0; tx < W; tx += 128) {
-      const tex = tx < 600 ? 'tile-refinery' : 'tile-lava-ground';
+      const tex = tx < 940 ? 'tile-refinery' : 'tile-lava-ground';
       const b1 = this.platforms.create(tx + 64, groundY + 16, tex) as Phaser.Physics.Arcade.Sprite;
       b1.setDisplaySize(128, 48); b1.refreshBody(); b1.setDepth(3);
-      if (tx < 600) {
+      if (tx < 900) {
         const b2 = this.platforms.create(tx + 64, groundY + 48, 'tile-refinery') as Phaser.Physics.Arcade.Sprite;
         b2.setDisplaySize(128, 32); b2.refreshBody(); b2.setDepth(3);
       }
@@ -78,7 +78,7 @@ export class TransitionScene23 extends Phaser.Scene {
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.5);
 
     // Altar
-    this.saveAltar = new SaveAltar(this, 350, groundY, 'TransitionScene23');
+    this.saveAltar = new SaveAltar(this, 500, groundY, 'TransitionScene23');
 
     this.physics.add.collider(this.player, this.platforms);
 
@@ -97,7 +97,7 @@ export class TransitionScene23 extends Phaser.Scene {
     g.fillStyle(0x0d1218, 0.5);
     g.fillRect(0, 450, wallW, 2);
     g.fillRect(0, 540, wallW, 2);
-    g.fillRect(0, 630, wallW, 2);
+    g.fillRect(0, 930, wallW, 2);
 
     g.fillStyle(0x0a0e13, 1);
     g.fillRect(45, 540, 70, 240);
@@ -120,24 +120,24 @@ export class TransitionScene23 extends Phaser.Scene {
 
     // Cliff edge
     g.fillStyle(0x0a080c, 1);
-    g.fillRect(600, 580, W - 600, 220);
+    g.fillRect(900, 580, W - 900, 220);
     g.fillStyle(0x12101a, 0.6);
-    g.fillRect(600, 580, W - 600, 4);
+    g.fillRect(900, 580, W - 900, 4);
     g.fillStyle(0x08060a, 1);
-    for (let cx = 600; cx < W; cx += 25) {
+    for (let cx = 900; cx < W; cx += 25) {
       g.fillRect(cx, 790, 20, Phaser.Math.Between(6, 20));
     }
     g.fillStyle(0x12101a, 0.5);
-    g.fillCircle(630, 610, 8);
-    g.fillCircle(680, 620, 6);
-    g.fillCircle(650, 640, 10);
+    g.fillCircle(930, 610, 8);
+    g.fillCircle(980, 620, 6);
+    g.fillCircle(950, 640, 10);
   }
 
   update(time: number, delta: number): void {
     if (this.player?.active) {
       this.gameAudio?.update(this.player.x);
-      this.playerShadow.setAlpha(this.player.x < 600 ? 0.5 : 0);
-      if (this.player.x < 600) {
+      this.playerShadow.setAlpha(this.player.x < 900 ? 0.5 : 0);
+      if (this.player.x < 900) {
         this.playerShadow.x = this.player.x;
         this.playerShadow.y = this.player.y + 24;
         this.playerShadow.setScale(this.player.scaleX);
@@ -147,7 +147,7 @@ export class TransitionScene23 extends Phaser.Scene {
     if (this.saveAltar?.active) this.saveAltar.updatePrompt(this.player);
     if (this.player.active && this.player.alive && !this.hasTransitioned) {
       if (this.player.x <= 40) this.transitionToLevel2();
-      if (this.player.x >= 760 && this.player.formMachine.state === FormState.DRAGON) this.transitionToLevel3();
+      if (this.player.x >= 1160 && this.player.formMachine.state === FormState.DRAGON) this.transitionToLevel3();
     }
   }
 
