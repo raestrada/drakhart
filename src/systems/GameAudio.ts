@@ -154,9 +154,9 @@ export class GameAudio {
     // Variable tempo intervals:
     // Level 1: 120 BPM -> 250ms
     // Level 2: 90 BPM -> 333ms (heavy industrial stomp)
-    // Level 3: 150 BPM -> 200ms (fast shmup)
-    // Level 4: 150 BPM -> 200ms (hyper intense boss)
-    const interval = this.currentLevel === 4 ? 200 : (this.currentLevel === 3 ? 200 : (this.currentLevel === 2 ? 333 : 250));
+    // Level 3: 200 BPM -> 150ms (ultra fast shmup)
+    // Level 4: 187 BPM -> 160ms (hyper intense boss)
+    const interval = this.currentLevel === 4 ? 160 : (this.currentLevel === 3 ? 150 : (this.currentLevel === 2 ? 333 : 250));
 
     // Start beat loop
     this.bgmTimer = setInterval(() => {
@@ -229,8 +229,8 @@ export class GameAudio {
         this.synthesizeBGMHiHat();
       }
       const fastPattern = [
-        0, 1, 2, 3, 4, 5, 4, 3,
-        2, 3, 4, 5, 3, 2, 1, 0
+        0, 1, 0, 2, 0, 3, 0, 4,
+        0, 5, 0, 4, 3, 2, 1, 2
       ];
       const noteIndex = fastPattern[step];
       if (noteIndex !== -1) {
@@ -248,8 +248,8 @@ export class GameAudio {
         this.synthesizeBGMHiHat();
       }
       const bossPattern = [
-        0, 2, 1, 3, 2, 4, 3, 5,
-        4, 2, 3, 1, 2, 0, 1, -1
+        0, 3, 1, 4, 2, 5, 3, 4,
+        0, 3, 1, 4, 2, 5, 4, 5
       ];
       const noteIndex = bossPattern[step];
       if (noteIndex !== -1) {

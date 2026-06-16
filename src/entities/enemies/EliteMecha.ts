@@ -33,6 +33,8 @@ export class EliteMecha extends BaseEnemy {
     body.setSize(60, 72);
     body.setOffset(34, 50);
 
+    this.setDepth(15);
+
     this.createFloatingUI();
   }
 

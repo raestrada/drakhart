@@ -4417,6 +4417,36 @@ export class TexturesGenerator {
   private drawAltarSave(): void {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
 
+    // 0. Dragon Bone & Obsidian Mountain Base
+    // Mountain from Y=120 to Y=240
+    // Dark rock base
+    g.fillStyle(0x0c0a0c);
+    g.beginPath();
+    g.moveTo(64, 120);
+    g.lineTo(12, 160);
+    g.lineTo(0, 240);
+    g.lineTo(128, 240);
+    g.lineTo(116, 160);
+    g.closePath();
+    g.fillPath();
+
+    // Jagged obsidian rocks
+    g.fillStyle(0x1a151f);
+    g.fillTriangle(64, 130, 20, 240, 100, 240);
+    g.fillStyle(0x2d2435);
+    g.fillTriangle(64, 140, 40, 240, 80, 240);
+    g.fillStyle(0x1a151f);
+    g.fillTriangle(30, 160, 10, 240, 60, 240);
+    g.fillTriangle(100, 150, 60, 240, 120, 240);
+
+    // Giant ancient dragon ribs jutting out of the rock
+    g.lineStyle(4, 0x8a8a7a, 1);
+    g.beginPath(); g.moveTo(40, 200); g.lineTo(20, 160); g.lineTo(10, 170); g.strokePath();
+    g.beginPath(); g.moveTo(80, 220); g.lineTo(110, 170); g.lineTo(125, 180); g.strokePath();
+    g.lineStyle(2, 0xbfbfae, 1);
+    g.beginPath(); g.moveTo(40, 200); g.lineTo(20, 160); g.strokePath();
+    g.beginPath(); g.moveTo(80, 220); g.lineTo(110, 170); g.strokePath();
+
     // 1. Pedestal steps (stone blocks)
     // Bottom step: Y = 124 to 144 (height 20). Width = 112, centered (X from 8 to 120). Slate-grey.
     g.fillStyle(0x1e272e);
@@ -4562,7 +4592,7 @@ export class TexturesGenerator {
     g.fillRect(40, 70, 4, 4);
     g.fillRect(84, 70, 4, 4);
 
-    this.tex(g, 'altar-save', 128, 144);
+    this.tex(g, 'altar-save', 128, 240);
   }
 
 }

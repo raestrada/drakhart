@@ -12,14 +12,15 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   private lightBeamTween: Phaser.Tweens.Tween | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, sceneKey: string) {
-    super(scene, x, y - 40, 'altar-save'); // offset since origin is center and height is 80
+    super(scene, x, y - 120, 'altar-save'); // offset since origin is center and height is 240
     this.sceneKey = sceneKey;
 
     scene.add.existing(this);
     scene.physics.add.existing(this, true); // static body
+    this.setDepth(-2); // Render behind player so mountain doesn't block player
 
     // Prompt text shown when player is nearby
-    this.promptText = scene.add.text(x, y - 90, '', {
+    this.promptText = scene.add.text(x, y - 260, '', {
       fontSize: '11px',
       fontFamily: 'monospace',
       color: '#ffffff',

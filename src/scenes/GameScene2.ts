@@ -27,6 +27,7 @@ import {
   LEVEL_HEIGHT,
   CAMERA_LERP,
   CAMERA_ZOOM_MECHA,
+  CAMERA_ZOOM_HUMAN,
 } from '../utils/constants';
 import { t } from '../i18n';
 
@@ -305,7 +306,7 @@ export class GameScene2 extends BaseLevelScene {
     this.terrainGen.generateGroundSegment(this.platforms, 6280, groundY, 1720, 'refinery', 14);
 
     // Organic platforms
-    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 6600,490,128, 7200,480,96, 7350,500,256].forEach((_,i,arr) => {
+    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 6600,490,128, 7000,640,96, 7180,560,96, 7350,500,256].forEach((_,i,arr) => {
       if (i%3===0) this.terrainGen.generatePlatform(this.platforms, arr[i], arr[i+1], arr[i+2], 'refinery');
     });
 
@@ -432,7 +433,7 @@ export class GameScene2 extends BaseLevelScene {
     const m5a = new MechaEnemy(this, 6380, 700, this.player, { health: 480, speed: 85, damage: 55, patrolMinX: 6280, patrolMaxX: 6420 });
 
     // Mini-boss Arena (6500 - 7300): Completely clean space except for the Elite Mecha Guard!
-    const eliteBoss = new EliteMecha(this, 6880, 650, this.player);
+    const eliteBoss = new EliteMecha(this, 6880, 500, this.player);
 
     this.enemies.addMultiple([
       m1a, m1b, m1c,
@@ -464,7 +465,7 @@ export class GameScene2 extends BaseLevelScene {
   private setupCamera(): void {
     this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
-    this.cameras.main.setZoom(CAMERA_ZOOM_MECHA);
+    this.cameras.main.setZoom(CAMERA_ZOOM_HUMAN);
   }
 
   private createEchoFragments(): void {
@@ -1005,61 +1006,105 @@ export class GameScene2 extends BaseLevelScene {
   }
 
   private showDragonUnlockedPrompt(): void {
+    if (this.isCutsceneActive) return;
+    this.isCutsceneActive = true;
+    this.physics.world.pause();
+    this.player.setInputEnabled(false);
+
+    const disabledEnemies: BaseEnemy[] = [];
+    this.enemies.getChildren().forEach((enemy) => {
+      const e = enemy as BaseEnemy;
+      if (e.active && e.isActive) {
+        e.isActive = false;
+        if (e.body) {
+          e.body.velocity.x = 0;
+          e.body.velocity.y = 0;
+        }
+        disabledEnemies.push(e);
+      }
+    });
+
     const cx = this.cameras.main.width / 2;
     const cy = this.cameras.main.height / 2;
     const scale = this.cameras.main.width / 800;
 
-    const bannerBg = this.add.rectangle(cx, cy, this.cameras.main.width, 140 * scale, 0x000000, 0.8)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(600)
-      .setAlpha(0);
+    const bgOverlay = this.add.rectangle(cx, cy, this.cameras.main.width, this.cameras.main.height, 0x000000, 0.75)
+      .setScrollFactor(0).setDepth(600).setAlpha(0);
 
-    const borderTop = this.add.rectangle(cx, cy - 70 * scale, this.cameras.main.width, 2 * scale, 0x00d2d3)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(601)
-      .setAlpha(0);
+    const panelWidth = 400 * scale;
+    const panelHeight = 160 * scale;
+    
+    const panel = this.add.graphics().setScrollFactor(0).setDepth(601).setAlpha(0);
+    panel.fillStyle(0x060c14, 0.95);
+    panel.lineStyle(2, 0x00d2d3, 0.8);
+    panel.fillRect(cx - panelWidth/2, cy - panelHeight/2, panelWidth, panelHeight);
+    panel.strokeRect(cx - panelWidth/2, cy - panelHeight/2, panelWidth, panelHeight);
 
-    const borderBottom = this.add.rectangle(cx, cy + 70 * scale, this.cameras.main.width, 2 * scale, 0x00d2d3)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(601)
-      .setAlpha(0);
+    const promptParts = t('story.dragonUnlockedPrompt').split('\n\n');
+    const titleString = promptParts.length > 0 ? promptParts[0] : 'CORE ACQUIRED';
+    const descString = promptParts.length > 1 ? promptParts[1] : '';
 
-    const unlockText = this.add.text(cx, cy, t('story.dragonUnlockedPrompt'), {
-      fontSize: `${Math.round(13 * scale)}px`,
-      fontFamily: 'monospace',
-      color: '#ffffff',
+    const titleText = this.add.text(cx, cy - 35 * scale, titleString, {
+      fontSize: `${Math.round(16 * scale)}px`,
+      fontFamily: 'Georgia, serif',
+      color: '#00d2d3',
       align: 'center',
-      stroke: '#000000',
-      strokeThickness: 3,
-      lineSpacing: 8 * scale
-    })
-    .setOrigin(0.5)
-    .setScrollFactor(0)
-    .setDepth(602)
-    .setAlpha(0);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(602).setAlpha(0);
+
+    const descText = this.add.text(cx, cy + 15 * scale, descString, {
+      fontSize: `${Math.round(11 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#dddddd',
+      align: 'center',
+      lineSpacing: 8 * scale,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(602).setAlpha(0);
+
+    const continueText = this.add.text(cx, cy + panelHeight/2 - 20 * scale, t('story.introSkip') || 'ENTER / CLICK to continue', {
+      fontSize: `${Math.round(10 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#888888',
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(602).setAlpha(0);
+
+    this.tweens.add({ targets: continueText, alpha: 0.3, yoyo: true, repeat: -1, duration: 800, delay: 500 });
 
     this.tweens.add({
-      targets: [bannerBg, borderTop, borderBottom, unlockText],
+      targets: [bgOverlay, panel, titleText, descText, continueText],
       alpha: 1,
-      duration: 600,
+      duration: 300,
     });
 
-    this.time.delayedCall(5000, () => {
+    const closePrompt = () => {
+      this.input.keyboard?.off('keydown-ENTER', closePrompt);
+      this.input.keyboard?.off('keydown-C', closePrompt);
+      this.input.keyboard?.off('keydown-SPACE', closePrompt);
+      this.input.keyboard?.off('keydown-ESC', closePrompt);
+      this.input.off('pointerdown', closePrompt);
+
       this.tweens.add({
-        targets: [bannerBg, borderTop, borderBottom, unlockText],
+        targets: [bgOverlay, panel, titleText, descText, continueText],
         alpha: 0,
-        duration: 600,
+        duration: 300,
         onComplete: () => {
-          bannerBg.destroy();
-          borderTop.destroy();
-          borderBottom.destroy();
-          unlockText.destroy();
+          bgOverlay.destroy();
+          panel.destroy();
+          titleText.destroy();
+          descText.destroy();
+          continueText.destroy();
+
+          this.isCutsceneActive = false;
+          this.physics.world.resume();
+          this.player.setInputEnabled(true);
+          disabledEnemies.forEach(e => { if (e.active) e.isActive = true; });
         }
       });
-    });
+    };
+
+    this.input.keyboard?.once('keydown-ENTER', closePrompt);
+    this.input.keyboard?.once('keydown-C', closePrompt);
+    this.input.keyboard?.once('keydown-SPACE', closePrompt);
+    this.input.keyboard?.once('keydown-ESC', closePrompt);
+    this.input.once('pointerdown', closePrompt);
   }
 
   private transitionToLevel1(): void {

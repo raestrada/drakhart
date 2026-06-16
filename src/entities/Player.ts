@@ -277,10 +277,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.setVelocityY(PLAYER_HUMAN_JUMP * 0.8);
       this.hasDoubleJumped = true;
       (this.scene as any).gameAudio?.playJump();
+      const baseScale = this.formMachine.state === FormState.MECHA ? 1.4 : (this.formMachine.state === FormState.DRAGON ? 1.45 : 0.8);
       this.scene.tweens.add({
         targets: this,
-        scaleY: 1.1,
-        scaleX: 0.9,
+        scaleY: baseScale * 1.25,
+        scaleX: baseScale * 0.8,
         duration: 120,
         yoyo: true,
         ease: 'Power2',
@@ -590,10 +591,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private triggerJumpJuice(): void {
     (this.scene as any).gameAudio?.playJump();
+    const baseScale = this.formMachine.state === FormState.MECHA ? 1.4 : (this.formMachine.state === FormState.DRAGON ? 1.45 : 0.8);
     this.scene.tweens.add({
       targets: this,
-      scaleY: 1.25,
-      scaleX: 0.8,
+      scaleY: baseScale * 1.25,
+      scaleX: baseScale * 0.8,
       duration: 100,
       yoyo: true,
       ease: 'Power2',
@@ -602,10 +604,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private triggerLandingJuice(): void {
     (this.scene as any).gameAudio?.playLand();
+    const baseScale = this.formMachine.state === FormState.MECHA ? 1.4 : (this.formMachine.state === FormState.DRAGON ? 1.45 : 0.8);
     this.scene.tweens.add({
       targets: this,
-      scaleY: 0.78,
-      scaleX: 1.22,
+      scaleY: baseScale * 0.78,
+      scaleX: baseScale * 1.22,
       duration: 80,
       yoyo: true,
       ease: 'Power2',

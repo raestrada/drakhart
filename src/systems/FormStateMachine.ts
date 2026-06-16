@@ -124,9 +124,13 @@ export class FormStateMachine {
     this.player.setTexture('player-mecha');
     this.player.setScale(1.4);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    body.allowGravity = true;
+    const oldBottom = body.bottom;
     body.setSize(48, 76);
     body.setOffset(40, 52);
+    body.updateFromGameObject();
+    this.player.y -= (body.bottom - oldBottom);
+    body.updateFromGameObject();
+    body.allowGravity = true;
 
     this.scene.cameras.main.zoomTo(
       CAMERA_ZOOM_MECHA,
@@ -155,8 +159,12 @@ export class FormStateMachine {
     this.player.setScale(1.45);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
+    const oldBottom = body.bottom;
     body.setSize(84, 60);
     body.setOffset(6, 6);
+    body.updateFromGameObject();
+    this.player.y -= (body.bottom - oldBottom);
+    body.updateFromGameObject();
     this.flightSystem.activate();
 
     this.scene.cameras.main.zoomTo(
@@ -172,8 +180,12 @@ export class FormStateMachine {
     this.player.setScale(0.8);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = true;
+    const oldBottom = body.bottom;
     body.setSize(36, 60);
     body.setOffset(30, 36);
+    body.updateFromGameObject();
+    this.player.y -= (body.bottom - oldBottom);
+    body.updateFromGameObject();
     this.flightSystem.deactivate();
 
     this.scene.cameras.main.zoomTo(
