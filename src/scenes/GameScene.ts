@@ -378,19 +378,15 @@ export class GameScene extends BaseLevelScene {
     ];
     platDefs.forEach(p => this.terrainGen.generatePlatform(this.platforms, p.x, p.y, p.w, 'forest'));
 
-    // Thorns / hazards (keep tile-based)
-    const thornZones: { x: number; y: number; w: number }[] = [
-      { x: 2300, y: 784, w: 500 }, { x: 3100, y: 784, w: 600 },
-      { x: 4000, y: 784, w: 500 }, { x: 4900, y: 504, w: 64 },
-      { x: 5480, y: 534, w: 64 }, { x: 6100, y: 464, w: 64 },
-    ];
-    thornZones.forEach(tz => {
-      for (let tx = tz.x; tx < tz.x + tz.w; tx += 32) {
-        const tile = this.hazards.create(tx + 16, tz.y + 16, 'tile-thorns');
-        (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
-        tile.refreshBody();
-      }
-    });
+    // Organic thorn gaps — dangerous abyss between ground segments
+    this.terrainGen.generateThornGap(this.hazards, 2300, 784, 500, 71);
+    this.terrainGen.generateThornGap(this.hazards, 3100, 784, 600, 72);
+    this.terrainGen.generateThornGap(this.hazards, 4000, 784, 500, 73);
+
+    // Small thorn patches on ruin platforms
+    this.terrainGen.generateThornPatch(this.hazards, 4900, 504, 64, 74);
+    this.terrainGen.generateThornPatch(this.hazards, 5480, 534, 64, 75);
+    this.terrainGen.generateThornPatch(this.hazards, 6100, 464, 64, 76);
   }
 
   private createEnemies(): void {
@@ -1314,59 +1310,105 @@ export class GameScene extends BaseLevelScene {
   }
 
   private showCoreUnlockedPrompt(): void {
+    if (this.isCutsceneActive) return;
+    this.isCutsceneActive = true;
+    this.physics.world.pause();
+    this.player.setInputEnabled(false);
+
+    const disabledEnemies: BaseEnemy[] = [];
+    this.enemies.getChildren().forEach((enemy) => {
+      const e = enemy as BaseEnemy;
+      if (e.active && e.isActive) {
+        e.isActive = false;
+        if (e.body) {
+          e.body.velocity.x = 0;
+          e.body.velocity.y = 0;
+        }
+        disabledEnemies.push(e);
+      }
+    });
+
     const cx = this.cameras.main.width / 2;
     const cy = this.cameras.main.height / 2;
     const scale = this.cameras.main.width / 800;
 
-    const bannerBg = this.add.rectangle(cx, cy, this.cameras.main.width, 140 * scale, 0x000000, 0.8)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(500)
-      .setAlpha(0);
+    const bgOverlay = this.add.rectangle(cx, cy, this.cameras.main.width, this.cameras.main.height, 0x000000, 0.75)
+      .setScrollFactor(0).setDepth(600).setAlpha(0);
 
-    const borderTop = this.add.rectangle(cx, cy - 70 * scale, this.cameras.main.width, 2 * scale, 0xff6600)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(500)
-      .setAlpha(0);
+    const panelWidth = 400 * scale;
+    const panelHeight = 160 * scale;
+    
+    const panel = this.add.graphics().setScrollFactor(0).setDepth(601).setAlpha(0);
+    panel.fillStyle(0x0a0808, 0.95);
+    panel.lineStyle(2, 0xffaa00, 0.8);
+    panel.fillRect(cx - panelWidth/2, cy - panelHeight/2, panelWidth, panelHeight);
+    panel.strokeRect(cx - panelWidth/2, cy - panelHeight/2, panelWidth, panelHeight);
 
-    const borderBottom = this.add.rectangle(cx, cy + 70 * scale, this.cameras.main.width, 2 * scale, 0xff6600)
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(500)
-      .setAlpha(0);
+    const promptParts = t('story.coreFoundPrompt').split('\n\n');
+    const titleString = promptParts.length > 0 ? promptParts[0] : 'CORE ACQUIRED';
+    const descString = promptParts.length > 1 ? promptParts[1] : '';
 
-    const unlockText = this.add.text(cx, cy, t('story.coreFoundPrompt'), {
-      fontSize: `${Math.round(14 * scale)}px`,
-      fontFamily: 'monospace',
+    const titleText = this.add.text(cx, cy - 35 * scale, titleString, {
+      fontSize: `${Math.round(18 * scale)}px`,
+      fontFamily: 'Georgia, serif',
       color: '#ffaa00',
       align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(602).setAlpha(0);
+
+    const descText = this.add.text(cx, cy + 15 * scale, descString, {
+      fontSize: `${Math.round(11 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#dddddd',
+      align: 'center',
       lineSpacing: 8 * scale,
-    })
-    .setOrigin(0.5)
-    .setScrollFactor(0)
-    .setDepth(501)
-    .setAlpha(0);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(602).setAlpha(0);
+
+    const continueText = this.add.text(cx, cy + panelHeight/2 - 20 * scale, t('story.introSkip') || 'ENTER / CLICK to continue', {
+      fontSize: `${Math.round(10 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#888888',
+      align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(602).setAlpha(0);
+
+    this.tweens.add({ targets: continueText, alpha: 0.3, yoyo: true, repeat: -1, duration: 800, delay: 500 });
 
     this.tweens.add({
-      targets: [bannerBg, borderTop, borderBottom, unlockText],
+      targets: [bgOverlay, panel, titleText, descText, continueText],
       alpha: 1,
-      duration: 600,
+      duration: 300,
     });
 
-    this.time.delayedCall(5000, () => {
+    const closePrompt = () => {
+      this.input.keyboard?.off('keydown-ENTER', closePrompt);
+      this.input.keyboard?.off('keydown-C', closePrompt);
+      this.input.keyboard?.off('keydown-SPACE', closePrompt);
+      this.input.keyboard?.off('keydown-ESC', closePrompt);
+      this.input.off('pointerdown', closePrompt);
+
       this.tweens.add({
-        targets: [bannerBg, borderTop, borderBottom, unlockText],
+        targets: [bgOverlay, panel, titleText, descText, continueText],
         alpha: 0,
-        duration: 600,
+        duration: 300,
         onComplete: () => {
-          bannerBg.destroy();
-          borderTop.destroy();
-          borderBottom.destroy();
-          unlockText.destroy();
+          bgOverlay.destroy();
+          panel.destroy();
+          titleText.destroy();
+          descText.destroy();
+          continueText.destroy();
+
+          this.isCutsceneActive = false;
+          this.physics.world.resume();
+          this.player.setInputEnabled(true);
+          disabledEnemies.forEach(e => { if (e.active) e.isActive = true; });
         }
       });
-    });
+    };
+
+    this.input.keyboard?.once('keydown-ENTER', closePrompt);
+    this.input.keyboard?.once('keydown-C', closePrompt);
+    this.input.keyboard?.once('keydown-SPACE', closePrompt);
+    this.input.keyboard?.once('keydown-ESC', closePrompt);
+    this.input.once('pointerdown', closePrompt);
   }
 
   private transitionToLevel2(): void {
