@@ -75,6 +75,8 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       currentScene: this.sceneKey
     });
 
+    // Stop BGM, play gothic choir
+    (this.scene as any).gameAudio?.stopBGM?.();
     (this.scene as any).gameAudio?.playChoirSave?.();
 
     player.setInputEnabled(false);
@@ -82,10 +84,11 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     const body = player.body as Phaser.Physics.Arcade.Body;
     if (body) body.setVelocity(0, 0);
 
-    // Position player at altar and set kneeling pose
+    // Position player kneeling at altar — visible, not cut off
     player.x = this.x;
-    player.y = this.y - (isMecha ? 40 : 30);
+    player.y = this.y - (isMecha ? 60 : 48);
     player.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
+    player.setScale(isMecha ? 1.0 : 0.75);
     player.setAlpha(1);
     player.animState = 'kneeling';
 
@@ -93,14 +96,22 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     player.health = 100;
     player.formMachine.energy.addEnergy(100);
 
-    // ── Dramatic Light Beam ──
-    this.lightBeam = this.scene.add.graphics();
-    this.lightBeam.setDepth(player.depth - 1);
-    this.lightBeam.setBlendMode(Phaser.BlendModes.ADD);
-    this.drawLightBeamShaft(this.lightBeam, player.x, player.y);
+    // ── Dramatic Light Beam from sky ──
+    // Delay: beam descends from sky as player kneels
+    this.scene.time.delayedCall(300, () => {
+      if (!this.active || !this.isPraying) return;
+      this.lightBeam = this.scene.add.graphics();
+      this.lightBeam.setDepth(player.depth - 1);
+      this.lightBeam.setAlpha(0);
+      this.lightBeam.setBlendMode(Phaser.BlendModes.ADD);
+      this.drawLightBeamShaft(this.lightBeam, player.x, player.y + 24);
 
-    this.lightBeamTween = this.scene.tweens.add({
-      targets: this.lightBeam, alpha: { from: 0.6, to: 1 }, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+      // Fade in
+      this.scene.tweens.add({ targets: this.lightBeam, alpha: 1, duration: 600, ease: 'Power2' });
+
+      this.lightBeamTween = this.scene.tweens.add({
+        targets: this.lightBeam, alpha: { from: 0.7, to: 1 }, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 600
+      });
     });
 
     // ── Holy particles rising ──
@@ -129,43 +140,56 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   }
 
   private drawLightBeamShaft(g: Phaser.GameObjects.Graphics, x: number, groundY: number): void {
-    // Wide divine shaft — trapezoid from sky to ground
-    const topW = 30;
-    const bottomW = 90;
-    const topY = -20;
-    // Multiple layers for soft glow
-    const layers = [
-      { alpha: 0.05, topW: topW * 3, bottomW: bottomW * 3 },
-      { alpha: 0.08, topW: topW * 2, bottomW: bottomW * 2 },
-      { alpha: 0.12, topW: topW * 1.5, bottomW: bottomW * 1.5 },
-      { alpha: 0.18, topW: topW, bottomW: bottomW },
-    ];
+    const cam = this.scene.cameras.main;
+    const topY = cam.scrollY;
+    const bottomY = cam.scrollY + cam.height;
+    const topW = 16;
+    const bottomW = 100;
 
+    // Outer glow layers
+    const layers = [
+      { alpha: 0.03, topW: topW * 4, bottomW: bottomW * 2.5 },
+      { alpha: 0.06, topW: topW * 2.5, bottomW: bottomW * 1.8 },
+      { alpha: 0.10, topW: topW * 1.5, bottomW: bottomW * 1.3 },
+    ];
     for (const l of layers) {
       g.fillStyle(0xfff8dc, l.alpha);
       g.beginPath();
       g.moveTo(x - l.topW / 2, topY);
       g.lineTo(x + l.topW / 2, topY);
-      g.lineTo(x + l.bottomW / 2, groundY);
-      g.lineTo(x - l.bottomW / 2, groundY);
+      g.lineTo(x + l.bottomW / 2, bottomY);
+      g.lineTo(x - l.bottomW / 2, bottomY);
       g.closePath(); g.fillPath();
     }
 
-    // Core bright shaft
-    g.fillStyle(0xffffff, 0.25);
+    // Main shaft
+    g.fillStyle(0xfff8dc, 0.14);
     g.beginPath();
-    g.moveTo(x - 6, topY);
-    g.lineTo(x + 6, topY);
-    g.lineTo(x + 22, groundY);
-    g.lineTo(x - 22, groundY);
+    g.moveTo(x - topW / 2, topY);
+    g.lineTo(x + topW / 2, topY);
+    g.lineTo(x + bottomW / 2, bottomY);
+    g.lineTo(x - bottomW / 2, bottomY);
     g.closePath(); g.fillPath();
 
-    // Sparkle dots in beam
-    g.fillStyle(0xffffff, 0.4);
-    for (let i = 0; i < 8; i++) {
-      const dy = groundY * Math.random();
-      const dw = (bottomW / 2) * (dy / groundY);
-      g.fillCircle(x + Phaser.Math.Between(-dw, dw), topY + dy, Phaser.Math.Between(1, 2));
+    // Core bright beam (stops at player)
+    g.fillStyle(0xffffff, 0.2);
+    g.beginPath();
+    g.moveTo(x - 4, topY);
+    g.lineTo(x + 4, topY);
+    g.lineTo(x + 28, bottomY);
+    g.lineTo(x - 28, bottomY);
+    g.closePath(); g.fillPath();
+
+    // Hit glow at ground (player's level)
+    g.fillStyle(0xfff8dc, 0.2);
+    g.fillEllipse(x, bottomY, bottomW, 12);
+
+    // Sparkle dust motes in beam
+    g.fillStyle(0xffffff, 0.35);
+    for (let i = 0; i < 10; i++) {
+      const dy = Phaser.Math.Between(20, bottomY - topY - 20);
+      const beamHalf = bottomW * (dy / (bottomY - topY)) * 0.8;
+      g.fillCircle(x + Phaser.Math.Between(-beamHalf, beamHalf), topY + dy, Phaser.Math.Between(1, 2.5));
     }
   }
 
@@ -180,17 +204,21 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     if (this.lightBeam) {
       if (this.lightBeamTween) { this.lightBeamTween.stop(); this.lightBeamTween = null; }
       const beam = this.lightBeam; this.lightBeam = null;
-      this.scene.tweens.add({ targets: beam, alpha: 0, duration: 500, onComplete: () => beam.destroy() });
+      this.scene.tweens.add({ targets: beam, alpha: 0, duration: 400, onComplete: () => beam.destroy() });
     }
     if (this.glowParticles) {
       this.glowParticles.stop();
-      this.scene.time.delayedCall(800, () => { if (this.glowParticles) this.glowParticles.destroy(); this.glowParticles = null; });
+      this.scene.time.delayedCall(600, () => { if (this.glowParticles) this.glowParticles.destroy(); this.glowParticles = null; });
     }
 
     player.setInputEnabled(true);
-    player.setTexture(player.formMachine.isMecha() ? 'm-idle-0' : 'h-idle-0');
+    const isMecha = player.formMachine.isMecha();
+    player.setTexture(isMecha ? 'player-mecha' : 'player-human');
+    player.setScale(isMecha ? 1.4 : 0.8);
     player.animState = 'idle';
     player.setAlpha(1);
+    // Restore player to standing position in front of altar
+    player.y = this.y + (isMecha ? 20 : 10);
   }
 
   destroy(fromScene?: boolean) {
