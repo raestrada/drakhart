@@ -7,54 +7,72 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   private promptText: Phaser.GameObjects.Text;
   private isPraying = false;
   private sceneKey: string;
+
   private lightBeam: Phaser.GameObjects.Graphics | null = null;
   private lightBeamTween: Phaser.Tweens.Tween | null = null;
-  private glowParticles: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
-  private halo: Phaser.GameObjects.Ellipse | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, sceneKey: string) {
-    super(scene, x, y - 40, 'altar-save');
+    super(scene, x, y - 40, 'altar-save'); // offset since origin is center and height is 80
     this.sceneKey = sceneKey;
 
     scene.add.existing(this);
-    scene.physics.add.existing(this, true);
-    this.setOrigin(0.5, 1);
+    scene.physics.add.existing(this, true); // static body
 
-    this.promptText = scene.add.text(x, y - 100, '', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#ffcc88',
-      stroke: '#000000', strokeThickness: 3,
+    // Prompt text shown when player is nearby
+    this.promptText = scene.add.text(x, y - 90, '', {
+      fontSize: '11px',
+      fontFamily: 'monospace',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 2,
     }).setOrigin(0.5).setAlpha(0).setDepth(200);
 
-    // Subtle altar glow
-    this.halo = scene.add.ellipse(x, y - 20, 80, 14, 0xffd700, 0.08);
-    this.halo.setDepth(1);
-    this.halo.setBlendMode(Phaser.BlendModes.ADD);
-    scene.tweens.add({ targets: this.halo, alpha: 0.15, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-
-    scene.tweens.add({ targets: this, y: this.y - 3, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // Glow floating tween
+    scene.tweens.add({
+      targets: this,
+      y: this.y - 6,
+      duration: 1250,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
   }
 
   updatePrompt(player: Player): void {
     if (this.isPraying) {
       this.promptText.setAlpha(0);
-      if (this.lightBeam && this.lightBeam.active) {
-        this.lightBeam.x = player.x;
-        this.lightBeam.clear();
-        this.drawLightBeamShaft(this.lightBeam, player.x, player.y);
-      }
+
+      // Check if player presses any move key to stand up/cancel prayer
       const kb = this.scene.input.keyboard!;
-      if (kb.addKey(Phaser.Input.Keyboard.KeyCodes.E).isDown ||
-          kb.createCursorKeys().left.isDown || kb.createCursorKeys().right.isDown) {
+      const cursors = kb.createCursorKeys();
+      const wKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+      const aKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+      const sKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+      const dKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+      const spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      const eKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+      const isMoveKeyPressed = 
+        cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown || cursors.space.isDown ||
+        wKey.isDown || aKey.isDown || sKey.isDown || dKey.isDown || spaceKey.isDown;
+
+      const isExitPressed = Phaser.Input.Keyboard.JustDown(eKey);
+
+      if (isMoveKeyPressed || isExitPressed) {
         this.stopPraying(player);
       }
       return;
     }
 
-    const dist = Phaser.Math.Distance.Between(this.x, this.y + 20, player.x, player.y);
+    const dist = Phaser.Math.Distance.Between(this.x, this.y + 40, player.x, player.y);
     if (dist < 80) {
       this.promptText.setText(`[E] ${t('ui.pray') || 'PRAY'}`);
-      this.promptText.setAlpha(0.85);
-      if (Phaser.Input.Keyboard.JustDown(this.scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E))) {
+      this.promptText.setAlpha(1);
+
+      // Check key press E
+      const kb = this.scene.input.keyboard!;
+      const keyE = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+      if (Phaser.Input.Keyboard.JustDown(keyE)) {
         this.triggerSave(player);
       }
     } else {
@@ -66,6 +84,7 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     if (this.isPraying) return;
     this.isPraying = true;
 
+    // Save Game state
     saveGame({
       cardsCollected: player.tarotSystem?.collectedCards || [],
       mechaUnlocked: player.formMachine.isMechaUnlocked(),
@@ -75,158 +94,167 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       currentScene: this.sceneKey
     });
 
-    // Stop BGM, play gothic choir
+    // Play dramatic religious prayer BGM sweep — stop normal BGM first
     (this.scene as any).gameAudio?.stopBGM?.();
     (this.scene as any).gameAudio?.playChoirSave?.();
 
+    // Disable player controls & force kneeling pose at altar center
     player.setInputEnabled(false);
-    const isMecha = player.formMachine.isMecha();
-    const body = player.body as Phaser.Physics.Arcade.Body;
-    if (body) body.setVelocity(0, 0);
-
-    // Position player kneeling at altar — visible, not cut off
+    player.setVelocity(0, 0);
     player.x = this.x;
-    player.y = this.y - (isMecha ? 60 : 48);
+    
+    const isMecha = player.formMachine.isMecha();
     player.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
     player.setScale(isMecha ? 1.0 : 0.75);
-    player.setAlpha(1);
     player.animState = 'kneeling';
 
-    // Full heal
+    // Restore full HP & Energy
     player.health = 100;
     player.formMachine.energy.addEnergy(100);
 
-    // ── Dramatic Light Beam from sky ──
-    // Delay: beam descends from sky as player kneels
+    // Create dramatic light beam from sky (trapezoid, multi-layer glow)
     this.scene.time.delayedCall(300, () => {
       if (!this.active || !this.isPraying) return;
       this.lightBeam = this.scene.add.graphics();
       this.lightBeam.setDepth(player.depth - 1);
-      this.lightBeam.setAlpha(0);
       this.lightBeam.setBlendMode(Phaser.BlendModes.ADD);
-      this.drawLightBeamShaft(this.lightBeam, player.x, player.y + 24);
+      const cam = this.scene.cameras.main;
+      const topY = cam.scrollY;
+      const bottomY = player.y + 30;
+      const topW = 20;
+      const bottomW = 120;
 
-      // Fade in
-      this.scene.tweens.add({ targets: this.lightBeam, alpha: 1, duration: 600, ease: 'Power2' });
+      // Outer glow
+      for (const l of [{ a: 0.04, tw: topW * 3, bw: bottomW * 2 }, { a: 0.08, tw: topW * 1.5, bw: bottomW * 1.4 }, { a: 0.12, tw: topW, bw: bottomW }]) {
+        this.lightBeam.fillStyle(0xfff8dc, l.a);
+        this.lightBeam.beginPath();
+        this.lightBeam.moveTo(player.x - l.tw / 2, topY);
+        this.lightBeam.lineTo(player.x + l.tw / 2, topY);
+        this.lightBeam.lineTo(player.x + l.bw / 2, bottomY);
+        this.lightBeam.lineTo(player.x - l.bw / 2, bottomY);
+        this.lightBeam.closePath(); this.lightBeam.fillPath();
+      }
+      // Core
+      this.lightBeam.fillStyle(0xffffff, 0.18);
+      this.lightBeam.beginPath();
+      this.lightBeam.moveTo(player.x - 6, topY);
+      this.lightBeam.lineTo(player.x + 6, topY);
+      this.lightBeam.lineTo(player.x + 32, bottomY);
+      this.lightBeam.lineTo(player.x - 32, bottomY);
+      this.lightBeam.closePath(); this.lightBeam.fillPath();
+      // Ground hit glow
+      this.lightBeam.fillStyle(0xfff8dc, 0.25);
+      this.lightBeam.fillEllipse(player.x, bottomY, bottomW, 12);
+
+      this.lightBeam.setAlpha(0);
+      this.scene.tweens.add({ targets: this.lightBeam, alpha: 1, duration: 500 });
 
       this.lightBeamTween = this.scene.tweens.add({
-        targets: this.lightBeam, alpha: { from: 0.7, to: 1 }, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 600
+        targets: this.lightBeam, alpha: 0.7, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 500
       });
     });
 
-    // ── Holy particles rising ──
-    if (this.scene.textures.exists('px-4')) {
-      this.glowParticles = this.scene.add.particles(player.x, player.y + 10, 'px-4', {
-        speed: { min: 10, max: 40 }, angle: { min: 240, max: 300 },
-        scale: { start: 1.2, end: 0 }, alpha: { start: 0.6, end: 0 },
-        tint: [0xffd700, 0xfff0aa, 0xffcc44, 0xff8800],
-        lifespan: { min: 600, max: 1500 }, frequency: 60,
-        blendMode: Phaser.BlendModes.ADD,
-        emitZone: { type: 'random', source: new Phaser.Geom.Rectangle(-16, -10, 32, 20) } as any,
+    // Spawn visual particles rising from altar
+    for (let i = 0; i < 20; i++) {
+      this.scene.time.delayedCall(i * 40, () => {
+        if (!this.active) return;
+        const spark = this.scene.add.rectangle(
+          this.x + Phaser.Math.Between(-25, 25),
+          this.y + 40,
+          Phaser.Math.Between(2, 5),
+          Phaser.Math.Between(2, 5),
+          0xff0055
+        );
+        spark.setBlendMode(Phaser.BlendModes.ADD);
+        this.scene.physics.add.existing(spark);
+        const sBody = spark.body as Phaser.Physics.Arcade.Body;
+        if (sBody) {
+          sBody.allowGravity = false;
+          sBody.setVelocityY(Phaser.Math.Between(-140, -60));
+        }
+        this.scene.tweens.add({
+          targets: spark,
+          alpha: 0,
+          scale: 0.1,
+          duration: 900,
+          onComplete: () => spark.destroy()
+        });
       });
-      this.glowParticles.setDepth(player.depth + 5);
     }
 
-    // ── Camera FX ──
-    this.scene.cameras.main.flash(600, 255, 220, 100);
-    this.scene.cameras.main.shake(400, 0.004);
+    // Camera flash and shake
+    this.scene.cameras.main.flash(450, 255, 245, 180);
+    this.scene.cameras.main.shake(300, 0.003);
 
-    // ── Banner ──
+    // Display banner: "PROGRESS SAVED / PROGRESO GUARDADO"
     const cam = this.scene.cameras.main;
-    const banner = this.scene.add.text(cam.width / 2, cam.height / 2 - 40, t('ui.gameSaved') || 'PROGRESS SAVED', {
-      fontSize: '22px', fontFamily: 'Georgia, serif', color: '#ffcc44', stroke: '#000000', strokeThickness: 4,
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+    const banner = this.scene.add.text(cx, cy, t('ui.gameSaved') || 'PROGRESS SAVED', {
+      fontSize: '20px',
+      fontFamily: 'monospace',
+      color: '#ff0055',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setAlpha(0).setDepth(1000);
-    this.scene.tweens.add({ targets: banner, alpha: 1, duration: 300, yoyo: true, hold: 1500, onComplete: () => banner.destroy() });
-  }
 
-  private drawLightBeamShaft(g: Phaser.GameObjects.Graphics, x: number, groundY: number): void {
-    const cam = this.scene.cameras.main;
-    const topY = cam.scrollY;
-    const bottomY = cam.scrollY + cam.height;
-    const topW = 16;
-    const bottomW = 100;
-
-    // Outer glow layers
-    const layers = [
-      { alpha: 0.03, topW: topW * 4, bottomW: bottomW * 2.5 },
-      { alpha: 0.06, topW: topW * 2.5, bottomW: bottomW * 1.8 },
-      { alpha: 0.10, topW: topW * 1.5, bottomW: bottomW * 1.3 },
-    ];
-    for (const l of layers) {
-      g.fillStyle(0xfff8dc, l.alpha);
-      g.beginPath();
-      g.moveTo(x - l.topW / 2, topY);
-      g.lineTo(x + l.topW / 2, topY);
-      g.lineTo(x + l.bottomW / 2, bottomY);
-      g.lineTo(x - l.bottomW / 2, bottomY);
-      g.closePath(); g.fillPath();
-    }
-
-    // Main shaft
-    g.fillStyle(0xfff8dc, 0.14);
-    g.beginPath();
-    g.moveTo(x - topW / 2, topY);
-    g.lineTo(x + topW / 2, topY);
-    g.lineTo(x + bottomW / 2, bottomY);
-    g.lineTo(x - bottomW / 2, bottomY);
-    g.closePath(); g.fillPath();
-
-    // Core bright beam (stops at player)
-    g.fillStyle(0xffffff, 0.2);
-    g.beginPath();
-    g.moveTo(x - 4, topY);
-    g.lineTo(x + 4, topY);
-    g.lineTo(x + 28, bottomY);
-    g.lineTo(x - 28, bottomY);
-    g.closePath(); g.fillPath();
-
-    // Hit glow at ground (player's level)
-    g.fillStyle(0xfff8dc, 0.2);
-    g.fillEllipse(x, bottomY, bottomW, 12);
-
-    // Sparkle dust motes in beam
-    g.fillStyle(0xffffff, 0.35);
-    for (let i = 0; i < 10; i++) {
-      const dy = Phaser.Math.Between(20, bottomY - topY - 20);
-      const beamHalf = bottomW * (dy / (bottomY - topY)) * 0.8;
-      g.fillCircle(x + Phaser.Math.Between(-beamHalf, beamHalf), topY + dy, Phaser.Math.Between(1, 2.5));
-    }
+    this.scene.tweens.add({
+      targets: banner,
+      alpha: 1,
+      duration: 300,
+      yoyo: true,
+      hold: 1200,
+      onComplete: () => {
+        banner.destroy();
+      }
+    });
   }
 
   private stopPraying(player: Player): void {
     if (!this.isPraying) return;
-    this.isPraying = false;
 
+    // Stop choir audio and play level BGM back
     (this.scene as any).gameAudio?.stopChoirSave?.();
     const lvl = this.sceneKey === 'TransitionScene12' ? 1 : 2;
     (this.scene as any).gameAudio?.playBGM?.(lvl);
 
+    // Fade out light beam
     if (this.lightBeam) {
-      if (this.lightBeamTween) { this.lightBeamTween.stop(); this.lightBeamTween = null; }
-      const beam = this.lightBeam; this.lightBeam = null;
-      this.scene.tweens.add({ targets: beam, alpha: 0, duration: 400, onComplete: () => beam.destroy() });
-    }
-    if (this.glowParticles) {
-      this.glowParticles.stop();
-      this.scene.time.delayedCall(600, () => { if (this.glowParticles) this.glowParticles.destroy(); this.glowParticles = null; });
+      if (this.lightBeamTween) {
+        this.lightBeamTween.stop();
+        this.lightBeamTween = null;
+      }
+      const beam = this.lightBeam;
+      this.lightBeam = null;
+      this.scene.tweens.add({
+        targets: beam,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => beam.destroy()
+      });
     }
 
+    // Re-enable player controls — restore standing pose
     player.setInputEnabled(true);
     const isMecha = player.formMachine.isMecha();
     player.setTexture(isMecha ? 'player-mecha' : 'player-human');
     player.setScale(isMecha ? 1.4 : 0.8);
     player.animState = 'idle';
-    player.setAlpha(1);
-    // Restore player to standing position in front of altar
-    player.y = this.y + (isMecha ? 20 : 10);
+    // Position standing in front of altar
+    player.x = this.x;
+    player.y = this.y;
+    
+    // Tiny delay before we allow praying again
+    this.scene.time.delayedCall(250, () => {
+      this.isPraying = false;
+    });
   }
 
   destroy(fromScene?: boolean) {
-    if (this.promptText?.active) this.promptText.destroy();
-    if (this.lightBeam?.active) this.lightBeam.destroy();
+    if (this.promptText && this.promptText.active) this.promptText.destroy();
+    if (this.lightBeam && this.lightBeam.active) this.lightBeam.destroy();
     if (this.lightBeamTween) this.lightBeamTween.stop();
-    if (this.glowParticles) this.glowParticles.destroy();
-    if (this.halo?.active) this.halo.destroy();
     super.destroy(fromScene);
   }
 }
