@@ -231,4 +231,75 @@ export class TerrainGenerator {
       g.fillRect(vertices[i].x - 3, vertices[i].y - 2, 6, 4);
     }
   }
+
+  generateThornGap(
+    group: Phaser.Physics.Arcade.StaticGroup,
+    startX: number,
+    baseY: number,
+    width: number,
+    seed = 77
+  ): void {
+    const rng = new Phaser.Math.RandomDataGenerator(['thorns', seed.toString()]);
+
+    // Draw organic thorn thicket at the bottom
+    const g = this.scene.add.graphics();
+    g.setDepth(6);
+
+    // Dark void below
+    g.fillStyle(0x060208, 1);
+    g.fillRect(startX, baseY - 4, width, 36);
+
+    // Thorn bushes — clusters of sharp triangles
+    for (let bush = 0; bush < Math.floor(width / 60); bush++) {
+      const bx = startX + bush * 60 + rng.between(10, 40);
+      const by = baseY + rng.between(-4, 8);
+
+      // Main thorn body
+      g.fillStyle(0x1a1018, 0.9);
+      g.fillTriangle(bx - 6, by + 16, bx + 6, by + 16, bx, by - rng.between(4, 14));
+
+      // Sharp tips
+      for (let t = 0; t < rng.between(4, 8); t++) {
+        const tx = bx + rng.between(-12, 12);
+        const ty = by + rng.between(-6, 12);
+        const th = rng.between(6, 20);
+
+        // Color gradient: dark purple base, bright tip
+        g.fillStyle(0x2a1533, 0.8);
+        g.fillTriangle(tx - 1.5, ty, tx + 1.5, ty, tx, ty - th);
+
+        // Blood-red tip highlight
+        g.fillStyle(0x661133, 0.5);
+        g.fillTriangle(tx - 0.8, ty - th + 4, tx + 0.8, ty - th + 4, tx, ty - th);
+      }
+
+      // Thorn berry/fire bud — the "estrella de fuego"
+      if (rng.between(0, 3) > 0) {
+        const fbX = bx + rng.between(-8, 8);
+        const fbY = by + rng.between(2, 14);
+        g.fillStyle(0xff3300, 0.7);
+        g.fillCircle(fbX, fbY, rng.between(2, 4));
+        g.fillStyle(0xff6600, 0.5);
+        g.fillCircle(fbX, fbY, rng.between(1, 2));
+        g.fillStyle(0xffcc00, 0.3);
+        g.fillCircle(fbX - 0.5, fbY - 0.5, 0.8);
+      }
+    }
+
+    // Ground-level roots
+    g.fillStyle(0x1a0f1a, 0.6);
+    for (let rx = startX + 10; rx < startX + width; rx += rng.between(30, 60)) {
+      const rw = rng.between(6, 14);
+      g.fillRect(rx, baseY + rng.between(0, 4), rw, rng.between(2, 4));
+    }
+
+    // Arcade collision body — wide flat hazard along the gap floor
+    const segW = 128;
+    for (let tx = startX; tx < startX + width; tx += segW) {
+      const body = group.create(tx + segW / 2, baseY + 16, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
+      body.setDisplaySize(segW, 28);
+      body.setAlpha(0.01); // nearly invisible — the graphics handle visuals
+      body.refreshBody();
+    }
+  }
 }

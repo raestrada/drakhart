@@ -378,22 +378,15 @@ export class GameScene extends BaseLevelScene {
     ];
     platDefs.forEach(p => this.terrainGen.generatePlatform(this.platforms, p.x, p.y, p.w, 'forest'));
 
-    // Thorns in gaps — player falls through and dies
-    const thornGaps: { x: number; w: number }[] = [
-      { x: 2300, w: 500 }, { x: 3100, w: 600 }, { x: 4000, w: 500 },
-    ];
-    thornGaps.forEach(gap => {
-      for (let tx = gap.x; tx < gap.x + gap.w; tx += 32) {
-        this.hazards.create(tx + 16, 784, 'tile-thorns');
-      }
-    });
+    // Organic thorn gaps — player falls through and dies
+    this.terrainGen.generateThornGap(this.hazards, 2300, 784, 500, 71);
+    this.terrainGen.generateThornGap(this.hazards, 3100, 784, 600, 72);
+    this.terrainGen.generateThornGap(this.hazards, 4000, 784, 500, 73);
 
-    // Thorns on top of ruins
-    [{ x: 4900, y: 504, w: 64 }, { x: 5480, y: 534, w: 64 }, { x: 6100, y: 464, w: 64 }].forEach(tz => {
-      for (let tx = tz.x; tx < tz.x + tz.w; tx += 32) {
-        this.hazards.create(tx + 16, tz.y + 16, 'tile-thorns');
-      }
-    });
+    // Small thorn patches on top of ruins
+    this.terrainGen.generateThornGap(this.hazards, 4900, 500, 64, 74);
+    this.terrainGen.generateThornGap(this.hazards, 5480, 530, 64, 75);
+    this.terrainGen.generateThornGap(this.hazards, 6100, 460, 64, 76);
   }
 
   private createEnemies(): void {
