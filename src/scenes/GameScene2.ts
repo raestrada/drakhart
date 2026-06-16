@@ -18,6 +18,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
+import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
 import {
   LEVEL_WIDTH,
@@ -35,7 +36,7 @@ interface PlatformDef {
   texture?: string;
 }
 
-export class GameScene2 extends Phaser.Scene {
+export class GameScene2 extends BaseLevelScene {
   public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
@@ -95,6 +96,8 @@ export class GameScene2 extends Phaser.Scene {
   }
 
   create(): void {
+    super.create();
+
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
     // Initialize/resume Audio system
@@ -114,12 +117,6 @@ export class GameScene2 extends Phaser.Scene {
     });
 
     this.bloom = new BloomSystem(this);
-
-    this.input.keyboard?.on('keydown-ESC', () => {
-      this.physics.world.pause();
-      this.scene.pause();
-      this.scene.launch('PauseScene', { gameScene: 'GameScene2' });
-    });
 
     this.input.keyboard?.on('keydown-T', () => {
       if (this.scene.isPaused()) return;

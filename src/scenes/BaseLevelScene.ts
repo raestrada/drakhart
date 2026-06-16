@@ -4,10 +4,10 @@ export class BaseLevelScene extends Phaser.Scene {
   protected parallaxLayers: Phaser.GameObjects.TileSprite[] = [];
   protected vignette!: Phaser.GameObjects.Rectangle;
   protected gameAudio: any = null;
-  private emberTimer: Phaser.Time.TimerEvent | null = null;
+  private emberRainTimer: Phaser.Time.TimerEvent | null = null;
 
-  constructor(key: string) {
-    super({ key });
+  constructor(key: string | Phaser.Types.Scenes.SettingsConfig) {
+    super(typeof key === 'string' ? { key } : key);
   }
 
   create(): void {
@@ -17,16 +17,6 @@ export class BaseLevelScene extends Phaser.Scene {
       this.scene.pause();
       this.scene.launch('PauseScene', { gameScene: this.scene.key });
     });
-  }
-
-  protected createVignette(): void {
-    const { width, height } = this.scale;
-    this.vignette = this.add.rectangle(
-      width / 2, height / 2, width, height,
-      0x000000, 0
-    );
-    this.vignette.setDepth(100);
-    this.vignette.setScrollFactor(0);
   }
 
   protected updateVignette(alpha: number = 0): void {
@@ -61,7 +51,7 @@ export class BaseLevelScene extends Phaser.Scene {
 
   protected startEmberRain(): void {
     const { width, height } = this.scale;
-    this.emberTimer = this.time.addEvent({
+    this.emberRainTimer = this.time.addEvent({
       delay: 90,
       callback: () => {
         const x = Phaser.Math.Between(50, width + 150) + this.cameras.main.scrollX;
@@ -91,9 +81,9 @@ export class BaseLevelScene extends Phaser.Scene {
   }
 
   protected stopEmberRain(): void {
-    if (this.emberTimer) {
-      this.emberTimer.destroy();
-      this.emberTimer = null;
+    if (this.emberRainTimer) {
+      this.emberRainTimer.destroy();
+      this.emberRainTimer = null;
     }
   }
 
@@ -117,6 +107,78 @@ export class BaseLevelScene extends Phaser.Scene {
     if (onComplete) {
       this.time.delayedCall(duration, onComplete);
     }
+  }
+
+  protected irisOut(duration = 800, onComplete?: () => void): void {
+    const { width, height } = this.scale;
+    const maxRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+
+    for (let i = 0; i < 8; i++) {
+      const g = this.add.graphics();
+      g.setDepth(500);
+      g.setScrollFactor(0);
+
+      this.tweens.addCounter({
+        from: 0,
+        to: maxRadius,
+        duration: duration + i * 40,
+        ease: 'Power3',
+        onUpdate: (tween) => {
+          const r = tween.getValue();
+          if (r == null) return;
+          g.clear();
+          g.fillStyle(0x000000, 1 - (r / maxRadius) * 0.5);
+          g.fillCircle(width / 2, height / 2, r);
+        },
+        onComplete: () => g.destroy(),
+      });
+    }
+
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0)
+      .setDepth(499).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 1,
+      duration: duration + 200,
+      delay: duration * 0.4,
+      onComplete: () => {
+        if (onComplete) onComplete();
+      },
+    });
+  }
+
+  protected irisIn(duration = 800): void {
+    const { width, height } = this.scale;
+    const maxRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1)
+      .setDepth(500).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: duration * 0.6,
+    });
+
+    const g = this.add.graphics();
+    g.setDepth(501);
+    g.setScrollFactor(0);
+
+    this.tweens.addCounter({
+      from: 0,
+      to: maxRadius * 3,
+      duration: duration,
+      ease: 'Power4',
+      onUpdate: (tween) => {
+        const r = tween.getValue();
+        if (r == null) return;
+        g.clear();
+        g.fillStyle(0x000000, 1 - Math.min(1, (r - maxRadius * 2) / maxRadius));
+        g.fillCircle(width / 2, height / 2, maxRadius - r + maxRadius);
+      },
+      onComplete: () => g.destroy(),
+    });
   }
 
   protected transitionToScene(key: string, data?: object, duration = 800): void {

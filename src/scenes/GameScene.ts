@@ -21,6 +21,7 @@ import {
   spawnDeathExplosion,
 } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
+import { BaseLevelScene } from './BaseLevelScene';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -37,7 +38,7 @@ interface PlatformDef {
   texture?: string;
 }
 
-export class GameScene extends Phaser.Scene {
+export class GameScene extends BaseLevelScene {
   public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
@@ -118,6 +119,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    super.create();
+
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
     // Initialize Game Audio system
@@ -138,12 +141,6 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.bloom = new BloomSystem(this);
-
-    this.input.keyboard?.on('keydown-ESC', () => {
-      this.physics.world.pause();
-      this.scene.pause();
-      this.scene.launch('PauseScene', { gameScene: 'GameScene' });
-    });
 
     this.input.keyboard?.on('keydown-T', () => {
       if (this.scene.isPaused()) return;
