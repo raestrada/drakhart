@@ -34,7 +34,7 @@ export class TransitionScene23 extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 1000;
+    const W = 800;
     this.physics.world.setBounds(0, 0, W, 800);
     this.cameras.main.setBackgroundColor('#0a080c');
 
@@ -56,10 +56,10 @@ export class TransitionScene23 extends Phaser.Scene {
     // ── Ground — refinery metal ──
     this.platforms = this.physics.add.staticGroup();
     for (let tx = 0; tx < W; tx += 128) {
-      const tex = tx < 700 ? 'tile-refinery' : 'tile-lava-ground';
+      const tex = tx < 600 ? 'tile-refinery' : 'tile-lava-ground';
       const b1 = this.platforms.create(tx + 64, 752, tex) as Phaser.Physics.Arcade.Sprite;
       b1.setDisplaySize(128, 48); b1.refreshBody(); b1.setDepth(3);
-      if (tx < 700) {
+      if (tx < 600) {
         const b2 = this.platforms.create(tx + 64, 784, 'tile-refinery') as Phaser.Physics.Arcade.Sprite;
         b2.setDisplaySize(128, 32); b2.refreshBody(); b2.setDepth(3);
       }
@@ -84,9 +84,8 @@ export class TransitionScene23 extends Phaser.Scene {
 
     // ── Camera ──
     this.cameras.main.setBounds(0, 0, W, 800);
-    this.cameras.main.setZoom(1.45);
-    this.cameras.main.scrollX = 150;
-    this.cameras.main.scrollY = 50;
+    this.cameras.main.scrollX = 0;
+    this.cameras.main.scrollY = 0;
 
     const vig = this.add.graphics().setDepth(100);
     vig.fillStyle(0x000000, 0.35);
@@ -96,19 +95,17 @@ export class TransitionScene23 extends Phaser.Scene {
 
   private drawRefineryBackdrop(W: number): void {
     const g = this.add.graphics().setDepth(-10);
+    const wallW = 160;
 
-    // Factory wall left side
     g.fillStyle(0x151d25, 1);
-    g.fillRect(0, 400, 180, 400);
+    g.fillRect(0, 400, wallW, 400);
     g.fillStyle(0x1c2834, 0.6);
-    g.fillRect(10, 410, 160, 380);
+    g.fillRect(10, 410, wallW - 20, 380);
 
-    // Seams
     g.fillStyle(0x0d1218, 0.5);
-    g.fillRect(0, 450, 180, 2);
-    g.fillRect(0, 520, 180, 2);
-    g.fillRect(0, 590, 180, 2);
-    g.fillRect(0, 660, 180, 2);
+    g.fillRect(0, 450, wallW, 2);
+    g.fillRect(0, 540, wallW, 2);
+    g.fillRect(0, 630, wallW, 2);
 
     // Doorway
     g.fillStyle(0x0a0e13, 1);
@@ -163,8 +160,8 @@ export class TransitionScene23 extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.player?.active) {
       this.gameAudio?.update(this.player.x);
-      this.playerShadow.setAlpha(this.player.x < 700 ? 0.5 : 0);
-      if (this.player.x < 700) {
+      this.playerShadow.setAlpha(this.player.x < 600 ? 0.5 : 0);
+      if (this.player.x < 600) {
         this.playerShadow.x = this.player.x;
         this.playerShadow.y = this.player.y + 24;
         this.playerShadow.setScale(this.player.scaleX);
@@ -174,8 +171,8 @@ export class TransitionScene23 extends Phaser.Scene {
     if (this.saveAltar?.active) this.saveAltar.updatePrompt(this.player);
 
     if (this.player.active && this.player.alive && !this.hasTransitioned) {
-      if (this.player.x <= 50) this.transitionToLevel2();
-      if (this.player.x >= 940 && this.player.formMachine.state === FormState.DRAGON) this.transitionToLevel3();
+      if (this.player.x <= 40) this.transitionToLevel2();
+      if (this.player.x >= 760 && this.player.formMachine.state === FormState.DRAGON) this.transitionToLevel3();
     }
   }
 

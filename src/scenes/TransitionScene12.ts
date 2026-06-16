@@ -33,7 +33,7 @@ export class TransitionScene12 extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 1000;
+    const W = 800;
     this.physics.world.setBounds(0, 0, W, 800);
     this.cameras.main.setBackgroundColor('#080610');
 
@@ -51,13 +51,13 @@ export class TransitionScene12 extends Phaser.Scene {
     this.add.tileSprite(0, 380, W, 380, 'bg-forest').setOrigin(0, 0).setDepth(-15).setAlpha(0.55).setTint(0x332233);
 
     // ── Moon ──
-    const moon = this.add.image(180, 140, 'bg-moon').setOrigin(0.5).setDepth(-25).setAlpha(0.85);
-    this.tweens.add({ targets: moon, y: 135, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const moon = this.add.image(120, 120, 'bg-moon').setOrigin(0.5).setDepth(-25).setAlpha(0.85);
+    this.tweens.add({ targets: moon, y: 115, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     // ── Organic Ground ──
     this.platforms = this.physics.add.staticGroup();
     for (let tx = 0; tx < W; tx += 128) {
-      const isRefinery = tx >= 750;
+      const isRefinery = tx >= 600;
       const tex = isRefinery ? 'tile-refinery' : 'tile-ground';
       const b1 = this.platforms.create(tx + 64, 752, tex) as Phaser.Physics.Arcade.Sprite;
       b1.setDisplaySize(128, 48); b1.refreshBody(); b1.setDepth(3);
@@ -69,7 +69,7 @@ export class TransitionScene12 extends Phaser.Scene {
       }
     }
 
-    // ── Factory Entrance (right side, detailed) ──
+    // ── Factory Entrance ──
     this.drawFactoryEntrance(W);
 
     // ── Tarot ──
@@ -83,17 +83,16 @@ export class TransitionScene12 extends Phaser.Scene {
     if (this.pendingDragonUnlock) this.player.formMachine.unlockDragon();
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.5);
 
-    // ── Altar — center of the screen ──
-    this.saveAltar = new SaveAltar(this, 500, 736, 'TransitionScene12');
+    // ── Altar ──
+    this.saveAltar = new SaveAltar(this, 400, 736, 'TransitionScene12');
 
     // ── Colliders ──
     this.physics.add.collider(this.player, this.platforms);
 
-    // ── Camera — centered on altar area, closer zoom ──
+    // ── Camera ──
     this.cameras.main.setBounds(0, 0, W, 800);
-    this.cameras.main.setZoom(1.45);
-    this.cameras.main.scrollX = 250;
-    this.cameras.main.scrollY = 50;
+    this.cameras.main.scrollX = 0;
+    this.cameras.main.scrollY = 0;
 
     // ── Vignette ──
     const vig = this.add.graphics().setDepth(100);
@@ -104,78 +103,45 @@ export class TransitionScene12 extends Phaser.Scene {
 
   private drawFactoryEntrance(W: number): void {
     const g = this.add.graphics().setDepth(-10);
-    const gateX = 750;
+    const gateX = 580;
 
-    // Main factory wall — dark industrial steel
     g.fillStyle(0x151d25, 1);
     g.fillRect(gateX, 420, W - gateX, 380);
-    // Lighter panel inset
     g.fillStyle(0x1c2834, 0.6);
     g.fillRect(gateX + 10, 430, W - gateX - 20, 360);
 
-    // Horizontal rivet seams
     g.fillStyle(0x0d1218, 0.5);
-    for (let sy = 440; sy < 780; sy += 40) {
-      g.fillRect(gateX, sy, W - gateX, 2);
-    }
-    // Vertical seam
-    g.fillRect(gateX + 125, 420, 2, 380);
+    for (let sy = 440; sy < 780; sy += 40) g.fillRect(gateX, sy, W - gateX, 2);
+    g.fillRect(gateX + 100, 420, 2, 380);
 
-    // Arched doorway
+    const doorW = 120, doorH = 240, doorX = gateX + 25, doorY = 520;
     g.fillStyle(0x0a0e13, 1);
-    g.fillRect(gateX + 30, 520, 140, 260);
-    // Arch top
-    g.fillStyle(0x0a0e13, 1);
-    const archCX = gateX + 100;
-    const archCY = 520;
-    g.fillCircle(archCX, archCY, 70);
-    g.fillStyle(0x151d25, 1); // cut top off circle
-    g.fillRect(gateX + 25, 400, 150, 120);
-
-    // Door frame
+    g.fillRect(doorX, doorY, doorW, doorH);
     g.lineStyle(3, 0x3a4a5a, 1);
-    g.strokeRect(gateX + 30, 520, 140, 260);
-    // Arch frame
-    g.lineStyle(3, 0x3a4a5a, 1);
-    g.beginPath(); g.arc(archCX, archCY, 70, Math.PI, 0); g.strokePath();
+    g.strokeRect(doorX, doorY, doorW, doorH);
 
-    // Hazard stripes beside door
     g.fillStyle(0xe8b830, 1);
-    g.fillRect(gateX + 20, 520, 10, 260);
+    g.fillRect(doorX - 10, doorY, 10, doorH);
     g.fillStyle(0x1c2834, 1);
-    for (let sy = 520; sy < 780; sy += 16) {
-      g.beginPath(); g.moveTo(gateX + 20, sy); g.lineTo(gateX + 30, sy + 8); g.lineTo(gateX + 30, sy + 16); g.lineTo(gateX + 20, sy + 8); g.closePath(); g.fillPath();
+    for (let sy = doorY; sy < doorY + doorH; sy += 16) {
+      g.beginPath(); g.moveTo(doorX - 10, sy); g.lineTo(doorX, sy + 8); g.lineTo(doorX, sy + 16); g.lineTo(doorX - 10, sy + 8); g.closePath(); g.fillPath();
     }
 
-    // Pipes on wall
     g.fillStyle(0x2a3a4a, 0.7);
-    g.fillRect(gateX + 180, 460, 12, 320);
-    g.fillStyle(0x3a5060, 0.5);
-    g.fillRect(gateX + 182, 460, 4, 320);
-    // Pipe joints
+    g.fillRect(gateX + 155, 460, 12, 320);
     g.fillStyle(0x1a2530, 0.8);
-    for (let py = 480; py < 760; py += 80) {
-      g.fillRect(gateX + 176, py, 20, 8);
-    }
+    for (let py = 480; py < 760; py += 80) g.fillRect(gateX + 151, py, 20, 8);
 
-    // Small pipe
     g.fillStyle(0x2a3540, 0.6);
-    g.fillRect(gateX + 205, 500, 8, 280);
+    g.fillRect(gateX + 180, 500, 8, 280);
 
-    // Glowing warning light
-    const lightX = gateX + 150;
+    const lightX = gateX + 135;
     g.fillStyle(0x1a1010, 1);
     g.fillCircle(lightX, 460, 8);
     g.fillStyle(0xff3322, 1);
     g.fillCircle(lightX, 460, 5);
     g.lineStyle(2, 0xff5566, 0.5);
     g.strokeCircle(lightX, 460, 8);
-
-    // Steam exhaust at top
-    g.fillStyle(0x1c2834, 1);
-    g.fillRect(gateX + 235, 430, 12, 40);
-    g.fillStyle(0x0d1218, 0.5);
-    g.fillRect(gateX + 237, 425, 8, 6);
   }
 
   update(time: number, delta: number): void {
@@ -188,8 +154,8 @@ export class TransitionScene12 extends Phaser.Scene {
     if (this.saveAltar?.active) this.saveAltar.updatePrompt(this.player);
 
     if (this.player.active && !this.hasTransitioned) {
-      if (this.player.x <= 60) this.transitionToLevel1();
-      if (this.player.x >= 940) this.transitionToLevel2();
+      if (this.player.x <= 40) this.transitionToLevel1();
+      if (this.player.x >= 760) this.transitionToLevel2();
     }
   }
 
