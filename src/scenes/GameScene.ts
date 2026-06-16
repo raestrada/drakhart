@@ -55,6 +55,9 @@ export class GameScene extends BaseLevelScene {
   private bgSky!: Phaser.GameObjects.TileSprite;
   private bgMist1!: Phaser.GameObjects.TileSprite;
   private bgMist2!: Phaser.GameObjects.TileSprite;
+  private bgMountains!: Phaser.GameObjects.TileSprite;
+  private bgForest!: Phaser.GameObjects.TileSprite;
+  private bgRuins!: Phaser.GameObjects.TileSprite;
   private bgMoon!: Phaser.GameObjects.Image;
   private bgMoonGlow1!: Phaser.GameObjects.Image;
   private bgMoonGlow2!: Phaser.GameObjects.Image;
@@ -225,21 +228,36 @@ export class GameScene extends BaseLevelScene {
       .setDepth(-22)
       .setAlpha(0.5);
 
-    // 4. Organic Mountains (replaces tileSprite)
-    this.terrainGen.generateBackgroundMountains(240, LEVEL_WIDTH, 70);
+    // 4. Parallax Mountains
+    this.bgMountains = this.add
+      .tileSprite(0, 240, this.scale.width * 1.5, 800, 'bg-mountains')
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(-20);
+    this.bgMountains.setTint(0xcc4455, 0xff8899, 0x4d1622, 0x992c3f);
 
-    // 5. Organic Forest (replaces tileSprite)
-    this.terrainGen.generateBackgroundForest(280, LEVEL_WIDTH, 50);
+    // 5. Parallax Forest
+    this.bgForest = this.add
+      .tileSprite(0, 280, this.scale.width * 1.5, 800, 'bg-forest')
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(-15);
+    this.bgForest.setTint(0xbb3344, 0xff6677, 0x401018, 0x882233);
 
-    // Mist Layer 2
+    // 5.5 Mist Layer 2 (in front of forest, behind ruins, faster drift)
     this.bgMist2 = this.add.tileSprite(0, 270, this.scale.width * 1.5, 128, 'bg-mist')
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(-12)
       .setAlpha(0.4);
 
-    // 6. Organic Ruins (replaces tileSprite)
-    this.terrainGen.generateBackgroundRuins(310, LEVEL_WIDTH, 60);
+    // 6. Parallax Ruins
+    this.bgRuins = this.add
+      .tileSprite(0, 310, this.scale.width * 1.5, 800, 'bg-ruins')
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(-10);
+    this.bgRuins.setTint(0xdd5566, 0xff8899, 0x662c38, 0xbb4455);
 
     // 6.5 Moon Glow Layer 2 (large volumetric atmospheric bloom overlaying backgrounds)
     this.bgMoonGlow2 = this.add.image(0, 0, 'moon-glow')
@@ -331,15 +349,12 @@ export class GameScene extends BaseLevelScene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    // Organic ground segments WITH gaps for thorn pits
+    // Organic ground segments
     const groundY = 768;
     this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 2000, 'forest', 1);
-    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 300, 'forest', 2);
-    // Gap 2300-2800 (thorns)
-    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 300, 'forest', 3);
-    // Gap 3100-3700 (thorns)
-    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 300, 'forest', 4);
-    // Gap 4000-4500 (thorns)
+    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 800, 'forest', 2);
+    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 900, 'forest', 3);
+    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 800, 'forest', 4);
     this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
 
@@ -360,15 +375,19 @@ export class GameScene extends BaseLevelScene {
     ];
     platDefs.forEach(p => this.terrainGen.generatePlatform(this.platforms, p.x, p.y, p.w, 'forest'));
 
-    // Organic thorn gaps — player falls through and dies
-    this.terrainGen.generateThornGap(this.hazards, 2300, 784, 500, 71);
-    this.terrainGen.generateThornGap(this.hazards, 3100, 784, 600, 72);
-    this.terrainGen.generateThornGap(this.hazards, 4000, 784, 500, 73);
-
-    // Small thorn patches on top of ruins
-    this.terrainGen.generateThornGap(this.hazards, 4900, 500, 64, 74);
-    this.terrainGen.generateThornGap(this.hazards, 5480, 530, 64, 75);
-    this.terrainGen.generateThornGap(this.hazards, 6100, 460, 64, 76);
+    // Thorns / hazards (keep tile-based)
+    const thornZones: { x: number; y: number; w: number }[] = [
+      { x: 2300, y: 784, w: 500 }, { x: 3100, y: 784, w: 600 },
+      { x: 4000, y: 784, w: 500 }, { x: 4900, y: 504, w: 64 },
+      { x: 5480, y: 534, w: 64 }, { x: 6100, y: 464, w: 64 },
+    ];
+    thornZones.forEach(tz => {
+      for (let tx = tz.x; tx < tz.x + tz.w; tx += 32) {
+        const tile = this.hazards.create(tx + 16, tz.y + 16, 'tile-thorns');
+        (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
+        tile.refreshBody();
+      }
+    });
   }
 
   private createEnemies(): void {
@@ -802,17 +821,20 @@ export class GameScene extends BaseLevelScene {
   }
 
   private createForeground(): void {
-    // Organic burnt trees
-    [1050, 1400, 1750, 2050, 3500, 4300, 5000, 5800, 6600, 7400].forEach((fx, i) => {
-      this.terrainGen.generateBurntTree(fx, 768, 100 + i);
+    // Burnt trees resting on ground (y=768)
+    [1050, 1400, 1750, 2050, 3500, 4300, 5000, 5800, 6600, 7400].forEach((fx) => {
+      this.add.image(fx, 768, 'fg-tree')
+        .setOrigin(0.5, 1).setDepth(60).setAlpha(0.6).setScrollFactor(0.95);
     });
-    // Organic broken columns
-    [3400, 3700, 4200, 4800, 5500, 6200, 7000].forEach((fx, i) => {
-      this.terrainGen.generateRuinsColumn(fx, 768, 200 + i);
+    // Broken columns resting on ground (y=768)
+    [3400, 3700, 4200, 4800, 5500, 6200, 7000].forEach((fx) => {
+      this.add.image(fx, 768, 'fg-column')
+        .setOrigin(0.5, 1).setDepth(60).setAlpha(0.5).setScrollFactor(0.95);
     });
-    // Organic hanging vines
-    [2100, 2300, 2600, 2900, 4700, 5200, 5900, 6400].forEach((fx, i) => {
-      this.terrainGen.generateHangingVine(fx, 420, 300 + i);
+    // Hanging vines
+    [2100, 2300, 2600, 2900, 4700, 5200, 5900, 6400].forEach((fx) => {
+      this.add.image(fx, 420, 'fg-vine')
+        .setOrigin(0.5, 0).setDepth(60).setAlpha(0.4).setScrollFactor(0.95);
     });
   }
 
@@ -1459,6 +1481,9 @@ export class GameScene extends BaseLevelScene {
   private updateParallax(): void {
     const cam = this.cameras.main;
     const camX = cam.scrollX;
+    this.bgMountains.tilePositionX = camX * 0.08;
+    this.bgForest.tilePositionX = camX * 0.2;
+    this.bgRuins.tilePositionX = camX * 0.35;
 
     const w = this.scale.width;
     const h = this.scale.height;
@@ -1483,12 +1508,33 @@ export class GameScene extends BaseLevelScene {
       this.bgMist1.y = (210 - cam.centerY) / cam.zoom + cam.centerY;
     }
 
+    if (this.bgMountains) {
+      this.bgMountains.width = desiredWidth;
+      this.bgMountains.height = desiredHeight;
+      this.bgMountains.setScale(1.0 / cam.zoom);
+      this.bgMountains.y = (240 - cam.centerY) / cam.zoom + cam.centerY;
+    }
+
+    if (this.bgForest) {
+      this.bgForest.width = desiredWidth;
+      this.bgForest.height = desiredHeight;
+      this.bgForest.setScale(1.0 / cam.zoom);
+      this.bgForest.y = (280 - cam.centerY) / cam.zoom + cam.centerY;
+    }
+
     if (this.bgMist2) {
       this.bgMist2.tilePositionX = camX * 0.15 + time * 0.015;
       this.bgMist2.width = desiredWidth;
       this.bgMist2.height = desiredHeight;
       this.bgMist2.setScale(1.0 / cam.zoom);
       this.bgMist2.y = (270 - cam.centerY) / cam.zoom + cam.centerY;
+    }
+
+    if (this.bgRuins) {
+      this.bgRuins.width = desiredWidth;
+      this.bgRuins.height = desiredHeight;
+      this.bgRuins.setScale(1.0 / cam.zoom);
+      this.bgRuins.y = (310 - cam.centerY) / cam.zoom + cam.centerY;
     }
 
     if (this.bgTwinkleStars) {
