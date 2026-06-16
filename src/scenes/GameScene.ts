@@ -259,6 +259,9 @@ export class GameScene extends BaseLevelScene {
       .setDepth(-10);
     this.bgRuins.setTint(0xdd5566, 0xff8899, 0x662c38, 0xbb4455);
 
+    // 6.2 Organic mid-ground — breaks tile repetition between backgrounds and ground
+    this.generateMidGroundForest();
+
     // 6.5 Moon Glow Layer 2 (large volumetric atmospheric bloom overlaying backgrounds)
     this.bgMoonGlow2 = this.add.image(0, 0, 'moon-glow')
       .setOrigin(0.5, 0.5)
@@ -817,6 +820,37 @@ export class GameScene extends BaseLevelScene {
           onComplete: () => leaf.destroy(),
         });
       }
+    }
+  }
+
+  private generateMidGroundForest(): void {
+    const rng = new Phaser.Math.RandomDataGenerator(['midground', '42']);
+    const g = this.add.graphics();
+    g.setDepth(-6);
+    g.setScrollFactor(1, 1);
+
+    for (let x = 0; x < LEVEL_WIDTH; x += rng.between(80, 160)) {
+      const h = rng.between(60, 180);
+      const w = rng.between(12, 30);
+      const baseY = 768;
+
+      // Dark silhouette
+      g.fillStyle(0x060408, 0.6 + rng.realInRange(-0.1, 0.1));
+      g.fillRect(x, baseY - h, w, h);
+
+      // Slight highlight edge
+      g.fillStyle(0x0a080c, 0.3);
+      g.fillRect(x + 2, baseY - h, w / 3, h);
+
+      // Canopy top
+      if (rng.between(0, 3) > 0) {
+        const cw = w + rng.between(6, 18);
+        g.fillStyle(0x08060a, 0.5);
+        g.fillTriangle(x - cw / 2, baseY - h + rng.between(4, 15), x + w + cw / 2, baseY - h + 5, x + w / 2, baseY - h - rng.between(0, 20));
+      }
+
+      // Skip some positions for natural gaps
+      if (rng.between(0, 5) === 0) x += rng.between(60, 120);
     }
   }
 
