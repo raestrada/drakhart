@@ -820,20 +820,17 @@ export class GameScene extends BaseLevelScene {
   }
 
   private createForeground(): void {
-    // Burnt trees resting on ground (y=768)
-    [1050, 1400, 1750, 2050, 3500, 4300, 5000, 5800, 6600, 7400].forEach((fx) => {
-      this.add.image(fx, 768, 'fg-tree')
-        .setOrigin(0.5, 1).setDepth(60).setAlpha(0.6).setScrollFactor(0.95);
+    // Organic burnt trees
+    [1050, 1400, 1750, 2050, 3500, 4300, 5000, 5800, 6600, 7400].forEach((fx, i) => {
+      this.terrainGen.generateBurntTree(fx, 768, 100 + i);
     });
-    // Broken columns resting on ground (y=768)
-    [3400, 3700, 4200, 4800, 5500, 6200, 7000].forEach((fx) => {
-      this.add.image(fx, 768, 'fg-column')
-        .setOrigin(0.5, 1).setDepth(60).setAlpha(0.5).setScrollFactor(0.95);
+    // Organic broken columns
+    [3400, 3700, 4200, 4800, 5500, 6200, 7000].forEach((fx, i) => {
+      this.terrainGen.generateRuinsColumn(fx, 768, 200 + i);
     });
-    // Hanging vines
-    [2100, 2300, 2600, 2900, 4700, 5200, 5900, 6400].forEach((fx) => {
-      this.add.image(fx, 420, 'fg-vine')
-        .setOrigin(0.5, 0).setDepth(60).setAlpha(0.4).setScrollFactor(0.95);
+    // Organic hanging vines
+    [2100, 2300, 2600, 2900, 4700, 5200, 5900, 6400].forEach((fx, i) => {
+      this.terrainGen.generateHangingVine(fx, 420, 300 + i);
     });
   }
 

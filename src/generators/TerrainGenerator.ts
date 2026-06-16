@@ -302,4 +302,96 @@ export class TerrainGenerator {
       body.refreshBody();
     }
   }
+
+  generateBurntTree(x: number, y: number, seed = 1): void {
+    const rng = new Phaser.Math.RandomDataGenerator(['tree', seed.toString()]);
+    const g = this.scene.add.graphics();
+    g.setDepth(60);
+    g.setScrollFactor(0.95);
+
+    const trunkH = rng.between(90, 140);
+    const trunkW = rng.between(6, 10);
+
+    g.fillStyle(0x0d0a08, 0.7);
+    g.fillRect(x - trunkW / 2, y - trunkH, trunkW, trunkH);
+    g.fillStyle(0x151210, 0.5);
+    g.fillRect(x - trunkW / 4, y - trunkH, trunkW / 2, trunkH);
+
+    const branchCount = rng.between(3, 6);
+    for (let b = 0; b < branchCount; b++) {
+      const by = y - rng.between(20, trunkH - 20);
+      const bx = x + (rng.between(0, 1) ? 1 : -1) * trunkW / 2;
+      const bw = rng.between(4, 14);
+      g.fillStyle(0x0d0a08, 0.6);
+      g.fillRect(bx, by, rng.between(0, 1) ? bw : -bw, 2);
+      if (rng.between(0, 2) > 0) {
+        const tipX = bx + (bx > x ? bw : -bw);
+        g.fillRect(tipX, by - rng.between(1, 4), 2, rng.between(3, 8));
+      }
+    }
+
+    g.fillStyle(0xff4400, 0.15);
+    for (let a = 0; a < 3; a++) {
+      g.fillCircle(x + rng.between(-6, 6), y - rng.between(10, trunkH), rng.between(1, 2));
+    }
+  }
+
+  generateRuinsColumn(x: number, y: number, seed = 1): void {
+    const rng = new Phaser.Math.RandomDataGenerator(['column', seed.toString()]);
+    const g = this.scene.add.graphics();
+    g.setDepth(60);
+    g.setScrollFactor(0.95);
+
+    const colH = rng.between(60, 100);
+    const colW = rng.between(12, 18);
+
+    g.fillStyle(0x181c22, 0.6);
+    g.fillRect(x - colW / 2, y - colH, colW, colH);
+    g.fillStyle(0x202830, 0.4);
+    g.fillRect(x - colW / 4, y - colH, colW * 0.6, colH);
+
+    g.fillStyle(0x101418, 0.3);
+    for (let f = 0; f < rng.between(1, 3); f++) {
+      g.fillRect(x - colW / 4 + f * 4, y - colH + 8, 1, colH - 16);
+    }
+
+    const crackX = x + rng.between(-colW / 3, colW / 3);
+    g.fillStyle(0x0c0e12, 0.5);
+    g.fillRect(crackX, y - colH + rng.between(10, colH / 3), rng.between(1, 2), rng.between(8, 20));
+
+    g.fillStyle(0x141820, 0.3);
+    for (let j = 0; j < 3; j++) {
+      const jx = x - colW / 2 + j * (colW / 3) + rng.between(-2, 2);
+      g.fillRect(jx, y - colH, rng.between(3, 7), rng.between(2, 4));
+    }
+
+    g.fillStyle(0x1a2818, 0.25);
+    for (let m = 0; m < rng.between(1, 3); m++) {
+      g.fillRect(x + rng.between(-colW / 3, colW / 3), y - rng.between(15, colH), rng.between(4, 8), 2);
+    }
+  }
+
+  generateHangingVine(x: number, y: number, seed = 1): void {
+    const rng = new Phaser.Math.RandomDataGenerator(['vine', seed.toString()]);
+    const g = this.scene.add.graphics();
+    g.setDepth(60);
+    g.setScrollFactor(0.95);
+
+    const vineLen = rng.between(60, 140);
+
+    g.fillStyle(0x1a2818, 0.4);
+    g.fillRect(x - 1, y, 2, vineLen);
+
+    g.fillStyle(0x1a2818, 0.3);
+    for (let vy = y + 10; vy < y + vineLen; vy += rng.between(15, 25)) {
+      g.fillRect(x - 2, vy, 4, 1);
+    }
+
+    for (let l = 0; l < rng.between(2, 5); l++) {
+      const ly = y + rng.between(10, vineLen - 10);
+      const lx = x + (rng.between(0, 1) ? 2 : -2);
+      g.fillStyle(0x152212, 0.35);
+      g.fillRect(lx, ly, rng.between(0, 1) ? 4 : -4, 1);
+    }
+  }
 }
