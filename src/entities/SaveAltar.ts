@@ -11,6 +11,13 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   private lightBeam: Phaser.GameObjects.Graphics | null = null;
   private lightBeamTween: Phaser.Tweens.Tween | null = null;
 
+  // Idle sparkle system
+  private sparkleTimer: Phaser.Time.TimerEvent | null = null;
+  private altarLight: Phaser.GameObjects.PointLight | null = null;
+  private altarLightBaseRadius = 60;
+  private altarLightBaseIntensity = 0.35;
+  private altarLightColor = 0xff8844;
+
   constructor(scene: Phaser.Scene, x: number, y: number, sceneKey: string) {
     super(scene, x, y - 120, 'altar-save'); // offset since origin is center and height is 240
     this.sceneKey = sceneKey;
@@ -36,6 +43,92 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
+    });
+
+    // Sacred pointlight behind the altar (pulsing bonfire effect)
+    this.altarLight = scene.add.pointlight(x, y - 180, this.altarLightColor, this.altarLightBaseRadius, this.altarLightBaseIntensity);
+    this.altarLight.setDepth(-1);
+    scene.tweens.add({
+      targets: this.altarLight,
+      radius: this.altarLightBaseRadius + 20,
+      intensity: this.altarLightBaseIntensity + 0.15,
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Idle sparkle vortex — soft sacred chispas floating up around the altar
+    this.sparkleTimer = scene.time.addEvent({
+      delay: 120,
+      callback: () => this.emitIdleSparkle(),
+      loop: true,
+    });
+  }
+
+  private emitIdleSparkle(): void {
+    if (!this.active || this.isPraying) return;
+
+    const count = Phaser.Math.Between(1, 2);
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Phaser.Math.Between(25, 55);
+      const sx = this.x + Math.cos(angle) * dist;
+      const sy = this.y + 40 - Math.random() * 30;
+
+      const colors = [0x44ff44, 0x88cc44, 0xccaa44, 0xff8844, 0x44dd66];
+      const color = Phaser.Utils.Array.GetRandom(colors);
+      const size = Phaser.Math.Between(1, 3);
+
+      const spark = this.scene.add.rectangle(sx, sy, size, size, color, 0.7);
+      spark.setBlendMode(Phaser.BlendModes.ADD);
+      spark.setDepth(50);
+
+      this.scene.tweens.add({
+        targets: spark,
+        x: sx + Phaser.Math.Between(-20, 20),
+        y: sy - Phaser.Math.Between(40, 90),
+        alpha: 0,
+        scale: 0.2,
+        duration: Phaser.Math.Between(1200, 2200),
+        ease: 'Sine.easeOut',
+        onComplete: () => spark.destroy(),
+      });
+    }
+  }
+
+  private expandAltarLight(): void {
+    if (!this.altarLight) return;
+    this.scene.tweens.killTweensOf(this.altarLight);
+    this.scene.tweens.add({
+      targets: this.altarLight,
+      radius: 140,
+      intensity: 0.8,
+      duration: 600,
+      ease: 'Sine.easeOut',
+    });
+  }
+
+  private contractAltarLight(): void {
+    if (!this.altarLight) return;
+    this.scene.tweens.killTweensOf(this.altarLight);
+    this.scene.tweens.add({
+      targets: this.altarLight,
+      radius: this.altarLightBaseRadius,
+      intensity: this.altarLightBaseIntensity,
+      duration: 800,
+      ease: 'Sine.easeIn',
+    });
+    // Restart the idle pulse after contraction
+    this.scene.tweens.add({
+      targets: this.altarLight,
+      radius: this.altarLightBaseRadius + 20,
+      intensity: this.altarLightBaseIntensity + 0.15,
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      delay: 800,
     });
   }
 
@@ -84,6 +177,9 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   private triggerSave(player: Player) {
     if (this.isPraying) return;
     this.isPraying = true;
+
+    // Expand the sacred light halo on interaction
+    this.expandAltarLight();
 
     // Save Game state
     saveGame({
@@ -215,6 +311,9 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   private stopPraying(player: Player): void {
     if (!this.isPraying) return;
 
+    // Contract the sacred light halo
+    this.contractAltarLight();
+
     // Stop choir audio and play level BGM back
     (this.scene as any).gameAudio?.stopChoirSave?.();
     const lvl = this.sceneKey === 'TransitionScene12' ? 1 : 2;
@@ -253,6 +352,8 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   }
 
   destroy(fromScene?: boolean) {
+    if (this.sparkleTimer) { this.sparkleTimer.destroy(); this.sparkleTimer = null; }
+    if (this.altarLight && this.altarLight.active) this.altarLight.destroy();
     if (this.promptText && this.promptText.active) this.promptText.destroy();
     if (this.lightBeam && this.lightBeam.active) this.lightBeam.destroy();
     if (this.lightBeamTween) this.lightBeamTween.stop();

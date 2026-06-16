@@ -8,6 +8,7 @@ import { t } from '../i18n';
 
 export class TransitionScene34 extends Phaser.Scene {
   public gameAudio!: GameAudio;
+  public currentBiome: string | undefined;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private saveAltar!: SaveAltar;
@@ -36,6 +37,7 @@ export class TransitionScene34 extends Phaser.Scene {
 
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(2); // Calm ambient after the boss
+    this.currentBiome = 'gorge';
     this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     
@@ -66,6 +68,14 @@ export class TransitionScene34 extends Phaser.Scene {
     this.saveAltar = new SaveAltar(this, W / 2, groundY, 'TransitionScene34');
     
     this.physics.add.collider(this.player, this.platforms);
+
+    if (this.lights) {
+      this.lights.enable();
+      this.lights.setAmbientColor(0x88809c);
+      this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+      if (this.player && this.player.active) this.player.setPipeline('Light2D');
+      this.saveAltar.setPipeline('Light2D');
+    }
 
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
     this.cameras.main.setBounds(0, 0, W, H);

@@ -9,6 +9,9 @@ export class UIScene extends Phaser.Scene {
   private player!: Player;
   private tarotSystem!: TarotSystem;
   private healthFill!: Phaser.GameObjects.Rectangle;
+  private healthBorder!: Phaser.GameObjects.Rectangle;
+  private healthFillOrigX = 0;
+  private healthFillOrigY = 0;
   private energyFill!: Phaser.GameObjects.Rectangle;
   private heatFill!: Phaser.GameObjects.Rectangle;
   private transformLabel!: Phaser.GameObjects.Text;
@@ -107,7 +110,7 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setScrollFactor(0);
 
-    this.add
+    this.healthBorder = this.add
       .rectangle(x - 1 * this.scaleFactor, y + 11 * this.scaleFactor, this.barW + 2 * this.scaleFactor, this.barH + 2 * this.scaleFactor, 0x332211)
       .setOrigin(0, 0)
       .setScrollFactor(0)
@@ -118,6 +121,9 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(1);
+
+    this.healthFillOrigX = this.healthFill.x;
+    this.healthFillOrigY = this.healthFill.y;
 
     for (let i = 0; i < 5; i++) {
       const sx = x + (i + 1) * (this.barW / 5) - 1 * this.scaleFactor;
@@ -280,10 +286,28 @@ export class UIScene extends Phaser.Scene {
     // Damage flash: pulse panel border and shake UI camera on damage
     if (this.player.health < this.prevHealth) {
       this.healthFill.setFillStyle(0xffffff);
+      this.healthBorder.setFillStyle(0xffffff, 0.7);
       this.cameras.main.shake(150, 0.007);
+
+      // Scale+position tween — physical impact on the health bar
+      const baseX = this.healthFillOrigX;
+      const baseY = this.healthFillOrigY;
+      this.tweens.add({
+        targets: [this.healthFill, this.healthBorder],
+        scaleX: 1.12,
+        scaleY: 1.25,
+        y: baseY - 3 * this.scaleFactor,
+        duration: 60,
+        yoyo: true,
+        ease: 'Power2',
+      });
+
       this.time.delayedCall(80, () => {
         if (this.healthFill && this.healthFill.active) {
           this.healthFill.setFillStyle(0xcc3333);
+        }
+        if (this.healthBorder && this.healthBorder.active) {
+          this.healthBorder.setFillStyle(0x332211);
         }
       });
     }

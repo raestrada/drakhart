@@ -8,6 +8,7 @@ import { CAMERA_ZOOM_HUMAN, CAMERA_LERP } from '../utils/constants';
 
 export class TransitionScene12 extends Phaser.Scene {
   public gameAudio!: GameAudio;
+  public currentBiome: string | undefined;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private saveAltar!: SaveAltar;
@@ -44,6 +45,7 @@ export class TransitionScene12 extends Phaser.Scene {
     this.gameAudio = new GameAudio();
     this.terrainGen = new TerrainGenerator(this);
     this.gameAudio.playBGM(1);
+    this.currentBiome = 'forest';
     this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene12' }); });

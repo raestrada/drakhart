@@ -162,6 +162,7 @@ export class GameScene3 extends BaseLevelScene {
 
     this.bloom = new BloomSystem(this);
     this.terrainGen = new TerrainGenerator(this);
+    this.currentBiome = 'gorge';
 
     this.input.keyboard?.on('keydown-T', () => {
       if (this.scene.isPaused()) return;

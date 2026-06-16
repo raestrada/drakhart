@@ -246,7 +246,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (isMoving && onGround) {
       this.animState = 'walk';
-      this.updateFootstep(delta, 'stone', false);
+      this.updateFootstep(delta, this.getTerrainSurface(), false);
     } else if (onGround) {
       this.animState = 'idle';
     } else {
@@ -344,7 +344,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
       if (isMoving) {
         this.animState = 'walk';
-        this.updateFootstep(delta, 'metal', true);
+        this.updateFootstep(delta, this.getTerrainSurface(), true);
       } else {
         this.animState = 'idle';
       }
@@ -533,6 +533,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.visorLight.x = lx;
       this.visorLight.y = ly;
     }
+  }
+
+  private getTerrainSurface(): 'stone' | 'metal' | 'ash' {
+    const biome = (this.scene as any).currentBiome;
+    if (biome === 'refinery') return 'metal';
+    if (biome === 'gorge') return 'ash';
+    return 'stone';
   }
 
   private updateFootstep(delta: number, surface: 'stone' | 'metal' | 'ash', heavy: boolean): void {
