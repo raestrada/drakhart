@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { FormState } from '../../systems/FormStateMachine';
-import { spawnHitParticles } from '../../effects/Particles';
+import { spawnHitParticles, spawnMetalSparks, spawnOilSmoke } from '../../effects/Particles';
 
 export class MechaEnemy extends BaseEnemy {
   private chargeCooldown = false;
@@ -90,6 +90,16 @@ export class MechaEnemy extends BaseEnemy {
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
     if (dist > this.attackRange + 20) return;
 
+    // Telegraph: engine rev before strike
+    this.setTintFill(0xff4422);
+    this.scene.time.delayedCall(250, () => {
+      if (!this.active || this.health <= 0) return;
+      this.clearTint();
+      this.executeAttack();
+    });
+  }
+
+  private executeAttack(): void {
     const knockDir = this.player.x < this.x ? -1 : 1;
     this.player.takeDamage(this.attackDamage, knockDir);
 
@@ -137,5 +147,23 @@ export class MechaEnemy extends BaseEnemy {
         this.chargeCooldown = false;
       });
     }
+  }
+
+  protected die(): void {
+    spawnMetalSparks(this.scene, this.x, this.y, 16);
+    spawnOilSmoke(this.scene, this.x, this.y);
+    (this.scene as any).gameAudio?.playEnemyDeath();
+    this.isActive = false;
+    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.setTint(0x664444);
+
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0,
+      scaleX: 0.7,
+      scaleY: 0.5,
+      duration: 700,
+      onComplete: () => this.destroy(),
+    });
   }
 }

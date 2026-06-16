@@ -188,6 +188,54 @@ export class BaseLevelScene extends Phaser.Scene {
     });
   }
 
+  protected wipeIn(duration = 800, direction: 'left' | 'right' | 'up' | 'down' = 'left'): void {
+    const { width, height } = this.scale;
+    const overlay = this.add.rectangle(
+      direction === 'right' ? width : (direction === 'down' ? 0 : 0),
+      direction === 'down' ? height : (direction === 'up' ? 0 : 0),
+      direction === 'left' || direction === 'right' ? width + 4 : width,
+      direction === 'up' || direction === 'down' ? height + 4 : height,
+      0x000000, 1
+    ).setDepth(500).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: overlay,
+      x: direction === 'right' ? -width : (direction === 'left' ? width : 0),
+      y: direction === 'down' ? -height : (direction === 'up' ? height : 0),
+      duration,
+      ease: 'Power3',
+      onComplete: () => overlay.destroy(),
+    });
+  }
+
+  protected wipeOutAndTransition(
+    key: string,
+    data?: object,
+    duration = 700,
+    direction: 'left' | 'right' | 'up' | 'down' = 'right'
+  ): void {
+    const { width, height } = this.scale;
+    const overlay = this.add.rectangle(
+      direction === 'left' ? width + 2 : (direction === 'up' ? 0 : -2),
+      direction === 'up' ? height + 2 : (direction === 'down' ? 0 : -2),
+      direction === 'left' || direction === 'right' ? width + 4 : width,
+      direction === 'up' || direction === 'down' ? height + 4 : height,
+      0x000000, 0
+    ).setDepth(500).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: overlay,
+      x: direction === 'right' ? width + 2 : (direction === 'left' ? -width - 2 : 0),
+      y: direction === 'down' ? height + 2 : (direction === 'up' ? -height - 2 : 0),
+      alpha: 1,
+      duration,
+      ease: 'Power3',
+      onComplete: () => {
+        this.scene.start(key, data);
+      },
+    });
+  }
+
   shutdown(): void {
     this.parallaxLayers = [];
   }

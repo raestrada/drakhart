@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from './Player';
 import { t } from '../i18n';
-import { spawnDeathExplosion } from '../effects/Particles';
+import { spawnDeathExplosion, spawnEnergyShockwave } from '../effects/Particles';
 
 export class DragonCore extends Phaser.Physics.Arcade.Sprite {
   private glowEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -67,6 +67,10 @@ export class DragonCore extends Phaser.Physics.Arcade.Sprite {
     }
 
     spawnDeathExplosion(this.scene, this.x, this.y);
+    spawnEnergyShockwave(this.scene, this.x, this.y, 0xff6600);
+
+    this.scene.cameras.main.flash(400, 255, 100, 0);
+    this.scene.cameras.main.shake(500, 0.008);
 
     const text = this.scene.add.text(
       this.x,
@@ -87,7 +91,6 @@ export class DragonCore extends Phaser.Physics.Arcade.Sprite {
       onComplete: () => text.destroy(),
     });
 
-    this.scene.cameras.main.flash(300, 255, 100, 0);
     this.destroy();
   }
 }

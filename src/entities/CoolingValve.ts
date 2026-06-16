@@ -5,33 +5,27 @@ import { BaseEnemy } from './enemies/BaseEnemy';
 export class CoolingValve extends Phaser.Physics.Arcade.Sprite {
   public alive = true;
   private isOnCooldown = false;
-  private rechargeTime = 5000; // 5 seconds recharge
+  private rechargeTime = 5000;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'cool-valve');
     scene.add.existing(this);
-    scene.physics.add.existing(this, true); // static body
+    scene.physics.add.existing(this, true);
     this.setDepth(5);
   }
 
   hit(player: Player): void {
     if (this.isOnCooldown) return;
 
-    // Trigger cooldown
     this.isOnCooldown = true;
     this.setAlpha(0.4);
-    this.setTint(0x555555); // dim out
+    this.setTint(0x555555);
 
-    // Reset player's heat instantly
     player.formMachine.heat.clearHeat();
 
-    // Spawn cold steam particles
     this.spawnCoolParticles();
-
-    // Play visual freeze flash in a radius
     this.spawnCoolBlast();
 
-    // Slow down nearby enemies
     const activeEnemies = (this.scene as any).enemies;
     if (activeEnemies) {
       activeEnemies.getChildren().forEach((enemy: any) => {
@@ -39,67 +33,78 @@ export class CoolingValve extends Phaser.Physics.Arcade.Sprite {
         if (e.active && e.health > 0) {
           const dist = Phaser.Math.Distance.Between(this.x, this.y, e.x, e.y);
           if (dist <= 250) {
-            e.applySlow(3000, 0.40); // slow by 60% (speed multiplier 0.40) for 3 seconds
+            e.applySlow(3000, 0.40);
           }
         }
       });
     }
 
-    // Play cool vent hiss sound
-    (this.scene as any).gameAudio?.playShieldBlock?.(); // using high metal chime as placeholder/base sound
+    (this.scene as any).gameAudio?.playShieldBlock?.();
 
-    // Recharge timer
     this.scene.time.delayedCall(this.rechargeTime, () => {
       if (this.active) {
         this.isOnCooldown = false;
         this.setAlpha(1.0);
         this.clearTint();
-        // Play chime to indicate ready
         (this.scene as any).gameAudio?.playCardCollect?.();
       }
     });
   }
 
   private spawnCoolParticles(): void {
-    const particleCount = 20;
-    for (let i = 0; i < particleCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Phaser.Math.Between(50, 180);
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
+    const emitter = this.scene.add.particles(this.x, this.y, 'particle-smoke', {
+      speed: { min: 50, max: 180 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.6, end: 1.5 },
+      alpha: { start: 0.8, end: 0 },
+      tint: 0x00d2d3,
+      lifespan: { min: 500, max: 900 },
+      quantity: 20,
+      emitting: false,
+    });
 
-      const p = this.scene.add.image(this.x, this.y, 'particle-smoke');
-      p.setTint(0x00d2d3);
-      p.setAlpha(0.8);
-      p.setDepth(15);
-      p.setScale(Phaser.Math.FloatBetween(0.2, 0.6));
+    emitter.explode(20);
+    emitter.setDepth(15);
 
-      this.scene.tweens.add({
-        targets: p,
-        x: this.x + vx * 0.8,
-        y: this.y + vy * 0.8,
-        scale: 1.5,
-        alpha: 0,
-        duration: Phaser.Math.Between(500, 900),
-        onComplete: () => p.destroy()
-      });
-    }
+    this.scene.time.delayedCall(1000, () => {
+      emitter.destroy();
+    });
   }
 
   private spawnCoolBlast(): void {
-    const ring = this.scene.add.graphics();
-    ring.lineStyle(2, 0x00d2d3, 0.8);
-    ring.strokeCircle(this.x, this.y, 10);
+    const ring = this.scene.add.image(this.x, this.y, 'px-8');
+    ring.setTint(0x00d2d3);
+    ring.setAlpha(0.7);
     ring.setDepth(14);
+    ring.setBlendMode(Phaser.BlendModes.ADD);
+    ring.setScale(1.5);
 
     this.scene.tweens.add({
       targets: ring,
-      scaleX: 25, // expand outward to 250px radius
-      scaleY: 25,
+      scaleX: 28,
+      scaleY: 28,
       alpha: 0,
       duration: 600,
       ease: 'Quad.easeOut',
-      onComplete: () => ring.destroy()
+      onComplete: () => ring.destroy(),
+    });
+
+    const ring2 = this.scene.add.image(this.x, this.y, 'px-8');
+    ring2.setTint(0x88ffff);
+    ring2.setAlpha(0.4);
+    ring2.setDepth(14);
+    ring2.setBlendMode(Phaser.BlendModes.ADD);
+    ring2.setScale(1.0);
+
+    this.scene.tweens.add({
+      targets: ring2,
+      scaleX: 20,
+      scaleY: 20,
+      alpha: 0,
+      duration: 450,
+      delay: 80,
+      ease: 'Quad.easeOut',
+      onComplete: () => ring2.destroy(),
     });
   }
 }

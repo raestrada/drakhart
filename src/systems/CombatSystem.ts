@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { FormState } from './FormStateMachine';
 import { HitstopSystem, HITSTOP } from './HitstopSystem';
+import { spawnProjectileTrail } from '../effects/Particles';
 import {
   SWORD_DAMAGE,
   SWORD_RANGE,
@@ -276,7 +277,21 @@ export class CombatSystem {
     bullet.setFlipX(false);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
 
+    const trail = spawnProjectileTrail(this.scene, bullet.x, bullet.y, [0xff4400, 0xff8800, 0xffcc00], 250);
+    bullet.setData('trail', trail);
+
+    const trailTimer = this.scene.time.addEvent({
+      delay: 30,
+      repeat: Math.ceil(FIRE_LIFETIME / 30),
+      callback: () => {
+        if (!bullet.active) return;
+        trail.setPosition(bullet.x, bullet.y);
+      },
+    });
+
     this.scene.time.delayedCall(FIRE_LIFETIME, () => {
+      trailTimer.destroy();
+      if (trail.active) { trail.stop(); this.scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
       if (bullet.active) {
         bullet.disableBody(true, true);
       }

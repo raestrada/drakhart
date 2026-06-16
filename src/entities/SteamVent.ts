@@ -4,12 +4,25 @@ import { FormState } from '../systems/FormStateMachine';
 
 export class SteamVent extends Phaser.Physics.Arcade.Sprite {
   private lastDamageTime = 0;
-  private particleTimer = 0;
+  private steamEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'steam-vent');
     scene.add.existing(this);
-    scene.physics.add.existing(this, true); // static body
+    scene.physics.add.existing(this, true);
+
+    this.steamEmitter = scene.add.particles(x, y, 'particle-smoke', {
+      speed: { min: 15, max: 40 },
+      angle: { min: 250, max: 290 },
+      scale: { start: 0.5, end: 1.5 },
+      alpha: { start: 0.5, end: 0 },
+      tint: 0xeeeeee,
+      lifespan: { min: 600, max: 1200 },
+      frequency: 60,
+      follow: this,
+      followOffset: { x: 0, y: -12 },
+    });
+    this.steamEmitter.setDepth(15);
   }
 
   onPlayerOverlap(player: Player, delta: number): void {
@@ -18,12 +31,11 @@ export class SteamVent extends Phaser.Physics.Arcade.Sprite {
     if (state === FormState.MECHA) {
       const body = player.body as Phaser.Physics.Arcade.Body;
       const jumpKeyActive = player.isJumpKeyDown();
-      
+
       if (jumpKeyActive || !body.blocked.down) {
-        body.setVelocityY(-650); // Vertical steam boost!
-        player.formMachine.heat.addHeat(18 * (delta / 1000)); // Increase heat by +18/sec
-        
-        // Spawn small steam sparkles around the player
+        body.setVelocityY(-650);
+        player.formMachine.heat.addHeat(18 * (delta / 1000));
+
         this.spawnSteamSparkles(player.x, player.y);
       }
     } else if (state === FormState.HUMAN || state === FormState.EXHAUSTED) {
@@ -36,53 +48,33 @@ export class SteamVent extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  update(time: number, delta: number): void {
-    super.update();
-    
-    // Periodically spawn white steam rising particles
-    this.particleTimer += delta;
-    if (this.particleTimer > 60) {
-      this.particleTimer = 0;
-      this.spawnRisingSteam();
-    }
-  }
-
-  private spawnRisingSteam(): void {
-    const sx = this.x + Phaser.Math.Between(-8, 8);
-    const sy = this.y - 12;
-    const steam = this.scene.add.image(sx, sy, 'particle-smoke');
-    steam.setTint(0xeeeeee);
-    steam.setAlpha(0.6);
-    steam.setDepth(15);
-    steam.setScale(0.5);
-
-    this.scene.tweens.add({
-      targets: steam,
-      y: sy - Phaser.Math.Between(40, 100),
-      x: sx + Phaser.Math.Between(-15, 15),
-      scale: 1.5,
-      alpha: 0,
-      duration: Phaser.Math.Between(600, 1200),
-      onComplete: () => steam.destroy()
-    });
-  }
-
   private spawnSteamSparkles(x: number, y: number): void {
-    const sx = x + Phaser.Math.Between(-16, 16);
-    const sy = y + Phaser.Math.Between(-20, 20);
-    const spark = this.scene.add.image(sx, sy, 'particle-smoke');
-    spark.setTint(0xddf0ff);
-    spark.setAlpha(0.8);
-    spark.setDepth(15);
-    spark.setScale(0.3);
-
-    this.scene.tweens.add({
-      targets: spark,
-      y: sy - 40,
-      scale: 1.0,
-      alpha: 0,
-      duration: 400,
-      onComplete: () => spark.destroy()
+    const emitter = this.scene.add.particles(x, y, 'particle-smoke', {
+      speed: { min: 30, max: 80 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.4, end: 1.0 },
+      alpha: { start: 0.8, end: 0 },
+      tint: 0xddf0ff,
+      lifespan: { min: 300, max: 500 },
+      quantity: 8,
+      emitting: false,
     });
+
+    emitter.explode(8);
+    emitter.setDepth(15);
+
+    this.scene.time.delayedCall(600, () => {
+      emitter.destroy();
+    });
+  }
+
+  destroy(fromScene?: boolean): void {
+    if (this.steamEmitter) {
+      this.steamEmitter.stop();
+      this.scene.time.delayedCall(1400, () => {
+        if (this.steamEmitter) this.steamEmitter.destroy();
+      });
+    }
+    super.destroy(fromScene);
   }
 }

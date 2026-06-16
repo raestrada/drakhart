@@ -10,8 +10,10 @@ import { EnergyPickup } from '../entities/EnergyPickup';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
-import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
+import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
+import { applyBiomePostFX } from '../effects/PostFXPipelines';
+import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
 import { EchoFragment } from '../entities/EchoFragment';
@@ -72,6 +74,7 @@ export class GameScene3 extends BaseLevelScene {
   private emberTimer = 0;
   private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
   private bloom!: BloomSystem;
+  private weatherSystem!: WeatherSystem;
   private echoFragments: EchoFragment[] = [];
   private terrainGen!: TerrainGenerator;
 
@@ -182,6 +185,8 @@ export class GameScene3 extends BaseLevelScene {
     this.windLines.setDepth(10);
 
     this.createParallax();
+    this.weatherSystem = new WeatherSystem(this, 'gorge', LEVEL_WIDTH);
+    applyBiomePostFX(this, 'gorge');
     this.createLevel();
     this.createInteractiveObjects();
     this.createDecorations();
@@ -372,9 +377,12 @@ export class GameScene3 extends BaseLevelScene {
     if (!this.shmupStarted) {
       this.cameras.main.setZoom(1.6);
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+      this.cameras.main.setFollowOffset(0, -100);
     } else {
       this.cameras.main.setZoom(1.4);
+      this.cameras.main.setFollowOffset(0, -120);
     }
+    this.cameras.main.setDeadzone(100, 80);
   }
 
   private createEchoFragments(): void {
@@ -457,6 +465,7 @@ export class GameScene3 extends BaseLevelScene {
       this.platforms,
       (_bullet) => {
         const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        spawnProjectileImpact(this, b.x, b.y, [0xff6600, 0xff8800], 4);
         b.disableBody(true, true);
       }
     );
@@ -755,6 +764,7 @@ export class GameScene3 extends BaseLevelScene {
     }
 
     this.updateParallax();
+    this.weatherSystem?.update(this.cameras.main.scrollX, this.time.now);
     this.updateShadows();
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();

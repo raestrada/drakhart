@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { t } from '../../i18n';
-import { spawnDeathExplosion } from '../../effects/Particles';
+import { spawnDeathExplosion, spawnProjectileTrail } from '../../effects/Particles';
 
 type BossPhase = 'phase1' | 'phase2' | 'dead';
 

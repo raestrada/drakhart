@@ -19,9 +19,13 @@ import {
   spawnHitParticles,
   spawnTransformParticles,
   spawnDeathExplosion,
+  spawnProjectileImpact,
 } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
+import { drawLightningBolt } from '../effects/LightningBolt';
+import { applyBiomePostFX } from '../effects/PostFXPipelines';
+import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import {
   LEVEL_WIDTH,
@@ -89,6 +93,7 @@ export class GameScene extends BaseLevelScene {
   private fogWall: Phaser.GameObjects.Graphics | null = null;
   private ashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private bloom!: BloomSystem;
+  private weatherSystem!: WeatherSystem;
   private terrainGen!: TerrainGenerator;
 
   private pendingMechaUnlock = false;
@@ -161,6 +166,8 @@ export class GameScene extends BaseLevelScene {
     });
 
     this.createParallax();
+    this.weatherSystem = new WeatherSystem(this, 'forest', LEVEL_WIDTH);
+    applyBiomePostFX(this, 'forest');
     this.createLevel();
     this.createCrumblingPlatforms();
     this.createForeground();
@@ -1049,6 +1056,7 @@ export class GameScene extends BaseLevelScene {
       this.platforms,
       (_bullet) => {
         const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        spawnProjectileImpact(this, b.x, b.y, [0xff6600, 0xff8800], 4);
         b.disableBody(true, true);
       }
     );
@@ -1075,7 +1083,8 @@ export class GameScene extends BaseLevelScene {
 
   private setupCamera(): void {
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
-    this.cameras.main.setDeadzone(50, 50);
+    this.cameras.main.setFollowOffset(0, -80);
+    this.cameras.main.setDeadzone(80, 60);
     this.cameras.main.setZoom(CAMERA_ZOOM_HUMAN);
     this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
   }
@@ -1541,6 +1550,7 @@ export class GameScene extends BaseLevelScene {
       this.gameAudio?.setDragonActive?.(this.player.formMachine.state === FormState.DRAGON);
     }
     this.updateParallax();
+    this.weatherSystem?.update(this.cameras.main.scrollX, this.time.now);
     this.updateShadows();
     this.updateSwordVsEnemies();
     this.checkBushDestruction();
@@ -2129,65 +2139,16 @@ export class GameScene extends BaseLevelScene {
       this.cameras.main.flash(450, 220, 240, 255);
       this.cameras.main.shake(600, 0.015);
 
-      const lightning = this.add.graphics();
-      lightning.setDepth(player.depth + 10);
-
-      const startX = player.x + Phaser.Math.Between(-60, 60);
-      const startY = this.cameras.main.scrollY;
-      const endX = player.x;
-      const endY = player.y - 10;
-
-      const drawBolt = (g: Phaser.GameObjects.Graphics, styleColor: number, width: number, alpha: number) => {
-        g.lineStyle(width, styleColor, alpha);
-        g.beginPath();
-        g.moveTo(startX, startY);
-
-        let currentX = startX;
-        let currentY = startY;
-        const steps = 12;
-        const distY = (endY - startY) / steps;
-
-        for (let j = 1; j < steps; j++) {
-          const targetY = startY + j * distY;
-          const targetX = currentX + Phaser.Math.Between(-35, 35) + (endX - currentX) * 0.15;
-          g.lineTo(targetX, targetY);
-          currentX = targetX;
-          currentY = targetY;
-        }
-
-        g.lineTo(endX, endY);
-        g.strokePath();
-      };
-
-      const style = { color1: 0xffffff, color2: 0x90d0ff };
-      drawBolt(lightning, style.color2, 10, 0.45);
-      drawBolt(lightning, style.color1, 4, 1.0);
-
-      // Ground blast smoke
-      for (let i = 0; i < 15; i++) {
-        const smX = player.x + Phaser.Math.Between(-25, 25);
-        const smY = player.y + 25 + Phaser.Math.Between(-5, 5);
-        const size = Phaser.Math.Between(8, 20);
-        const smoke = this.add.rectangle(smX, smY, size, size, 0xaaaaaa);
-        smoke.setAlpha(0.6);
-        this.tweens.add({
-          targets: smoke,
-          x: smX + Phaser.Math.Between(-40, 40),
-          y: smY - Phaser.Math.Between(10, 40),
-          alpha: 0,
-          scale: 1.5,
-          duration: Phaser.Math.Between(800, 1400),
-          ease: 'Sine.easeOut',
-          onComplete: () => smoke.destroy()
-        });
-      }
-
-      this.tweens.add({
-        targets: lightning,
-        alpha: 0,
-        duration: 350,
-        onComplete: () => lightning.destroy()
-      });
+      drawLightningBolt(
+        this,
+        player.x + Phaser.Math.Between(-60, 60),
+        this.cameras.main.scrollY,
+        player.x,
+        player.y - 10,
+        { color1: 0xffffff, color2: 0x90d0ff },
+        true,
+        350
+      );
     });
 
     // 4. Ash Disintegration (900ms delay)

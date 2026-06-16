@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { FormState } from '../../systems/FormStateMachine';
+import { spawnMetalSparks } from '../../effects/Particles';
 
 export class ShieldEnemy extends BaseEnemy {
   constructor(
@@ -21,11 +22,11 @@ export class ShieldEnemy extends BaseEnemy {
     }
   ) {
     super(scene, x, y, 'enemy-shield', player, {
-      health: config?.health ?? 70, // sturdier
-      speed: config?.speed ?? 45,  // slower
+      health: config?.health ?? 70,
+      speed: config?.speed ?? 45,
       detectRange: config?.detectRange ?? 200,
       attackRange: config?.attackRange ?? 45,
-      damage: config?.damage ?? 15, // hits harder
+      damage: config?.damage ?? 15,
       attackCooldown: config?.attackCooldown ?? 1200,
       patrolMinX: config?.patrolMinX,
       patrolMaxX: config?.patrolMaxX,
@@ -35,45 +36,49 @@ export class ShieldEnemy extends BaseEnemy {
   takeDamage(amount: number): void {
     if (this.health <= 0) return;
 
-    // Sentry flips: setFlipX(true) means facing left, setFlipX(false) means facing right.
-    // Check if player is attacking from the front relative to our facing.
     const isFacingLeft = this.flipX;
     const isPlayerInFront = isFacingLeft ? (this.player.x < this.x) : (this.player.x > this.x);
     const isMecha = this.player.formMachine.state === FormState.MECHA;
 
     if (isPlayerInFront && !isMecha) {
       // Shield block!
-      // Flash blue/white to indicate shield hit
       this.setTint(0x55aaff);
       this.scene.time.delayedCall(80, () => {
         if (this.active) this.clearTint();
       });
 
-      // Play block sound if available, else standard hit sound
       if ((this.scene as any).gameAudio && typeof (this.scene as any).gameAudio.playShieldBlock === 'function') {
         (this.scene as any).gameAudio.playShieldBlock();
       } else {
         (this.scene as any).gameAudio?.playEnemyHit?.();
       }
 
-      // Spawn metal spark particles at the front
       this.spawnShieldSparks();
       return;
     }
 
-    // Otherwise, take damage normally
     super.takeDamage(amount);
   }
 
+  protected doAttack(): void {
+    // Telegraph: flash before melee strike
+    this.setTintFill(0x55aaff);
+    this.scene.time.delayedCall(220, () => {
+      if (!this.active || this.health <= 0) return;
+      this.clearTint();
+      super.doAttack();
+      this.scene.cameras.main.shake(60, 0.002);
+    });
+  }
+
   private spawnShieldSparks(): void {
-    // Spawn blue/gold sparks at the shield position (front of the enemy)
     const isFacingLeft = this.flipX;
     const sparkX = this.x + (isFacingLeft ? -12 : 12);
     const sparkY = this.y;
 
     for (let i = 0; i < 6; i++) {
       const p = this.scene.physics.add.sprite(sparkX, sparkY, 'particle-spark');
-      p.setTint(0x88ddff); // blueish shield sparks
+      p.setTint(0x88ddff);
       const body = p.body as Phaser.Physics.Arcade.Body;
       body.allowGravity = false;
 
@@ -89,5 +94,22 @@ export class ShieldEnemy extends BaseEnemy {
         onComplete: () => p.destroy()
       });
     }
+  }
+
+  protected die(): void {
+    spawnMetalSparks(this.scene, this.x, this.y, 14);
+    (this.scene as any).gameAudio?.playEnemyDeath();
+    this.isActive = false;
+    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.setTint(0x887744);
+
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0,
+      scaleX: 0.8,
+      scaleY: 0.6,
+      duration: 550,
+      onComplete: () => this.destroy(),
+    });
   }
 }

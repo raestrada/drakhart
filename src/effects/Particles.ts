@@ -221,7 +221,7 @@ export function spawnLavaSplash(scene: Phaser.Scene, x: number, y: number): void
   ensure(scene);
   const emitter = scene.add.particles(x, y, 'px-4', {
     speed: { min: 40, max: 120 },
-    angle: { min: 220, max: 320 }, // Splashes upwards and slightly outwards
+    angle: { min: 220, max: 320 },
     scale: { start: 1.0, end: 0 },
     alpha: { start: 0.9, end: 0 },
     tint: [0xff3300, 0xff6600, 0xffaa00],
@@ -235,5 +235,179 @@ export function spawnLavaSplash(scene: Phaser.Scene, x: number, y: number): void
 
   scene.time.delayedCall(600, () => {
     emitter.destroy();
+  });
+}
+
+export function spawnProjectileTrail(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tint: number | number[],
+  lifespan: number = 200,
+  blendMode: number = Phaser.BlendModes.ADD
+): Phaser.GameObjects.Particles.ParticleEmitter {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-4', {
+    speed: { min: 5, max: 25 },
+    scale: { start: 0.6, end: 0 },
+    alpha: { start: 0.8, end: 0 },
+    tint,
+    lifespan: { min: lifespan * 0.4, max: lifespan },
+    frequency: 30,
+    emitting: true,
+    blendMode,
+  });
+  return emitter;
+}
+
+export function spawnProjectileImpact(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tint: number | number[],
+  count: number = 8
+): void {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-4', {
+    speed: { min: 40, max: 160 },
+    angle: { min: 0, max: 360 },
+    scale: { start: 0.8, end: 0 },
+    alpha: { start: 0.9, end: 0 },
+    tint,
+    lifespan: { min: 100, max: 350 },
+    quantity: count,
+    emitting: false,
+    blendMode: Phaser.BlendModes.ADD,
+  });
+
+  emitter.explode(count);
+
+  scene.time.delayedCall(450, () => {
+    emitter.destroy();
+  });
+}
+
+export function spawnAcidSplash(scene: Phaser.Scene, x: number, y: number): void {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-4', {
+    speed: { min: 20, max: 100 },
+    angle: { min: 200, max: 340 },
+    scale: { start: 1.0, end: 0 },
+    alpha: { start: 0.7, end: 0 },
+    tint: [0x00ff88, 0x44ff66, 0x88dd44],
+    lifespan: { min: 200, max: 500 },
+    quantity: 12,
+    emitting: false,
+    gravityY: 80,
+  });
+
+  emitter.explode(12);
+
+  scene.time.delayedCall(700, () => {
+    emitter.destroy();
+  });
+}
+
+export function spawnMetalSparks(scene: Phaser.Scene, x: number, y: number, count: number = 10): void {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-4', {
+    speed: { min: 60, max: 200 },
+    angle: { min: 0, max: 360 },
+    scale: { start: 0.6, end: 0 },
+    alpha: { start: 1, end: 0 },
+    tint: [0xffffff, 0xffaa00, 0xffdd88, 0xcccccc],
+    lifespan: { min: 250, max: 600 },
+    quantity: count,
+    emitting: false,
+    blendMode: Phaser.BlendModes.ADD,
+    gravityY: 120,
+  });
+
+  emitter.explode(count);
+
+  scene.time.delayedCall(800, () => {
+    emitter.destroy();
+  });
+}
+
+export function spawnDarkMist(scene: Phaser.Scene, x: number, y: number, count: number = 8): void {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-8', {
+    speed: { min: 30, max: 100 },
+    angle: { min: 0, max: 360 },
+    scale: { start: 1.0, end: 2.5 },
+    alpha: { start: 0.5, end: 0 },
+    tint: [0x1a0505, 0x330a0a, 0x220808],
+    lifespan: { min: 400, max: 900 },
+    quantity: count,
+    emitting: false,
+  });
+
+  emitter.explode(count);
+
+  scene.time.delayedCall(1100, () => {
+    emitter.destroy();
+  });
+}
+
+export function spawnOilSmoke(scene: Phaser.Scene, x: number, y: number): void {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-8', {
+    speed: { min: 20, max: 80 },
+    angle: { min: 240, max: 300 },
+    scale: { start: 1.0, end: 2.5 },
+    alpha: { start: 0.5, end: 0 },
+    tint: [0x222222, 0x333333, 0x1a1a1a],
+    lifespan: { min: 600, max: 1500 },
+    quantity: 10,
+    emitting: false,
+    gravityY: -15,
+  });
+
+  emitter.explode(10);
+
+  scene.time.delayedCall(1800, () => {
+    emitter.destroy();
+  });
+}
+
+export function spawnEnergyShockwave(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  color: number = 0xff6600
+): void {
+  ensure(scene);
+  const ring = scene.add.graphics();
+  ring.lineStyle(3, color, 0.9);
+  ring.strokeCircle(x, y, 8);
+  ring.setDepth(100);
+  ring.setBlendMode(Phaser.BlendModes.ADD);
+
+  scene.tweens.add({
+    targets: ring,
+    scaleX: 35,
+    scaleY: 35,
+    alpha: 0,
+    duration: 700,
+    ease: 'Cubic.easeOut',
+    onComplete: () => ring.destroy(),
+  });
+
+  const ring2 = scene.add.graphics();
+  ring2.lineStyle(1, 0xffffff, 0.5);
+  ring2.strokeCircle(x, y, 4);
+  ring2.setDepth(100);
+  ring2.setBlendMode(Phaser.BlendModes.ADD);
+
+  scene.tweens.add({
+    targets: ring2,
+    scaleX: 50,
+    scaleY: 50,
+    alpha: 0,
+    duration: 1000,
+    delay: 100,
+    ease: 'Cubic.easeOut',
+    onComplete: () => ring2.destroy(),
   });
 }
