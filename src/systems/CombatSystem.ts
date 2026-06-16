@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { FormState } from './FormStateMachine';
+import { HitstopSystem, HITSTOP } from './HitstopSystem';
 import {
   SWORD_DAMAGE,
   SWORD_RANGE,
@@ -25,10 +26,12 @@ export class CombatSystem {
   private fireBullets: Phaser.Physics.Arcade.Group;
   private swordHitbox: Phaser.GameObjects.Image | null = null;
   private activeDamage = SWORD_DAMAGE;
+  public hitstop: HitstopSystem;
 
   constructor(scene: Phaser.Scene, player: Player) {
     this.scene = scene;
     this.player = player;
+    this.hitstop = new HitstopSystem(scene);
 
     this.fireBullets = scene.physics.add.group({
       allowGravity: false,
@@ -60,6 +63,8 @@ export class CombatSystem {
     this.activeDamage = SWORD_DAMAGE;
     (this.scene as any).gameAudio?.playAttack();
 
+    this.hitstop.freeze(HITSTOP.SWORD_LIGHT.duration, HITSTOP.SWORD_LIGHT.intensity);
+
     // Trigger slide tween
     const dir = facingRight ? 1 : -1;
     this.scene.tweens.add({
@@ -72,19 +77,7 @@ export class CombatSystem {
 
     // Animation locking & texture cycling
     this.player.isAnimatingAttack = true;
-    this.player.setTexture('h-attack-0');
-    
-    this.scene.time.delayedCall(SWORD_DURATION / 3, () => {
-      if (this.player.active && this.player.isAnimatingAttack) {
-        this.player.setTexture('h-attack-1');
-      }
-    });
-
-    this.scene.time.delayedCall((2 * SWORD_DURATION) / 3, () => {
-      if (this.player.active && this.player.isAnimatingAttack) {
-        this.player.setTexture('h-attack-2');
-      }
-    });
+    this.player.play('h-attack');
 
     this.scene.time.delayedCall(SWORD_DURATION, () => {
       this.player.isAnimatingAttack = false;
@@ -135,6 +128,8 @@ export class CombatSystem {
     this.activeDamage = MECHA_SWORD_DAMAGE;
     (this.scene as any).gameAudio?.playHeavyAttack();
 
+    this.hitstop.freeze(HITSTOP.MECHA_CLAYMORE.duration, HITSTOP.MECHA_CLAYMORE.intensity);
+
     this.player.formMachine.heat.addHeat(15);
 
     // Trigger heavy mecha slide
@@ -154,19 +149,7 @@ export class CombatSystem {
 
     // Animation locking & texture cycling
     this.player.isAnimatingAttack = true;
-    this.player.setTexture('m-attack-0');
-    
-    this.scene.time.delayedCall(MECHA_SWORD_DURATION / 3, () => {
-      if (this.player.active && this.player.isAnimatingAttack) {
-        this.player.setTexture('m-attack-1');
-      }
-    });
-
-    this.scene.time.delayedCall((2 * MECHA_SWORD_DURATION) / 3, () => {
-      if (this.player.active && this.player.isAnimatingAttack) {
-        this.player.setTexture('m-attack-2');
-      }
-    });
+    this.player.play('m-attack');
 
     this.scene.time.delayedCall(MECHA_SWORD_DURATION, () => {
       this.player.isAnimatingAttack = false;
@@ -291,6 +274,7 @@ export class CombatSystem {
   }
 
   destroy(): void {
+    this.hitstop.destroy();
     this.fireBullets.destroy(true);
     if (this.swordHitbox) {
       this.swordHitbox.destroy();

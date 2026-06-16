@@ -63,6 +63,12 @@ export class TransitionScene23 extends Phaser.Scene {
       this.gameAudio.stopChoirSave();
     });
 
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene', { gameScene: 'TransitionScene23' });
+    });
+
     // 1. Sky Background (Level 3 volcanic gorge sky)
     this.add.tileSprite(0, 0, 800, 600, 'bg-sky').setOrigin(0, 0).setDepth(-30);
 
@@ -209,8 +215,7 @@ export class TransitionScene23 extends Phaser.Scene {
     if (this.player.body) {
       (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     }
-    this.cameras.main.fade(800, 0, 0, 0);
-    this.time.delayedCall(800, () => {
+    this.showZoneTransition('SMELTING REFINERY', '#ff6622', () => {
       this.scene.start('GameScene2', {
         startPos: { x: 7800, y: 650 },
         cardsCollected: this.tarotSystem.collectedCards,
@@ -226,8 +231,7 @@ export class TransitionScene23 extends Phaser.Scene {
     if (this.player.body) {
       (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     }
-    this.cameras.main.fade(800, 0, 0, 0);
-    this.time.delayedCall(800, () => {
+    this.showZoneTransition('ASHEN GORGE', '#9933cc', () => {
       this.scene.start('GameScene3', {
         startPos: { x: 150, y: 400 },
         cardsCollected: this.tarotSystem.collectedCards,
@@ -235,5 +239,47 @@ export class TransitionScene23 extends Phaser.Scene {
         dragonUnlocked: this.player.formMachine.isDragonUnlocked()
       });
     });
+  }
+
+  private showZoneTransition(zoneName: string, color: string, onComplete: () => void): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const text = this.add.text(cx, cy, zoneName, {
+      fontSize: '28px',
+      fontFamily: 'Georgia, serif',
+      color: color,
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setAlpha(0).setDepth(300).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: text,
+      alpha: { from: 0, to: 0.9 },
+      duration: 300,
+      yoyo: true,
+      hold: 600,
+    });
+
+    const { width, height } = this.scale;
+    const maxRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+
+    this.tweens.addCounter({
+      from: 0,
+      to: maxRadius,
+      duration: 900,
+      ease: 'Power3',
+      onUpdate: (tween) => {
+        const r = tween.getValue();
+        if (r == null) return;
+        const g = this.add.graphics();
+        g.setDepth(500);
+        g.setScrollFactor(0);
+        g.fillStyle(0x000000, 1);
+        g.fillCircle(width / 2, height / 2, r);
+        this.time.delayedCall(50, () => g.destroy());
+      },
+    });
+
+    this.time.delayedCall(900, onComplete);
   }
 }

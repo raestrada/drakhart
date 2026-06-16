@@ -7,8 +7,6 @@ import { t } from '../../i18n';
 
 export class EliteMecha extends BaseEnemy {
   private stompCooldown = false;
-  private animTimer = 0;
-  private animFrame = 0;
   private isAttacking = false;
   private attackDuration = 0;
 
@@ -84,11 +82,8 @@ export class EliteMecha extends BaseEnemy {
       this.nameText.setPosition(uiX, uiY - 14);
     }
 
-    // Manage custom animations
-    this.animTimer += delta;
-
     if (this.isAttacking) {
-      this.setTexture('elm-attack');
+      this.play('elm-attack', true);
       this.attackDuration -= delta;
       if (this.attackDuration <= 0) {
         this.isAttacking = false;
@@ -98,19 +93,9 @@ export class EliteMecha extends BaseEnemy {
       const isMoving = Math.abs(body.velocity.x) > 10;
 
       if (isMoving) {
-        const frameMs = 180; // heavy walking pace
-        if (this.animTimer >= frameMs) {
-          this.animTimer = 0;
-          this.animFrame = (this.animFrame + 1) % 4;
-          this.setTexture(`elm-walk-${this.animFrame}`);
-        }
+        this.play('elm-walk', true);
       } else {
-        const frameMs = 300; // breathing idle
-        if (this.animTimer >= frameMs) {
-          this.animTimer = 0;
-          this.animFrame = (this.animFrame + 1) % 3;
-          this.setTexture(`elm-idle-${this.animFrame}`);
-        }
+        this.play('elm-idle', true);
       }
     }
   }
@@ -179,7 +164,7 @@ export class EliteMecha extends BaseEnemy {
   private executePlasmaCannon(): void {
     this.isAttacking = true;
     this.attackDuration = 800;
-    this.setTexture('elm-attack');
+    this.play('elm-attack', true);
 
     (this.scene as any).gameAudio?.playFireball?.();
 
@@ -235,7 +220,7 @@ export class EliteMecha extends BaseEnemy {
     this.stompCooldown = true;
     this.isAttacking = true;
     this.attackDuration = 900;
-    this.setTexture('elm-attack');
+    this.play('elm-attack', true);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     // Jump slightly in the air

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from '../Player';
 import { distanceBetween } from '../../utils/helpers';
+import { spawnDamageNumber } from '../../effects/DamageNumbers';
 
 export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   public health: number;
@@ -123,6 +124,7 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     if (this.health <= 0) return;
 
     this.health -= amount;
+    spawnDamageNumber(this.scene, this.x, this.y - 20, amount);
     this.setTint(0xff0000);
     this.scene.time.delayedCall(80, () => {
       if (this.active) this.clearTint();

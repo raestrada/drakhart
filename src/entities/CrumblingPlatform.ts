@@ -67,8 +67,13 @@ export class CrumblingPlatform {
     this.isFallen = true;
     this.sprite.setTint(0x222222);
 
-    // Remove physics body (player falls through)
-    this.group.remove(this.sprite, true, true);
+    if (this.group && this.group.active && this.sprite && this.sprite.active) {
+      try {
+        this.group.remove(this.sprite, true, true);
+      } catch (_) {
+        // Group or sprite may have been destroyed during delayed call
+      }
+    }
 
     // Fall tween + particles
     this.scene.tweens.add({
@@ -115,10 +120,14 @@ export class CrumblingPlatform {
     this.sprite.setAngle(0);
     this.sprite.setPosition(this.originalX, this.originalY);
 
-    this.group.add(this.sprite);
-    this.sprite.body!.enable = true;
-    (this.sprite.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
-    this.sprite.refreshBody();
+    if (this.group && this.group.active && this.sprite && this.sprite.active) {
+      try {
+        this.group.add(this.sprite);
+        this.sprite.body!.enable = true;
+        (this.sprite.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
+        this.sprite.refreshBody();
+      } catch (_) {}
+    }
 
     this.scene.tweens.add({
       targets: this.sprite,

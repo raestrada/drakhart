@@ -5,6 +5,12 @@ export class GameAudio {
   private sfxGainNode!: GainNode;
   private bgmVolScale = 1.0;
   private sfxVolScale = 1.0;
+  private combatIntensity = 0;
+  private targetIntensity = 0;
+  private bgmFilterNode!: BiquadFilterNode;
+  private dragonActive = false;
+  private combatPercOsc: OscillatorNode | null = null;
+  private combatPercGain: GainNode | null = null;
   
   // Reverb/Delay echo lines
   private echoNode!: DelayNode;
@@ -78,6 +84,16 @@ export class GameAudio {
     this.bgmGainNode = ctx.createGain();
     this.bgmGainNode.gain.value = 0.35 * this.bgmVolScale; // Default BGM volume
     this.bgmGainNode.connect(ctx.destination);
+
+    // 1b. Dynamic music filter (opens during combat, closes during exploration)
+    this.bgmFilterNode = ctx.createBiquadFilter();
+    this.bgmFilterNode.type = 'lowpass';
+    this.bgmFilterNode.frequency.value = 1800;
+    this.bgmFilterNode.Q.value = 0.7;
+    // Insert filter between BGM gain and destination
+    this.bgmGainNode.disconnect();
+    this.bgmGainNode.connect(this.bgmFilterNode);
+    this.bgmFilterNode.connect(ctx.destination);
 
     // 2. Create SFX volume control node
     this.sfxGainNode = ctx.createGain();
@@ -574,12 +590,85 @@ export class GameAudio {
   public update(playerX: number): void {
     // Dynamic BGM fade-out past x = 6500 (approaching the Dragon Core at 7478)
     if (playerX > 6500) {
-      const fadeDist = 800; // Fade out completely by x = 7300
+      const fadeDist = 800;
       const multiplier = Math.max(0, 1 - (playerX - 6500) / fadeDist);
       this.setBGMVolume(multiplier * 0.35);
     } else {
       this.setBGMVolume(0.35);
     }
+
+    // Smooth combat intensity lerp
+    this.combatIntensity += (this.targetIntensity - this.combatIntensity) * 0.05;
+    if (this.bgmGainNode && this.ctx) {
+      const boost = 1 + this.combatIntensity * 0.3;
+      this.bgmGainNode.gain.setValueAtTime(0.35 * this.bgmVolScale * boost, this.ctx.currentTime);
+    }
+  }
+
+  public setCombatActive(active: boolean): void {
+    this.targetIntensity = active ? 1 : 0;
+    this.updateMusicFilter();
+  }
+
+  public setBossActive(active: boolean): void {
+    this.targetIntensity = active ? 2 : (this.targetIntensity > 0 ? 1 : 0);
+    this.updateMusicFilter();
+  }
+
+  public setDragonActive(active: boolean): void {
+    this.dragonActive = active;
+    this.updateMusicFilter();
+  }
+
+  private updateMusicFilter(): void {
+    if (!this.bgmFilterNode || !this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    if (this.targetIntensity >= 2) {
+      // Boss: fully open, bright
+      this.bgmFilterNode.frequency.setTargetAtTime(6000, t, 0.3);
+      this.bgmFilterNode.Q.setTargetAtTime(0.3, t, 0.3);
+    } else if (this.targetIntensity >= 1) {
+      // Combat: open mid-highs
+      this.bgmFilterNode.frequency.setTargetAtTime(3500, t, 0.5);
+      this.bgmFilterNode.Q.setTargetAtTime(0.5, t, 0.5);
+    } else if (this.dragonActive) {
+      // Dragon: ethereal, slightly filtered with resonance
+      this.bgmFilterNode.frequency.setTargetAtTime(2200, t, 0.8);
+      this.bgmFilterNode.Q.setTargetAtTime(1.2, t, 0.8);
+    } else {
+      // Exploration: mellow, distant
+      this.bgmFilterNode.frequency.setTargetAtTime(1400, t, 1.0);
+      this.bgmFilterNode.Q.setTargetAtTime(0.7, t, 1.0);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  //  SPATIAL AUDIO (pan by screen position)
+  // ═══════════════════════════════════════
+
+  public playSpatialSFX(
+    playFn: (destination: AudioNode) => void,
+    worldX: number,
+    cameraScrollX: number,
+    viewportWidth: number
+  ): void {
+    if (!this.ctx) {
+      return;
+    }
+
+    const screenX = worldX - cameraScrollX;
+    const pan = Phaser.Math.Clamp((screenX / viewportWidth) * 2 - 1, -1, 1);
+
+    const panner = this.ctx.createStereoPanner();
+    panner.pan.value = pan;
+    panner.connect(this.ctx.destination);
+
+    playFn(panner);
+
+    setTimeout(() => {
+      try { panner.disconnect(); } catch (e) {}
+    }, 200);
   }
 
   // ═══════════════════════════════════════
@@ -1451,6 +1540,216 @@ export class GameAudio {
 
     subOsc.start(t);
     subOsc.stop(t + 0.82);
+  }
+
+  // ═══════════════════════════════════════
+  //  AMBIENT ZONE LOOPS
+  // ═══════════════════════════════════════
+
+  private ambientNodes: { gainNode: GainNode; oscillators: OscillatorNode[]; noiseSource?: AudioBufferSourceNode; filter?: BiquadFilterNode }[] = [];
+  private ambientPlaying = false;
+
+  public playAmbientZone(zone: number): void {
+    this.init();
+    if (!this.ctx || this.ambientPlaying) return;
+    this.ambientPlaying = true;
+    const t = this.ctx.currentTime;
+
+    if (zone === 1) {
+      this.startForestAmbient(t);
+    } else if (zone === 2) {
+      this.startRefineryAmbient(t);
+    } else if (zone === 3) {
+      this.startGorgeAmbient(t);
+    }
+  }
+
+  private startForestAmbient(t: number): void {
+    if (!this.ctx || !this.noiseBuffer) return;
+    const ctx = this.ctx;
+
+    const windSource = ctx.createBufferSource();
+    windSource.buffer = this.noiseBuffer;
+    windSource.loop = true;
+
+    const windFilter = ctx.createBiquadFilter();
+    windFilter.type = 'lowpass';
+    windFilter.frequency.value = 300;
+    windFilter.Q.value = 0.5;
+
+    const windGain = ctx.createGain();
+    windGain.gain.setValueAtTime(0, t);
+    windGain.gain.linearRampToValueAtTime(0.06, t + 2);
+
+    windSource.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(this.sfxGainNode);
+    windSource.start(t);
+
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.08;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 80;
+    lfo.connect(lfoGain);
+    lfoGain.connect(windFilter.frequency);
+    lfo.start(t);
+
+    this.ambientNodes.push({
+      gainNode: windGain,
+      oscillators: [lfo],
+      noiseSource: windSource,
+      filter: windFilter,
+    });
+  }
+
+  private startRefineryAmbient(t: number): void {
+    if (!this.ctx || !this.noiseBuffer) return;
+    const ctx = this.ctx;
+
+    const machineSource = ctx.createBufferSource();
+    machineSource.buffer = this.noiseBuffer;
+    machineSource.loop = true;
+
+    const machineFilter = ctx.createBiquadFilter();
+    machineFilter.type = 'lowpass';
+    machineFilter.frequency.value = 200;
+    machineFilter.Q.value = 1.5;
+
+    const machineGain = ctx.createGain();
+    machineGain.gain.setValueAtTime(0, t);
+    machineGain.gain.linearRampToValueAtTime(0.08, t + 1.5);
+
+    machineSource.connect(machineFilter);
+    machineFilter.connect(machineGain);
+    machineGain.connect(this.sfxGainNode);
+    machineSource.start(t);
+
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sawtooth';
+    lfo.frequency.value = 1.2;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 120;
+    lfo.connect(lfoGain);
+    lfoGain.connect(machineFilter.frequency);
+    lfo.start(t);
+
+    const thump = ctx.createOscillator();
+    thump.type = 'sine';
+    thump.frequency.value = 42;
+    const thumpGain = ctx.createGain();
+    thumpGain.gain.setValueAtTime(0, t);
+    thumpGain.gain.linearRampToValueAtTime(0.04, t + 1.5);
+    thump.connect(thumpGain);
+    thumpGain.connect(this.sfxGainNode);
+    thump.start(t);
+
+    this.ambientNodes.push({
+      gainNode: machineGain,
+      oscillators: [lfo, thump],
+      noiseSource: machineSource,
+      filter: machineFilter,
+    });
+  }
+
+  private startGorgeAmbient(t: number): void {
+    if (!this.ctx || !this.noiseBuffer) return;
+    const ctx = this.ctx;
+
+    const windSource = ctx.createBufferSource();
+    windSource.buffer = this.noiseBuffer;
+    windSource.loop = true;
+
+    const windFilter = ctx.createBiquadFilter();
+    windFilter.type = 'highpass';
+    windFilter.frequency.value = 400;
+    windFilter.Q.value = 0.3;
+
+    const windGain = ctx.createGain();
+    windGain.gain.setValueAtTime(0, t);
+    windGain.gain.linearRampToValueAtTime(0.1, t + 2);
+
+    windSource.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(this.sfxGainNode);
+    windSource.start(t);
+
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.15;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 200;
+    lfo.connect(lfoGain);
+    lfoGain.connect(windFilter.frequency);
+    lfo.start(t);
+
+    this.ambientNodes.push({
+      gainNode: windGain,
+      oscillators: [lfo],
+      noiseSource: windSource,
+      filter: windFilter,
+    });
+  }
+
+  public stopAmbient(): void {
+    if (!this.ctx) return;
+    this.ambientPlaying = false;
+    const t = this.ctx.currentTime;
+
+    this.ambientNodes.forEach((node) => {
+      try {
+        node.gainNode.gain.setValueAtTime(node.gainNode.gain.value, t);
+        node.gainNode.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+        setTimeout(() => {
+          node.oscillators.forEach((osc) => { try { osc.stop(); } catch (e) {} });
+          try { if (node.noiseSource) node.noiseSource.stop(); } catch (e) {}
+        }, 1100);
+      } catch (e) {}
+    });
+    this.ambientNodes = [];
+  }
+
+  // ═══════════════════════════════════════
+  //  FOOTSTEP SFX
+  // ═══════════════════════════════════════
+
+  public playFootstep(surface: 'stone' | 'metal' | 'ash' = 'stone', heavy = false): void {
+    this.init();
+    if (!this.ctx || !this.noiseBuffer) return;
+    const t = this.ctx.currentTime;
+    const ctx = this.ctx;
+
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = this.noiseBuffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+
+    if (surface === 'stone') {
+      filter.frequency.setValueAtTime(heavy ? 600 : 900, t);
+      filter.frequency.exponentialRampToValueAtTime(heavy ? 200 : 350, t + (heavy ? 0.12 : 0.08));
+      filter.Q.value = 1.8;
+    } else if (surface === 'metal') {
+      filter.frequency.setValueAtTime(heavy ? 1200 : 2000, t);
+      filter.frequency.exponentialRampToValueAtTime(heavy ? 300 : 600, t + (heavy ? 0.1 : 0.06));
+      filter.Q.value = 3.5;
+    } else {
+      filter.frequency.setValueAtTime(heavy ? 300 : 500, t);
+      filter.frequency.exponentialRampToValueAtTime(heavy ? 80 : 150, t + (heavy ? 0.15 : 0.1));
+      filter.Q.value = 1.2;
+    }
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(heavy ? 0.18 : 0.08, t + 0.003);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + (heavy ? 0.15 : 0.1));
+
+    noiseSource.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGainNode);
+
+    noiseSource.start(t);
+    noiseSource.stop(t + (heavy ? 0.16 : 0.11));
   }
 
   public stopBGM(): void {

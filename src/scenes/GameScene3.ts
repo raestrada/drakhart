@@ -9,8 +9,11 @@ import { EnergyPickup } from '../entities/EnergyPickup';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
-import { spawnHitParticles } from '../effects/Particles';
+import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
+import { BloomSystem } from '../effects/BloomSystem';
+import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
+import { EchoFragment } from '../entities/EchoFragment';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -40,7 +43,7 @@ interface WaveDef {
   enemies: WaveEnemyDef[];
 }
 
-export class GameScene3 extends Phaser.Scene {
+export class GameScene3 extends BaseLevelScene {
   public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
@@ -65,6 +68,8 @@ export class GameScene3 extends Phaser.Scene {
   private bgReactor!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
+  private bloom!: BloomSystem;
+  private echoFragments: EchoFragment[] = [];
 
   // Autoscroll & coordinates
   private scrollX = 0;
@@ -117,6 +122,8 @@ export class GameScene3 extends Phaser.Scene {
   }
 
   create(): void {
+    super.create();
+
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
     // Keyboard controls
@@ -130,12 +137,26 @@ export class GameScene3 extends Phaser.Scene {
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(3);
+    this.gameAudio.playAmbientZone(3);
 
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
+    });
+
+    this.bloom = new BloomSystem(this);
+
+    this.input.keyboard?.on('keydown-T', () => {
+      if (this.scene.isPaused()) return;
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('TarotCollectionScene', { tarotSystem: this.tarotSystem });
     });
 
     // Initialize groups & arrays before creating levels
@@ -152,6 +173,7 @@ export class GameScene3 extends Phaser.Scene {
     this.createLevel();
     this.createInteractiveObjects();
     this.createDecorations();
+    this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
 
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
@@ -447,7 +469,18 @@ export class GameScene3 extends Phaser.Scene {
     }
   }
 
+  private createEchoFragments(): void {
+    const e1 = new EchoFragment(this, 3500, 350, 2);
+    this.echoFragments.push(e1);
+  }
+
   private setupCollisions(): void {
+    this.echoFragments.forEach((echo) => {
+      this.physics.add.overlap(this.player, echo, () => {
+        if (echo.active) echo.collect();
+      });
+    });
+
     // Overlap checks for gorge platforms/walls to apply dragging speed penalty
     this.physics.add.overlap(this.player, this.platforms, (_player, _platform) => {
       if (this.player.formMachine.state !== FormState.DRAGON) return;
@@ -706,6 +739,11 @@ export class GameScene3 extends Phaser.Scene {
 
     if (this.player && this.player.active) {
       this.gameAudio?.update(this.player.x);
+      this.gameAudio?.setCombatActive?.(this.enemies.getChildren().some((e) => {
+        const enemy = e as Phaser.Physics.Arcade.Sprite;
+        return enemy.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 500;
+      }));
+      this.gameAudio?.setDragonActive?.(this.player.formMachine.state === FormState.DRAGON);
     }
 
     if (!this.shmupStarted) {
@@ -808,6 +846,8 @@ export class GameScene3 extends Phaser.Scene {
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
+    this.updateBloom();
+    this.updateVignettePulse();
     
     // Update active steam pipes & check steam hits
     this.steamPipes.forEach((pipe) => {
@@ -967,6 +1007,42 @@ export class GameScene3 extends Phaser.Scene {
       duration: Phaser.Math.Between(1500, 3000),
       onComplete: () => ember.destroy()
     });
+  }
+
+  private updateBloom(): void {
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        this.bloom.add(bullet.x, bullet.y, 8, 0xff4400, 0.6);
+      }
+    });
+
+    const state = this.player.formMachine.state;
+    if (state === FormState.DRAGON) {
+      this.bloom.add(this.player.x, this.player.y - 10, 14, 0xff0066, 0.4);
+    }
+
+    if (this.boss && this.boss.active) {
+      this.bloom.add(this.boss.x, this.boss.y, 24, 0xff1166, 0.7);
+    }
+
+    this.bloom.update();
+  }
+
+  private updateVignettePulse(): void {
+    if (!this.vignette) return;
+    const hpRatio = this.player.health / this.player.maxHealth;
+    let alpha = 0;
+
+    if (hpRatio < 0.3) {
+      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
+      this.vignette.setFillStyle(0x880000, alpha);
+    } else if (hpRatio < 0.5) {
+      alpha = 0.15;
+      this.vignette.setFillStyle(0x000000, alpha);
+    }
+
+    this.vignette.setAlpha(alpha);
   }
 
   private updateWaves(): void {
@@ -1217,32 +1293,7 @@ export class GameScene3 extends Phaser.Scene {
 
         // 3. Core shatter explosion upon landing/impact at target
         this.gameAudio?.playCoreShatter();
-
-        for (let i = 0; i < 35; i++) {
-          const px = player.x;
-          const py = player.y;
-          const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
-          const size = Phaser.Math.Between(4, 10);
-          const spark = this.add.rectangle(px, py, size, size, sparkColor);
-          spark.setBlendMode(Phaser.BlendModes.ADD);
-
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Phaser.Math.Between(50, 250);
-          const targetX = px + Math.cos(angle) * speed * 0.6;
-          const targetY = py + Math.sin(angle) * speed * 0.6;
-
-          this.tweens.add({
-            targets: spark,
-            x: targetX,
-            y: targetY,
-            alpha: 0,
-            scale: 0.2,
-            angle: Phaser.Math.Between(-180, 180),
-            duration: Phaser.Math.Between(600, 1200),
-            ease: 'Quad.easeOut',
-            onComplete: () => spark.destroy()
-          });
-        }
+        spawnDeathExplosion(this, player.x, player.y);
 
         // 4. Lightning Strike (400ms delay after crash ends)
         this.time.delayedCall(400, () => {

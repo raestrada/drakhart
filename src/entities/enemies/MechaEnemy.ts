@@ -6,9 +6,6 @@ import { spawnHitParticles } from '../../effects/Particles';
 
 export class MechaEnemy extends BaseEnemy {
   private chargeCooldown = false;
-  private chargeTimer = 0;
-  private animTimer = 0;
-  private animFrame = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -37,7 +34,6 @@ export class MechaEnemy extends BaseEnemy {
       patrolMaxX: config?.patrolMaxX,
     });
 
-    // Match new wide 48×36 sprite
     this.setScale(1.4);
     (this.body as Phaser.Physics.Arcade.Body).setSize(44, 30);
     (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 6);
@@ -47,28 +43,16 @@ export class MechaEnemy extends BaseEnemy {
     super.preUpdate(time, delta);
     if (!this.active || !this.isActive || this.health <= 0) return;
 
-    this.animTimer += delta;
-
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMoving = Math.abs(body.velocity.x) > 10;
     const isCharging = Math.abs(body.velocity.x) > 150;
 
     if (isCharging) {
-      this.setTexture('em-charge');
+      this.play('em-charge', true);
     } else if (isMoving) {
-      const frameMs = 120; // brisk walk speed
-      if (this.animTimer >= frameMs) {
-        this.animTimer = 0;
-        this.animFrame = (this.animFrame + 1) % 4;
-        this.setTexture(`em-walk-${this.animFrame}`);
-      }
+      this.play('em-walk', true);
     } else {
-      const frameMs = 280; // slow idle breath
-      if (this.animTimer >= frameMs) {
-        this.animTimer = 0;
-        this.animFrame = (this.animFrame + 1) % 3;
-        this.setTexture(`em-idle-${this.animFrame}`);
-      }
+      this.play('em-idle', true);
     }
   }
 
@@ -77,23 +61,9 @@ export class MechaEnemy extends BaseEnemy {
 
     const playerState = this.player.formMachine.state;
     if (playerState === FormState.HUMAN || playerState === FormState.EXHAUSTED) {
-      // Immune to human attacks
       (this.scene as any).gameAudio?.playShieldBlock?.();
 
-      for (let i = 0; i < 6; i++) {
-        const spark = this.scene.add.rectangle(
-          this.x + Phaser.Math.Between(-12, 12),
-          this.y + Phaser.Math.Between(-8, 8),
-          3, 3, 0x00d2d3
-        );
-        this.scene.tweens.add({
-          targets: spark,
-          y: spark.y - 24,
-          alpha: 0,
-          duration: 320,
-          onComplete: () => spark.destroy()
-        });
-      }
+      spawnHitParticles(this.scene, this.x, this.y, 6);
 
       const immuneText = this.scene.add.text(this.x, this.y - 28, 'IMMUNE', {
         fontSize: '10px',
@@ -123,11 +93,9 @@ export class MechaEnemy extends BaseEnemy {
     const knockDir = this.player.x < this.x ? -1 : 1;
     this.player.takeDamage(this.attackDamage, knockDir);
 
-    // Camera shake — heavy impact
     this.scene.cameras.main.shake(220, 0.004);
     (this.scene as any).gameAudio?.playLand?.();
 
-    // Mace ground shockwave ring
     const dust = this.scene.add.rectangle(this.x, this.y + 14, 10, 5, 0x444444);
     this.scene.tweens.add({
       targets: dust,
@@ -137,7 +105,6 @@ export class MechaEnemy extends BaseEnemy {
       onComplete: () => dust.destroy()
     });
 
-    // Thruster exhaust burst on attack
     for (let i = 0; i < 4; i++) {
       const exhaust = this.scene.add.rectangle(
         this.x - knockDir * 16 + Phaser.Math.Between(-6, 6),
@@ -155,7 +122,6 @@ export class MechaEnemy extends BaseEnemy {
       });
     }
 
-    // Charge dash — short burst velocity toward player
     if (!this.chargeCooldown) {
       this.chargeCooldown = true;
       const body = this.body as Phaser.Physics.Arcade.Body;

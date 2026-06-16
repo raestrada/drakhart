@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { spawnImmuneText } from '../effects/DamageNumbers';
 
 export class Barricade extends Phaser.Physics.Arcade.Sprite {
   public health = 75;
@@ -35,22 +36,7 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
 
   private spawnImmuneEffects(): void {
     (this.scene as any).gameAudio?.playEnemyHit();
-    // Floating text
-    const txt = this.scene.add.text(this.x, this.y - 32, 'IMMUNE', {
-      fontSize: '10px',
-      fontFamily: 'monospace',
-      color: '#aaaaaa',
-      backgroundColor: '#00000088',
-      padding: { x: 3, y: 1 }
-    }).setOrigin(0.5);
-
-    this.scene.tweens.add({
-      targets: txt,
-      y: txt.y - 20,
-      alpha: 0,
-      duration: 800,
-      onComplete: () => txt.destroy()
-    });
+    spawnImmuneText(this.scene, this.x, this.y - 16);
 
     // Sparks
     for (let i = 0; i < 4; i++) {

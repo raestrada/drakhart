@@ -14,10 +14,14 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { saveGame, loadGame } from '../systems/SaveSystem';
 import { CrumblingPlatform } from '../entities/CrumblingPlatform';
 import { SaveAltar } from '../entities/SaveAltar';
+import { EchoFragment } from '../entities/EchoFragment';
 import {
   spawnHitParticles,
   spawnTransformParticles,
+  spawnDeathExplosion,
 } from '../effects/Particles';
+import { BloomSystem } from '../effects/BloomSystem';
+import { BaseLevelScene } from './BaseLevelScene';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -34,7 +38,7 @@ interface PlatformDef {
   texture?: string;
 }
 
-export class GameScene extends Phaser.Scene {
+export class GameScene extends BaseLevelScene {
   public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
@@ -79,8 +83,10 @@ export class GameScene extends Phaser.Scene {
 
   private shmupZoneActive = false;
   private crumblingPlatforms: CrumblingPlatform[] = [];
+  private echoFragments: EchoFragment[] = [];
   private fogWall: Phaser.GameObjects.Graphics | null = null;
   private ashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+  private bloom!: BloomSystem;
 
   private pendingMechaUnlock = false;
   private pendingDragonUnlock = false;
@@ -113,18 +119,34 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    super.create();
+
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
     // Initialize Game Audio system
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM();
+    this.gameAudio.playAmbientZone(1);
 
     // Cleanup BGM when transitioning/destroying scene
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
+      this.gameAudio.stopAmbient();
+      this.bloom?.destroy();
+    });
+
+    this.bloom = new BloomSystem(this);
+
+    this.input.keyboard?.on('keydown-T', () => {
+      if (this.scene.isPaused()) return;
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('TarotCollectionScene', { tarotSystem: this.tarotSystem });
     });
 
     this.createParallax();
@@ -135,6 +157,7 @@ export class GameScene extends Phaser.Scene {
     this.createDecorations();
     this.createFogWall();
     this.createAshParticles();
+    this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
       this.pendingCardsToCollect.forEach((cardId) => {
@@ -890,6 +913,12 @@ export class GameScene extends Phaser.Scene {
     this.ashEmitter.setDepth(40);
   }
 
+  private createEchoFragments(): void {
+    const e1 = new EchoFragment(this, 3000, 630, 0);
+    const e2 = new EchoFragment(this, 6500, 600, 1);
+    this.echoFragments.push(e1, e2);
+  }
+
   private createShmup(): void {
     this.shmupSystem = new ShmupSystem(this, this.player);
   }
@@ -960,6 +989,12 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.enemies, this.barricades);
     this.physics.add.collider(this.player, this.solidDestructibles);
     this.physics.add.collider(this.enemies, this.solidDestructibles);
+
+    this.echoFragments.forEach((echo) => {
+      this.physics.add.overlap(this.player, echo, () => {
+        if (echo.active) echo.collect();
+      });
+    });
 
     this.physics.add.overlap(
       this.player,
@@ -1417,6 +1452,11 @@ export class GameScene extends Phaser.Scene {
 
     if (this.player && this.player.active) {
       this.gameAudio?.update(this.player.x);
+      this.gameAudio?.setCombatActive?.(this.enemies.getChildren().some((e) => {
+        const enemy = e as Phaser.Physics.Arcade.Sprite;
+        return enemy.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 500;
+      }));
+      this.gameAudio?.setDragonActive?.(this.player.formMachine.state === FormState.DRAGON);
     }
     this.updateParallax();
     this.updateShadows();
@@ -1425,6 +1465,8 @@ export class GameScene extends Phaser.Scene {
     this.updateBulletCleanup();
     this.checkCrumblingPlatforms();
     this.updateEmbers(delta);
+    this.updateBloom();
+    this.updateVignettePulse();
     this.updateShmupZone(delta, time);
 
     if (this.player.active) {
@@ -1733,6 +1775,54 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private updateBloom(): void {
+    // Dragon Core glow
+    if (this.dragonCore && this.dragonCore.active) {
+      this.bloom.add(this.dragonCore.x, this.dragonCore.y, 18, 0xff6600, 1.2);
+    }
+
+    // Player fire bullets glow
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        this.bloom.add(bullet.x, bullet.y, 8, 0xff4400, 0.6);
+      }
+    });
+
+    // Player energy glow (subtle, only when mecha/dragon)
+    const state = this.player.formMachine.state;
+    if (state === FormState.MECHA || state === FormState.DRAGON) {
+      this.bloom.add(this.player.x, this.player.y - 10, 10, state === FormState.DRAGON ? 0xff0066 : 0xff5ea2, 0.3);
+    }
+
+    this.bloom.update();
+  }
+
+  private updateVignettePulse(): void {
+    if (!this.vignette) return;
+    const hpRatio = this.player.health / this.player.maxHealth;
+    const heatLevel = this.player.formMachine.heat.level;
+    let alpha = 0;
+
+    if (hpRatio < 0.3) {
+      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
+      this.vignette.setFillStyle(0x880000, alpha);
+    } else if (hpRatio < 0.5) {
+      alpha = 0.15;
+      this.vignette.setFillStyle(0x000000, alpha);
+    }
+
+    if (heatLevel === 'danger') {
+      alpha = Math.max(alpha, 0.3 + 0.15 * Math.sin(Date.now() * 0.015));
+      this.vignette.setFillStyle(0xff2200, alpha);
+    } else if (heatLevel === 'warning') {
+      alpha = Math.max(alpha, 0.12 + 0.06 * Math.sin(Date.now() * 0.008));
+      this.vignette.setFillStyle(0x880000, alpha);
+    }
+
+    this.vignette.setAlpha(alpha);
+  }
+
   private updateSwordVsEnemies(): void {
     if (!this.player.combatSystem.isSwordActive()) return;
 
@@ -1852,32 +1942,8 @@ export class GameScene extends Phaser.Scene {
     player.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
     player.setScale(isMecha ? 1.4 : 0.8);
 
-    // Spawn mecha-core shatter particles
-    for (let i = 0; i < 35; i++) {
-      const px = player.x;
-      const py = player.y - 12; // chest level
-      const sparkColor = Phaser.Math.Between(0, 1) ? 0xff3300 : 0xffaa00;
-      const size = Phaser.Math.Between(4, 10);
-      const spark = this.add.rectangle(px, py, size, size, sparkColor);
-      spark.setBlendMode(Phaser.BlendModes.ADD);
-
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Phaser.Math.Between(50, 250);
-      const targetX = px + Math.cos(angle) * speed * 0.6;
-      const targetY = py + Math.sin(angle) * speed * 0.6 - 20;
-
-      this.tweens.add({
-        targets: spark,
-        x: targetX,
-        y: targetY,
-        alpha: 0,
-        scale: 0.2,
-        angle: Phaser.Math.Between(-180, 180),
-        duration: Phaser.Math.Between(600, 1200),
-        ease: 'Quad.easeOut',
-        onComplete: () => spark.destroy()
-      });
-    }
+    // Spawn mecha-core shatter particles using native emitter
+    spawnDeathExplosion(this, player.x, player.y - 12);
 
     // 3. Lightning Strike (400ms delay)
     this.time.delayedCall(400, () => {
