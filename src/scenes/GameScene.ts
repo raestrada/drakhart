@@ -14,6 +14,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { saveGame, loadGame } from '../systems/SaveSystem';
 import { CrumblingPlatform } from '../entities/CrumblingPlatform';
 import { SaveAltar } from '../entities/SaveAltar';
+import { EchoFragment } from '../entities/EchoFragment';
 import {
   spawnHitParticles,
   spawnTransformParticles,
@@ -81,6 +82,7 @@ export class GameScene extends Phaser.Scene {
 
   private shmupZoneActive = false;
   private crumblingPlatforms: CrumblingPlatform[] = [];
+  private echoFragments: EchoFragment[] = [];
   private fogWall: Phaser.GameObjects.Graphics | null = null;
   private ashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private bloom!: BloomSystem;
@@ -158,6 +160,7 @@ export class GameScene extends Phaser.Scene {
     this.createDecorations();
     this.createFogWall();
     this.createAshParticles();
+    this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
       this.pendingCardsToCollect.forEach((cardId) => {
@@ -913,6 +916,12 @@ export class GameScene extends Phaser.Scene {
     this.ashEmitter.setDepth(40);
   }
 
+  private createEchoFragments(): void {
+    const e1 = new EchoFragment(this, 3000, 630, 0);
+    const e2 = new EchoFragment(this, 6500, 600, 1);
+    this.echoFragments.push(e1, e2);
+  }
+
   private createShmup(): void {
     this.shmupSystem = new ShmupSystem(this, this.player);
   }
@@ -983,6 +992,12 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.enemies, this.barricades);
     this.physics.add.collider(this.player, this.solidDestructibles);
     this.physics.add.collider(this.enemies, this.solidDestructibles);
+
+    this.echoFragments.forEach((echo) => {
+      this.physics.add.overlap(this.player, echo, () => {
+        if (echo.active) echo.collect();
+      });
+    });
 
     this.physics.add.overlap(
       this.player,
@@ -1444,6 +1459,7 @@ export class GameScene extends Phaser.Scene {
         const enemy = e as Phaser.Physics.Arcade.Sprite;
         return enemy.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 500;
       }));
+      this.gameAudio?.setDragonActive?.(this.player.formMachine.state === FormState.DRAGON);
     }
     this.updateParallax();
     this.updateShadows();

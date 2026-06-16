@@ -732,6 +732,7 @@ export class GameScene3 extends Phaser.Scene {
         const enemy = e as Phaser.Physics.Arcade.Sprite;
         return enemy.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) < 500;
       }));
+      this.gameAudio?.setDragonActive?.(this.player.formMachine.state === FormState.DRAGON);
     }
 
     if (!this.shmupStarted) {

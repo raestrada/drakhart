@@ -44,6 +44,9 @@ export const en = {
     bossAlert: 'BOSS DETECTED: CORRUPTED DRACONEL',
     extremeHeat: 'EXTREME HEAT: WARRIOR BURNS - FIND ENERGY',
     warningShmup: 'WARNING: INDUSTRIAL DEFENSE ZONE DETECTED!\nAUTOSCROLL INITIATED',
+    echo1: 'The Wardens fell here... their armor still holds the ash.',
+    echo2: 'They burned the cores to stop the Empire. It was not enough.',
+    echo3: 'The forge never sleeps. It hungers for dragon bone.',
   },
   boss: {
     name: 'CORRUPTED DRACONEL',

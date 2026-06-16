@@ -46,6 +46,9 @@ export const es: typeof en = {
     bossAlert: 'JEFE DETECTADO: DRACONEL CORRUPTO',
     extremeHeat: 'CALOR EXTREMO: GUERRERO SE QUEMA - BUSCA ENERGÍA',
     warningShmup: 'ADVERTENCIA: ¡ZONA DE DEFENSA INDUSTRIAL DETECTADA!\nINICIANDO DESPLAZAMIENTO AUT',
+    echo1: 'Los Wardens cayeron aquí... su armadura aún sostiene las cenizas.',
+    echo2: 'Quemaron los núcleos para detener al Imperio. No fue suficiente.',
+    echo3: 'La forja nunca duerme. Tiene hambre de hueso de dragón.',
   },
   boss: {
     name: 'DRACONEL CORRUPTO',

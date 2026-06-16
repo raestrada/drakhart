@@ -7,6 +7,10 @@ export class GameAudio {
   private sfxVolScale = 1.0;
   private combatIntensity = 0;
   private targetIntensity = 0;
+  private bgmFilterNode!: BiquadFilterNode;
+  private dragonActive = false;
+  private combatPercOsc: OscillatorNode | null = null;
+  private combatPercGain: GainNode | null = null;
   
   // Reverb/Delay echo lines
   private echoNode!: DelayNode;
@@ -80,6 +84,16 @@ export class GameAudio {
     this.bgmGainNode = ctx.createGain();
     this.bgmGainNode.gain.value = 0.35 * this.bgmVolScale; // Default BGM volume
     this.bgmGainNode.connect(ctx.destination);
+
+    // 1b. Dynamic music filter (opens during combat, closes during exploration)
+    this.bgmFilterNode = ctx.createBiquadFilter();
+    this.bgmFilterNode.type = 'lowpass';
+    this.bgmFilterNode.frequency.value = 1800;
+    this.bgmFilterNode.Q.value = 0.7;
+    // Insert filter between BGM gain and destination
+    this.bgmGainNode.disconnect();
+    this.bgmGainNode.connect(this.bgmFilterNode);
+    this.bgmFilterNode.connect(ctx.destination);
 
     // 2. Create SFX volume control node
     this.sfxGainNode = ctx.createGain();
@@ -593,10 +607,40 @@ export class GameAudio {
 
   public setCombatActive(active: boolean): void {
     this.targetIntensity = active ? 1 : 0;
+    this.updateMusicFilter();
   }
 
   public setBossActive(active: boolean): void {
     this.targetIntensity = active ? 2 : (this.targetIntensity > 0 ? 1 : 0);
+    this.updateMusicFilter();
+  }
+
+  public setDragonActive(active: boolean): void {
+    this.dragonActive = active;
+    this.updateMusicFilter();
+  }
+
+  private updateMusicFilter(): void {
+    if (!this.bgmFilterNode || !this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    if (this.targetIntensity >= 2) {
+      // Boss: fully open, bright
+      this.bgmFilterNode.frequency.setTargetAtTime(6000, t, 0.3);
+      this.bgmFilterNode.Q.setTargetAtTime(0.3, t, 0.3);
+    } else if (this.targetIntensity >= 1) {
+      // Combat: open mid-highs
+      this.bgmFilterNode.frequency.setTargetAtTime(3500, t, 0.5);
+      this.bgmFilterNode.Q.setTargetAtTime(0.5, t, 0.5);
+    } else if (this.dragonActive) {
+      // Dragon: ethereal, slightly filtered with resonance
+      this.bgmFilterNode.frequency.setTargetAtTime(2200, t, 0.8);
+      this.bgmFilterNode.Q.setTargetAtTime(1.2, t, 0.8);
+    } else {
+      // Exploration: mellow, distant
+      this.bgmFilterNode.frequency.setTargetAtTime(1400, t, 1.0);
+      this.bgmFilterNode.Q.setTargetAtTime(0.7, t, 1.0);
+    }
   }
 
   // ═══════════════════════════════════════
