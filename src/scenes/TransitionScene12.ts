@@ -3,6 +3,8 @@ import { Player } from '../entities/Player';
 import { SaveAltar } from '../entities/SaveAltar';
 import { GameAudio } from '../systems/GameAudio';
 import { TarotSystem } from '../systems/TarotSystem';
+import { TerrainGenerator } from '../generators/TerrainGenerator';
+import { CAMERA_ZOOM_HUMAN, CAMERA_LERP } from '../utils/constants';
 
 export class TransitionScene12 extends Phaser.Scene {
   public gameAudio!: GameAudio;
@@ -18,6 +20,7 @@ export class TransitionScene12 extends Phaser.Scene {
   private pendingDragonUnlock = false;
   private pendingCardsToCollect: string[] = [];
   private hasTransitioned = false;
+  private terrainGen!: TerrainGenerator;
 
   constructor() { super({ key: 'TransitionScene12' }); }
 
@@ -32,42 +35,33 @@ export class TransitionScene12 extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 1200, H = 800;
+    const W = 1920, H = 1080;
     const vw = this.scale.width;
     const vh = this.scale.height;
     this.physics.world.setBounds(0, 0, W, H);
     this.cameras.main.setBackgroundColor('#080610');
 
     this.gameAudio = new GameAudio();
+    this.terrainGen = new TerrainGenerator(this);
     this.gameAudio.playBGM(1);
     this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene12' }); });
 
-    // Full-viewport backgrounds (scrollFactor 0 = always fill screen)
-    this.add.tileSprite(0, 0, vw, vh, 'bg-sky').setOrigin(0, 0).setScrollFactor(0).setDepth(-30);
-    this.add.tileSprite(0, vh * 0.55, vw, vh * 0.45, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0).setDepth(-20).setAlpha(0.5).setTint(0x553344);
-    const mist = this.add.tileSprite(0, vh * 0.45, vw, vh * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0).setDepth(-18).setAlpha(0.25);
+    // Full-viewport backgrounds (scrollFactor to allow slight parallax)
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30);
+    this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.5).setTint(0x553344);
+    const mist = this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.15).setDepth(-18).setAlpha(0.25);
     this.tweens.add({ targets: mist, tilePositionX: 800, duration: 40000, loop: -1 });
-    this.add.tileSprite(0, vh * 0.5, vw, vh * 0.45, 'bg-forest').setOrigin(0, 0).setScrollFactor(0).setDepth(-15).setAlpha(0.45).setTint(0x332233);
-    const moon = this.add.image(vw * 0.15, vh * 0.15, 'bg-moon').setOrigin(0.5).setScrollFactor(0).setDepth(-25).setAlpha(0.85);
+    this.add.tileSprite(0, H * 0.5, W * 1.5, H * 0.5, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-15).setAlpha(0.45).setTint(0x332233);
+    const moon = this.add.image(W * 0.15, H * 0.15, 'bg-moon').setOrigin(0.5).setScrollFactor(0.02).setDepth(-25).setAlpha(0.85);
     this.tweens.add({ targets: moon, y: moon.y - 5, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     // Ground
     const groundY = 736;
     this.platforms = this.physics.add.staticGroup();
-    for (let tx = 0; tx < W; tx += 128) {
-      const isRefinery = tx >= 940;
-      const tex = isRefinery ? 'tile-refinery' : 'tile-ground';
-      const b1 = this.platforms.create(tx + 64, groundY + 16, tex) as Phaser.Physics.Arcade.Sprite;
-      b1.setDisplaySize(128, 48); b1.refreshBody(); b1.setDepth(3);
-      const b2 = this.platforms.create(tx + 64, groundY + 48, tex) as Phaser.Physics.Arcade.Sprite;
-      b2.setDisplaySize(128, 32); b2.refreshBody(); b2.setDepth(3);
-      if (!isRefinery) {
-        const g2 = this.platforms.create(tx + 64, groundY + 4, 'tile-grass') as Phaser.Physics.Arcade.Sprite;
-        g2.setDisplaySize(128, 12); g2.refreshBody(); g2.setDepth(3);
-      }
-    }
+    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, W - 260, 'forest', 10);
+    this.terrainGen.generateGroundSegment(this.platforms, W - 260, groundY, 260, 'refinery', 11);
 
     this.drawFactoryEntrance(W, groundY);
 
@@ -83,52 +77,55 @@ export class TransitionScene12 extends Phaser.Scene {
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.5);
 
     // Altar
-    this.saveAltar = new SaveAltar(this, 600, groundY, 'TransitionScene12');
+    this.saveAltar = new SaveAltar(this, W / 2, groundY, 'TransitionScene12');
+    const altarGlow = this.add.pointlight(W / 2, groundY - 180, 0xff0044, 80, 0.4).setDepth(-1);
+    this.tweens.add({ targets: altarGlow, radius: 100, intensity: 0.6, duration: 1500, yoyo: true, repeat: -1 });
 
     this.physics.add.collider(this.player, this.platforms);
 
-    // Camera bounds to match world
+    // Camera bounds to match world and player follow
+    this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
     this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.scrollX = 0;
-    this.cameras.main.scrollY = 0;
   }
 
   private drawFactoryEntrance(W: number, groundY: number): void {
+    const gateX = W - 350;
     const g = this.add.graphics().setDepth(-10);
-    const gateX = 940;
     g.fillStyle(0x151d25, 1);
-    g.fillRect(gateX, 400, W - gateX, 400);
+    g.fillRect(gateX, 350, W - gateX, 400);
     g.fillStyle(0x1c2834, 0.6);
-    g.fillRect(gateX + 10, 410, W - gateX - 20, 380);
+    g.fillRect(gateX + 10, 360, W - gateX - 20, 380);
     g.fillStyle(0x0d1218, 0.5);
-    for (let sy = 440; sy < 780; sy += 40) g.fillRect(gateX, sy, W - gateX, 2);
-    g.fillRect(gateX + 100, 400, 2, 400);
+    for (let sy = 380; sy < 780; sy += 40) g.fillRect(gateX, sy, W - gateX, 2);
+    g.fillRect(gateX + 100, 350, 4, 450);
+    g.fillRect(gateX + 250, 350, 4, 450);
 
-    const doorW = 120, doorH = 240, doorX = gateX + 25, doorY = 520;
+    const doorW = 140, doorH = 260, doorX = gateX + 30, doorY = groundY - doorH;
     g.fillStyle(0x0a0e13, 1);
     g.fillRect(doorX, doorY, doorW, doorH);
-    g.lineStyle(3, 0x3a4a5a, 1);
+    g.lineStyle(4, 0x3a4a5a, 1);
     g.strokeRect(doorX, doorY, doorW, doorH);
     g.fillStyle(0xe8b830, 1);
-    g.fillRect(doorX - 10, doorY, 10, doorH);
+    g.fillRect(doorX - 15, doorY, 15, doorH);
     g.fillStyle(0x1c2834, 1);
-    for (let sy = doorY; sy < doorY + doorH; sy += 16) {
-      g.beginPath(); g.moveTo(doorX - 10, sy); g.lineTo(doorX, sy + 8); g.lineTo(doorX, sy + 16); g.lineTo(doorX - 10, sy + 8); g.closePath(); g.fillPath();
+    for (let sy = doorY; sy < doorY + doorH; sy += 24) {
+      g.beginPath(); g.moveTo(doorX - 15, sy); g.lineTo(doorX, sy + 12); g.lineTo(doorX, sy + 24); g.lineTo(doorX - 15, sy + 12); g.closePath(); g.fillPath();
     }
     g.fillStyle(0x2a3a4a, 0.7);
-    g.fillRect(gateX + 155, 440, 12, 340);
+    g.fillRect(gateX + 200, 380, 16, 400);
     g.fillStyle(0x1a2530, 0.8);
-    for (let py = 470; py < 760; py += 80) g.fillRect(gateX + 151, py, 20, 8);
+    for (let py = 400; py < 760; py += 80) g.fillRect(gateX + 196, py, 24, 10);
     g.fillStyle(0x2a3540, 0.6);
-    g.fillRect(gateX + 180, 480, 8, 300);
+    g.fillRect(gateX + 230, 420, 10, 350);
 
-    const lightX = gateX + 135;
+    const lightX = gateX + 180;
     g.fillStyle(0x1a1010, 1);
-    g.fillCircle(lightX, 450, 8);
+    g.fillCircle(lightX, 400, 10);
     g.fillStyle(0xff3322, 1);
-    g.fillCircle(lightX, 450, 5);
+    g.fillCircle(lightX, 400, 6);
     g.lineStyle(2, 0xff5566, 0.5);
-    g.strokeCircle(lightX, 450, 8);
+    g.strokeCircle(lightX, 400, 10);
+    this.add.pointlight(lightX, 400, 0xff2211, 60, 0.5).setDepth(-9);
   }
 
   update(time: number, delta: number): void {
@@ -141,7 +138,7 @@ export class TransitionScene12 extends Phaser.Scene {
     if (this.saveAltar?.active) this.saveAltar.updatePrompt(this.player);
     if (this.player.active && !this.hasTransitioned) {
       if (this.player.x <= 40) this.transitionToLevel1();
-      if (this.player.x >= 1160) this.transitionToLevel2();
+      if (this.player.x >= 1880) this.transitionToLevel2();
     }
   }
 

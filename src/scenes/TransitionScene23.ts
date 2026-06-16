@@ -4,6 +4,8 @@ import { SaveAltar } from '../entities/SaveAltar';
 import { GameAudio } from '../systems/GameAudio';
 import { TarotSystem } from '../systems/TarotSystem';
 import { FormState } from '../systems/FormStateMachine';
+import { TerrainGenerator } from '../generators/TerrainGenerator';
+import { CAMERA_ZOOM_HUMAN, CAMERA_LERP } from '../utils/constants';
 
 export class TransitionScene23 extends Phaser.Scene {
   public gameAudio!: GameAudio;
@@ -19,6 +21,7 @@ export class TransitionScene23 extends Phaser.Scene {
   private pendingDragonUnlock = true;
   private pendingCardsToCollect: string[] = [];
   private hasTransitioned = false;
+  private terrainGen!: TerrainGenerator;
 
   constructor() { super({ key: 'TransitionScene23' }); }
 
@@ -33,38 +36,32 @@ export class TransitionScene23 extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 1200, H = 800;
+    const W = 1920, H = 1080;
     const vw = this.scale.width;
     const vh = this.scale.height;
     this.physics.world.setBounds(0, 0, W, H);
     this.cameras.main.setBackgroundColor('#0a080c');
 
     this.gameAudio = new GameAudio();
+    this.terrainGen = new TerrainGenerator(this);
     this.gameAudio.playBGM(2);
     this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene23' }); });
 
     // Full-viewport backgrounds
-    this.add.tileSprite(0, 0, vw, vh, 'bg-sky').setOrigin(0, 0).setScrollFactor(0).setDepth(-30).setTint(0x331133);
-    this.add.tileSprite(0, vh * 0.45, vw, vh * 0.5, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0).setDepth(-20).setAlpha(0.4).setTint(0x332244);
-    const smog = this.add.tileSprite(0, vh * 0.4, vw, vh * 0.35, 'bg-mist').setOrigin(0, 0).setScrollFactor(0).setDepth(-18).setAlpha(0.3).setTint(0xff6622);
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30).setTint(0x331133);
+    this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.5, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.4).setTint(0x332244);
+    const smog = this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.35, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-18).setAlpha(0.3).setTint(0xff6622);
     this.tweens.add({ targets: smog, tilePositionX: 600, duration: 25000, loop: -1 });
 
     this.drawRefineryBackdrop(W);
 
-    // Ground
+    // Ground — organic up to cliff edge
     const groundY = 736;
+    const cliffEdgeX = W - 300;
     this.platforms = this.physics.add.staticGroup();
-    for (let tx = 0; tx < W; tx += 128) {
-      const tex = tx < 940 ? 'tile-refinery' : 'tile-lava-ground';
-      const b1 = this.platforms.create(tx + 64, groundY + 16, tex) as Phaser.Physics.Arcade.Sprite;
-      b1.setDisplaySize(128, 48); b1.refreshBody(); b1.setDepth(3);
-      if (tx < 900) {
-        const b2 = this.platforms.create(tx + 64, groundY + 48, 'tile-refinery') as Phaser.Physics.Arcade.Sprite;
-        b2.setDisplaySize(128, 32); b2.refreshBody(); b2.setDepth(3);
-      }
-    }
+    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, cliffEdgeX, 'refinery', 20);
 
     // Tarot
     this.tarotSystem = new TarotSystem();
@@ -78,76 +75,83 @@ export class TransitionScene23 extends Phaser.Scene {
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.5);
 
     // Altar
-    this.saveAltar = new SaveAltar(this, 500, groundY, 'TransitionScene23');
+    this.saveAltar = new SaveAltar(this, W / 2 - 200, groundY, 'TransitionScene23');
+    const altarGlow = this.add.pointlight(W / 2 - 200, groundY - 180, 0xff0044, 80, 0.4).setDepth(-1);
+    this.tweens.add({ targets: altarGlow, radius: 100, intensity: 0.6, duration: 1500, yoyo: true, repeat: -1 });
 
     this.physics.add.collider(this.player, this.platforms);
 
+    this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
     this.cameras.main.setBounds(0, 0, W, H);
-    this.cameras.main.scrollX = 0;
-    this.cameras.main.scrollY = 0;
   }
 
   private drawRefineryBackdrop(W: number): void {
     const g = this.add.graphics().setDepth(-10);
-    const wallW = 160;
+    const wallW = 260; // Wider start area
     g.fillStyle(0x151d25, 1);
-    g.fillRect(0, 400, wallW, 400);
+    g.fillRect(0, 350, wallW, 500);
     g.fillStyle(0x1c2834, 0.6);
-    g.fillRect(10, 410, wallW - 20, 380);
+    g.fillRect(10, 360, wallW - 20, 480);
     g.fillStyle(0x0d1218, 0.5);
-    g.fillRect(0, 450, wallW, 2);
-    g.fillRect(0, 540, wallW, 2);
-    g.fillRect(0, 930, wallW, 2);
+    g.fillRect(0, 400, wallW, 3);
+    g.fillRect(0, 500, wallW, 3);
+    g.fillRect(0, 800, wallW, 3);
 
+    const doorW = 100, doorH = 260;
     g.fillStyle(0x0a0e13, 1);
-    g.fillRect(45, 540, 70, 240);
-    g.lineStyle(3, 0x3a4a5a, 1);
-    g.strokeRect(45, 540, 70, 240);
+    g.fillRect(65, 736 - doorH, doorW, doorH);
+    g.lineStyle(4, 0x3a4a5a, 1);
+    g.strokeRect(65, 736 - doorH, doorW, doorH);
     g.fillStyle(0xe8b830, 1);
-    g.fillRect(115, 540, 10, 240);
+    g.fillRect(165, 736 - doorH, 15, doorH);
     g.fillStyle(0x1c2834, 1);
-    for (let sy = 540; sy < 780; sy += 16) {
-      g.beginPath(); g.moveTo(115, sy); g.lineTo(125, sy + 8); g.lineTo(125, sy + 16); g.lineTo(115, sy + 8); g.closePath(); g.fillPath();
+    for (let sy = 736 - doorH; sy < 736; sy += 24) {
+      g.beginPath(); g.moveTo(165, sy); g.lineTo(180, sy + 12); g.lineTo(180, sy + 24); g.lineTo(165, sy + 12); g.closePath(); g.fillPath();
     }
     g.fillStyle(0x2a3a4a, 0.7);
-    g.fillRect(15, 440, 12, 340);
+    g.fillRect(15, 380, 12, 400);
     g.fillStyle(0x1a2530, 0.8);
-    for (let py = 470; py < 760; py += 80) g.fillRect(11, py, 20, 8);
+    for (let py = 400; py < 760; py += 80) g.fillRect(11, py, 20, 10);
+    
+    // Light
     g.fillStyle(0xffa502, 1);
-    g.fillCircle(140, 450, 6);
+    g.fillCircle(190, 400, 8);
     g.lineStyle(2, 0xffffff, 1);
-    g.strokeCircle(140, 450, 6);
+    g.strokeCircle(190, 400, 8);
+    this.add.pointlight(190, 400, 0xffa502, 60, 0.5).setDepth(-9);
 
-    // Cliff edge
+    // Cliff edge background structure
+    const cliffEdgeX = W - 300;
     g.fillStyle(0x0a080c, 1);
-    g.fillRect(900, 580, W - 900, 220);
+    g.fillRect(cliffEdgeX, 600, W - cliffEdgeX, 200);
     g.fillStyle(0x12101a, 0.6);
-    g.fillRect(900, 580, W - 900, 4);
+    g.fillRect(cliffEdgeX, 600, W - cliffEdgeX, 6);
     g.fillStyle(0x08060a, 1);
-    for (let cx = 900; cx < W; cx += 25) {
-      g.fillRect(cx, 790, 20, Phaser.Math.Between(6, 20));
+    for (let cx = cliffEdgeX; cx < W; cx += 35) {
+      g.fillRect(cx, 790, 25, Phaser.Math.Between(10, 30));
     }
     g.fillStyle(0x12101a, 0.5);
-    g.fillCircle(930, 610, 8);
-    g.fillCircle(980, 620, 6);
-    g.fillCircle(950, 640, 10);
+    g.fillCircle(cliffEdgeX + 30, 610, 8);
+    g.fillCircle(cliffEdgeX + 80, 620, 6);
+    g.fillCircle(cliffEdgeX + 50, 640, 10);
   }
 
   update(time: number, delta: number): void {
+    const cliffEdgeX = 1920 - 300;
     if (this.player?.active) {
       this.gameAudio?.update(this.player.x);
-      this.playerShadow.setAlpha(this.player.x < 900 ? 0.5 : 0);
-      if (this.player.x < 900) {
+      this.playerShadow.setAlpha(this.player.x < cliffEdgeX ? 0.5 : 0);
+      if (this.player.x < cliffEdgeX) {
         this.playerShadow.x = this.player.x;
         this.playerShadow.y = this.player.y + 24;
         this.playerShadow.setScale(this.player.scaleX);
       }
-      if (this.player.y > 800 && this.player.alive) this.player.takeDamage(100, 0);
+      if (this.player.y > 1080 && this.player.alive) this.player.takeDamage(100, 0);
     }
     if (this.saveAltar?.active) this.saveAltar.updatePrompt(this.player);
     if (this.player.active && this.player.alive && !this.hasTransitioned) {
       if (this.player.x <= 40) this.transitionToLevel2();
-      if (this.player.x >= 1160 && this.player.formMachine.state === FormState.DRAGON) this.transitionToLevel3();
+      if (this.player.x >= 1800 && this.player.formMachine.state === FormState.DRAGON) this.transitionToLevel3();
     }
   }
 

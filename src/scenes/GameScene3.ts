@@ -5,6 +5,7 @@ import { BaseEnemy } from '../entities/enemies/BaseEnemy';
 import { FlyingEnemy } from '../entities/enemies/FlyingEnemy';
 import { SpitterEnemy } from '../entities/enemies/SpitterEnemy';
 import { Boss } from '../entities/enemies/Boss';
+import { DreadnoughtBoss } from '../entities/enemies/DreadnoughtBoss';
 import { EnergyPickup } from '../entities/EnergyPickup';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
@@ -14,6 +15,7 @@ import { BloomSystem } from '../effects/BloomSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
 import { EchoFragment } from '../entities/EchoFragment';
+import { TerrainGenerator } from '../generators/TerrainGenerator';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -50,7 +52,7 @@ export class GameScene3 extends BaseLevelScene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private hazards!: Phaser.Physics.Arcade.StaticGroup;
   private energyPickups!: Phaser.Physics.Arcade.StaticGroup;
-  private boss: Boss | null = null;
+  private boss: DreadnoughtBoss | null = null;
   private tarotSystem!: TarotSystem;
 
   private laserGates: LaserGate[] = [];
@@ -70,6 +72,7 @@ export class GameScene3 extends BaseLevelScene {
   private emberTimer = 0;
   private bloom!: BloomSystem;
   private echoFragments: EchoFragment[] = [];
+  private terrainGen!: TerrainGenerator;
 
   // Autoscroll & coordinates
   private scrollX = 0;
@@ -151,6 +154,7 @@ export class GameScene3 extends BaseLevelScene {
     });
 
     this.bloom = new BloomSystem(this);
+    this.terrainGen = new TerrainGenerator(this);
 
     this.input.keyboard?.on('keydown-T', () => {
       if (this.scene.isPaused()) return;
@@ -244,93 +248,55 @@ export class GameScene3 extends BaseLevelScene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    // Ceiling and floor boundaries to lock player in the gorge corridor
-    const platforms: PlatformDef[] = [
-      { x: 0, y: 0, width: 8000, height: 96, texture: 'tile-lava-ground' },
-      { x: 0, y: 704, width: 8000, height: 96, texture: 'tile-lava-ground' }
-    ];
+    // Organic floor — gorge surface
+    this.terrainGen.generateGroundSegment(this.platforms, 0, 704, 13000, 'gorge', 40);
 
-    platforms.forEach((p) => {
-      const textureKey = p.texture || 'tile-lava-ground';
-      const tileW = 32;
-      const tileH = 32;
-
-      for (let tx = p.x; tx < p.x + p.width; tx += tileW) {
-        for (let ty = p.y; ty < p.y + p.height; ty += tileH) {
-          this.platforms.create(tx + tileW / 2, ty + tileH / 2, textureKey);
-        }
-      }
-    });
+    // Ceiling — solid top boundary (platforms group for collision)
+    for (let tx = 0; tx < 13000; tx += 256) {
+      const ceil = this.platforms.create(tx + 128, 32, 'tile-lava-ground') as Phaser.Physics.Arcade.Sprite;
+      ceil.setDisplaySize(256, 64); ceil.refreshBody(); ceil.setDepth(3);
+    }
 
     // Spawn Steam Pipes
-    const steamLocs = [
-      { x: 1200, isCeiling: true },
-      { x: 2000, isCeiling: false },
-      { x: 2800, isCeiling: true },
-      { x: 3800, isCeiling: false },
-      { x: 4600, isCeiling: true },
-      { x: 5400, isCeiling: false },
-      { x: 6200, isCeiling: true }
-    ];
-    steamLocs.forEach((loc) => {
-      const pipeY = loc.isCeiling ? 96 : 704;
-      const pipe = new SteamPipeHazard(this, loc.x, pipeY, loc.isCeiling);
-      this.steamPipes.push(pipe);
-    });
+    let currentX = 1200;
+    while (currentX < 11800) {
+      const isCeiling = Math.random() > 0.5;
+      const pipeY = isCeiling ? 96 : 704;
+      this.steamPipes.push(new SteamPipeHazard(this, currentX, pipeY, isCeiling));
+      currentX += Phaser.Math.Between(700, 1100);
+    }
 
     // Spawn Pistons
-    const pistonLocs = [
-      { x: 1600, isCeiling: true },
-      { x: 2200, isCeiling: false },
-      { x: 3200, isCeiling: true },
-      { x: 3200, isCeiling: false },
-      { x: 4200, isCeiling: true },
-      { x: 4800, isCeiling: false },
-      { x: 5800, isCeiling: true },
-      { x: 5800, isCeiling: false }
-    ];
-    pistonLocs.forEach((loc) => {
-      const pipeY = loc.isCeiling ? 96 : 704;
-      const piston = new PistonHazard(this, loc.x, pipeY, loc.isCeiling);
-      this.pistons.add(piston);
-    });
+    currentX = 1600;
+    while (currentX < 11800) {
+      const isCeiling = Math.random() > 0.5;
+      const pistonY = isCeiling ? 96 : 704;
+      this.pistons.add(new PistonHazard(this, currentX, pistonY, isCeiling));
+      currentX += Phaser.Math.Between(600, 1000);
+    }
 
     // Spawn Laser Gates
-    const laserGateXs = [2500, 3600, 4500, 5200, 6000, 6600];
-    laserGateXs.forEach((x) => {
-      const gate = new LaserGate(this, x);
+    currentX = 2500;
+    while (currentX < 11800) {
+      const gate = new LaserGate(this, currentX);
       this.laserGates.push(gate);
       this.laserBeams.add(gate.beam);
       this.enemies.add(gate.nodeTop);
       this.enemies.add(gate.nodeBottom);
-    });
+      currentX += Phaser.Math.Between(1500, 2500);
+    }
   }
 
   private createInteractiveObjects(): void {
     this.energyPickups = this.physics.add.staticGroup();
 
-    // Spawn Energy pickups along the gorge corridor (Y must be in flight path 120 - 680)
-    const pickupLocations = [
-      { x: 500, y: 300 },
-      { x: 1100, y: 250 },
-      { x: 1700, y: 250 },
-      { x: 2450, y: 450 },
-      { x: 2950, y: 350 },
-      { x: 3400, y: 250 },
-      { x: 3900, y: 450 },
-      { x: 4300, y: 300 },
-      { x: 4850, y: 250 },
-      { x: 5250, y: 500 },
-      { x: 5750, y: 200 },
-      { x: 6150, y: 450 },
-      { x: 6650, y: 350 },
-      { x: 7050, y: 300 },
-    ];
-
-    pickupLocations.forEach((loc) => {
-      const pickup = new EnergyPickup(this, loc.x, loc.y);
-      this.energyPickups.add(pickup);
-    });
+    // Spawn Energy pickups along the gorge corridor
+    let currentPX = 500;
+    while (currentPX < 11800) {
+      const y = Phaser.Math.Between(200, 600);
+      this.energyPickups.add(new EnergyPickup(this, currentPX, y));
+      currentPX += Phaser.Math.Between(400, 800);
+    }
   }
 
   private createPlayer(): void {
@@ -341,122 +307,55 @@ export class GameScene3 extends BaseLevelScene {
   }
 
   private buildWaves(): void {
-    this.waves = [
-      {
-        triggerX: 1400,
-        enemies: [
-          { type: 'seeker-drone', x: 0, y: 200 },
-          { type: 'seeker-drone', x: 100, y: 400 },
-          { type: 'seeker-drone', x: 200, y: 600 }
-        ]
-      },
-      {
-        triggerX: 1800,
-        enemies: [
-          { type: 'mine-dropper', x: 0, y: 140 },
-          { type: 'sky-hunter', x: 100, y: 300, speedX: -110 },
-          { type: 'sky-hunter', x: 200, y: 500, speedX: -110 }
-        ]
-      },
-      {
-        triggerX: 2200,
-        enemies: [
-          { type: 'gunship', x: 0, y: 300 },
-          { type: 'bone-serpent', x: 150, y: 200, speedX: -280 },
-          { type: 'bone-serpent', x: 150, y: 500, speedX: -280 }
-        ]
-      },
-      {
-        triggerX: 2600,
-        enemies: [
-          { type: 'seeker-drone', x: 0, y: 250 },
-          { type: 'seeker-drone', x: 80, y: 450 },
-          { type: 'mine-dropper', x: 160, y: 140 }
-        ]
-      },
-      {
-        triggerX: 3000,
-        enemies: [
-          { type: 'sky-hunter', x: 0, y: 200, speedX: -120 },
-          { type: 'sky-hunter', x: 50, y: 300, speedX: -120 },
-          { type: 'sky-hunter', x: 100, y: 400, speedX: -120 },
-          { type: 'sky-hunter', x: 150, y: 500, speedX: -120 }
-        ]
-      },
-      {
-        triggerX: 3400,
-        enemies: [
-          { type: 'gunship', x: 0, y: 400 },
-          { type: 'seeker-drone', x: 120, y: 200 },
-          { type: 'seeker-drone', x: 200, y: 600 }
-        ]
-      },
-      {
-        triggerX: 3900,
-        enemies: [
-          { type: 'mine-dropper', x: 0, y: 140 },
-          { type: 'mine-dropper', x: 150, y: 140 },
-          { type: 'bone-serpent', x: 200, y: 350, speedX: -300 }
-        ]
-      },
-      {
-        triggerX: 4300,
-        enemies: [
-          { type: 'gunship', x: 0, y: 300 },
-          { type: 'gunship', x: 200, y: 450 }
-        ]
-      },
-      {
-        triggerX: 4700,
-        enemies: [
-          { type: 'seeker-drone', x: 0, y: 200 },
-          { type: 'seeker-drone', x: 50, y: 350 },
-          { type: 'seeker-drone', x: 100, y: 500 }
-        ]
-      },
-      {
-        triggerX: 5100,
-        enemies: [
-          { type: 'mine-dropper', x: 0, y: 140 },
-          { type: 'sky-hunter', x: 100, y: 250, speedX: -120 },
-          { type: 'sky-hunter', x: 150, y: 450, speedX: -120 }
-        ]
-      },
-      {
-        triggerX: 5500,
-        enemies: [
-          { type: 'gunship', x: 0, y: 250 },
-          { type: 'bone-serpent', x: 100, y: 400, speedX: -300 },
-          { type: 'bone-serpent', x: 200, y: 550, speedX: -300 }
-        ]
-      },
-      {
-        triggerX: 5900,
-        enemies: [
-          { type: 'seeker-drone', x: 0, y: 300 },
-          { type: 'mine-dropper', x: 100, y: 140 },
-          { type: 'gunship', x: 200, y: 400 }
-        ]
-      },
-      {
-        triggerX: 6300,
-        enemies: [
-          { type: 'sky-hunter', x: 0, y: 200, speedX: -140 },
-          { type: 'sky-hunter', x: 50, y: 320, speedX: -140 },
-          { type: 'sky-hunter', x: 100, y: 440, speedX: -140 },
-          { type: 'bone-serpent', x: 150, y: 560, speedX: -320 }
-        ]
-      },
-      {
-        triggerX: 6700,
-        enemies: [
-          { type: 'gunship', x: 0, y: 300 },
-          { type: 'seeker-drone', x: 100, y: 200 },
-          { type: 'seeker-drone', x: 100, y: 500 },
-          { type: 'mine-dropper', x: 200, y: 140 }
-        ]
+    this.waves = [];
+    let currentX = 1400;
+    
+    const enemyTypes: WaveEnemyDef['type'][] = ['sky-hunter', 'bone-serpent', 'spitter', 'seeker-drone', 'mine-dropper', 'gunship'];
+    
+    while (currentX < 11500) {
+      // Pick 1 to 3 enemy types for this wave
+      const waveEnemies: WaveEnemyDef[] = [];
+      const numEnemies = Phaser.Math.Between(3, 7);
+      
+      const type1 = Phaser.Math.RND.pick(enemyTypes);
+      const type2 = Math.random() > 0.5 ? Phaser.Math.RND.pick(enemyTypes) : type1;
+
+      for (let i = 0; i < numEnemies; i++) {
+        const type = Math.random() > 0.5 ? type1 : type2;
+        const eX = Phaser.Math.Between(0, 400);
+        const eY = Phaser.Math.Between(150, 650);
+        
+        // Don't spawn spitters on the ground/ceiling randomly unless they are aligned,
+        // so skip spitters for random procedural to avoid floating turrets.
+        if (type === 'spitter') continue;
+
+        waveEnemies.push({
+          type: type,
+          x: eX,
+          y: eY
+        });
       }
-    ];
+
+      // Add structured formations sometimes
+      if (Math.random() > 0.7) {
+        // V-formation of Sky Hunters
+        const baseY = Phaser.Math.Between(300, 500);
+        waveEnemies.push({ type: 'sky-hunter', x: 0, y: baseY });
+        waveEnemies.push({ type: 'sky-hunter', x: 50, y: baseY - 80 });
+        waveEnemies.push({ type: 'sky-hunter', x: 50, y: baseY + 80 });
+        waveEnemies.push({ type: 'sky-hunter', x: 100, y: baseY - 160 });
+        waveEnemies.push({ type: 'sky-hunter', x: 100, y: baseY + 160 });
+      }
+
+      this.waves.push({
+        triggerX: currentX,
+        enemies: waveEnemies
+      });
+
+      // Shorter gaps as we get further into the level
+      const gap = Phaser.Math.Between(300, 600) - Math.min(200, (currentX / 12000) * 200);
+      currentX += Math.max(200, gap);
+    }
   }
 
   private setupCamera(): void {
@@ -766,12 +665,12 @@ export class GameScene3 extends BaseLevelScene {
 
         // 1. Autoscroll horizontal camera
         if (!this.bossActive) {
-          // Accelerate speed based on scrollX: starting at 210, ending at 280 near 7200
-          const progress = Math.min(this.scrollX / 7200, 1);
-          const currentSpeed = 210 + progress * 70; // 210 to 280 px/s
+          // Accelerate speed based on scrollX: starting at 210, ending at 300 near 12000
+          const progress = Math.min(this.scrollX / 12000, 1);
+          const currentSpeed = 210 + progress * 90; // 210 to 300 px/s
           this.scrollX += currentSpeed * dt;
-          if (this.scrollX >= 7200) {
-            this.scrollX = 7200;
+          if (this.scrollX >= 12000) {
+            this.scrollX = 12000;
             this.activateBoss();
           }
         }
@@ -965,19 +864,7 @@ export class GameScene3 extends BaseLevelScene {
       }
     });
 
-    if (this.boss && this.boss.active) {
-      this.boss.bullets.getChildren().forEach((bullet) => {
-        const b = bullet as Phaser.Physics.Arcade.Sprite;
-        if (!b.active) return;
-        if (
-          b.x < cam.scrollX - 100 ||
-          b.x > cam.scrollX + cam.width + 100
-        ) {
-          b.setActive(false);
-          b.setVisible(false);
-        }
-      });
-    }
+    // Dreadnought lasers clean themselves up
   }
 
   private updateEmbers(delta: number): void {
@@ -1064,15 +951,11 @@ export class GameScene3 extends BaseLevelScene {
       let enemy: Phaser.Physics.Arcade.Sprite | null = null;
 
       if (def.type === 'sky-hunter') {
-        enemy = new FlyingEnemy(this, spawnX, spawnY, this.player);
+        enemy = new SkyHunter(this, spawnX, spawnY, this.player);
         enemy.setTint(0xcc55aa);
         enemy.setScale(0.8);
         (enemy.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-        enemy.setVelocityX(def.speedX ?? -120);
-        if (def.pattern === 'sine') {
-          enemy.setData('sineOffset', Math.random() * Math.PI * 2);
-          enemy.setData('baseY', spawnY);
-        }
+        // The speed and sine pattern will be handled by the SkyHunter preUpdate
       } else if (def.type === 'bone-serpent') {
         enemy = this.physics.add.sprite(spawnX, spawnY, 'bullet-fire');
         enemy.setTint(0xff88ff);
@@ -1141,7 +1024,7 @@ export class GameScene3 extends BaseLevelScene {
     });
 
     // Spawn Boss at the right of the screen
-    this.boss = new Boss(this, this.scrollX + cam.width - 250, 400, this.player);
+    this.boss = new DreadnoughtBoss(this, this.scrollX + cam.width - 250, 350, this.player);
     this.enemies.add(this.boss);
     this.boss.activate();
 
@@ -1152,14 +1035,7 @@ export class GameScene3 extends BaseLevelScene {
       this.triggerLevel3Victory();
     };
 
-    // Override Boss bullets overlap handler
-    this.physics.add.overlap(this.player, this.boss.bullets, (_player, _bullet) => {
-      const b = _bullet as Phaser.Physics.Arcade.Sprite;
-      if (!b.active) return;
-      b.destroy();
-      this.playerScreenX -= 60; // pushback penalty
-      this.player.takeDamage(12, -1);
-    });
+    // Note: Boss lasers overlap is handled inside DreadnoughtBoss logic
   }
 
   private triggerLevel3Victory(): void {
@@ -1174,33 +1050,19 @@ export class GameScene3 extends BaseLevelScene {
     this.cameras.main.fade(2000, 0, 0, 0);
 
     this.time.delayedCall(2000, () => {
-      const cam = this.cameras.main;
-      const cx = cam.width / 2;
-      const cy = cam.height / 2;
-      const scale = cam.width / 800;
+      const saveData = {
+        playerX: 150,
+        playerY: 650,
+        cardsCollected: this.tarotSystem.getCollected(),
+        mechaUnlocked: true,
+        dragonUnlocked: true
+      };
 
-      this.add.rectangle(0, 0, cam.width * 2, cam.height * 2, 0x000000)
-        .setOrigin(0, 0)
-        .setScrollFactor(0)
-        .setDepth(1000);
-
-      const titleText = this.add.text(cx, cy, t('ui.prototypeComplete') + '\n\n' + t('story.demoEndPrompt'), {
-        fontSize: `${Math.round(20 * scale)}px`,
-        fontFamily: 'monospace',
-        color: '#ff3388',
-        align: 'center',
-        lineSpacing: 12 * scale,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(1001)
-      .setAlpha(0);
-
-      this.tweens.add({
-        targets: titleText,
-        alpha: 1,
-        duration: 2500,
-        ease: 'Power2',
+      this.scene.start('TransitionScene34', {
+        startPos: { x: saveData.playerX, y: saveData.playerY },
+        cardsCollected: saveData.cardsCollected,
+        mechaUnlocked: saveData.mechaUnlocked,
+        dragonUnlocked: saveData.dragonUnlocked
       });
     });
   }
@@ -1407,6 +1269,22 @@ export class GameScene3 extends BaseLevelScene {
   }
 
   private createDecorations(): void {
+    // Spawn heavy fast-moving rain/ash for SHMUP intensity
+    const particles = this.add.particles(0, 0, 'bullet-fire', {
+      x: { min: 0, max: 2500 },
+      y: { min: -100, max: -50 },
+      speed: { min: 400, max: 800 },
+      angle: { min: 100, max: 120 },
+      scale: { start: 0.1, end: 0.5 },
+      alpha: { start: 0.3, end: 0 },
+      lifespan: 1200,
+      frequency: 10,
+      blendMode: 'ADD',
+      tint: 0xffaa00
+    });
+    particles.setScrollFactor(0); // Moves independently of camera to simulate screen-space weather
+    particles.setDepth(100); // Foreground
+
     // Spawn floating gorge debris drifting in the background
     // Since it's a shmup, these represent volcanic ejecta and rubble floating in the gorge
     const count = 35;
@@ -1647,18 +1525,75 @@ class SteamPipeHazard extends Phaser.Physics.Arcade.Sprite {
   }
 }
 
+class SkyHunter extends FlyingEnemy {
+  private baseSpeedX: number;
+  private pattern: string;
+  private sineOffset: number;
+  private baseY: number;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+    super(scene, x, y, player);
+    this.baseSpeedX = -180; // Fast sweep
+    this.pattern = Math.random() > 0.5 ? 'sine' : 'straight';
+    this.sineOffset = Math.random() * Math.PI * 2;
+    this.baseY = y;
+    this.detectRange = 800;
+    this.attackRange = 600;
+  }
+
+  preUpdate(time: number, delta: number): void {
+    if (!this.active || this.health <= 0) return;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    
+    body.setVelocityX(this.baseSpeedX);
+    
+    if (this.pattern === 'sine') {
+      body.setVelocityY(Math.sin(time * 0.004 + this.sineOffset) * 120);
+    } else {
+      body.setVelocityY(0);
+    }
+
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
+    if (dist <= this.attackRange && time - this.lastAttackTime > this.attackCooldown && this.x > this.player.x) {
+      this.lastAttackTime = time;
+      this.doAttack();
+    }
+  }
+}
+
 class SeekerDrone extends FlyingEnemy {
+  private baseSpeedX: number;
+  private baseY: number;
+
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, player);
     this.setTexture('enemy-seeker-drone');
     this.setScale(1.0);
     this.health = 25;
     this.maxHealth = 25;
-    this.moveSpeed = 70;
-    this.detectRange = 550;
-    this.attackRange = 450;
+    this.baseSpeedX = -100;
+    this.baseY = y;
+    this.detectRange = 800; // Increase range since it doesn't chase
+    this.attackRange = 600;
     this.attackDamage = 10;
     this.attackCooldown = 2500;
+  }
+
+  preUpdate(time: number, delta: number): void {
+    if (!this.active || this.health <= 0) return;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    
+    // Constant fly left
+    body.setVelocityX(this.baseSpeedX);
+    
+    // Slight bobbing
+    body.setVelocityY(Math.sin(time * 0.005) * 30);
+    
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
+    if (dist <= this.attackRange && time - this.lastAttackTime > this.attackCooldown && this.x > this.player.x) {
+      this.lastAttackTime = time;
+      this.doAttack();
+    }
   }
 
   protected doAttack(): void {
