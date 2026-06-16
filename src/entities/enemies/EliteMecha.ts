@@ -28,10 +28,10 @@ export class EliteMecha extends BaseEnemy {
     // Colossal scale (1.8x)
     this.setScale(1.8);
 
-    // Position physics body nicely within 128x128 texture
+    // Position physics body within 128x128 texture
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(55, 85);
-    body.setOffset(36, 35);
+    body.setSize(60, 72);
+    body.setOffset(34, 50);
 
     this.createFloatingUI();
   }
