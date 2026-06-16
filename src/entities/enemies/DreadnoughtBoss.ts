@@ -141,7 +141,7 @@ export class DreadnoughtBoss extends BaseEnemy {
       return;
     }
     
-    super.takeDamage(amount, knockDir);
+    super.takeDamage(amount);
     
     // Flicker core
     this.setTint(0xffffff);

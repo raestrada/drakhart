@@ -1053,7 +1053,7 @@ export class GameScene3 extends BaseLevelScene {
       const saveData = {
         playerX: 150,
         playerY: 650,
-        cardsCollected: this.tarotSystem.getCollected(),
+        cardsCollected: this.tarotSystem.collectedCards,
         mechaUnlocked: true,
         dragonUnlocked: true
       };
