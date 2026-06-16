@@ -583,7 +583,29 @@ export class TexturesGenerator {
       g.fillStyle(P.wBl2); g.fillRect(armX + 3, armY - 39, 4, 34);         // inner blade
       g.fillStyle(P.wBr3, 0.6); g.fillRect(armX + 4.25, armY - 35, 1.5, 26); // blood runes
       g.fillStyle(P.wBl3);
-      g.beginPath(); g.moveTo(armX + 2, armY - 41); g.lineTo(armX + 5, armY - 46); g.lineTo(armX + 8, armY - 41); g.closePath(); g.fillPath(); // blade tip
+        g.beginPath(); g.moveTo(armX + 2, armY - 41); g.lineTo(armX + 5, armY - 46); g.lineTo(armX + 8, armY - 41); g.closePath(); g.fillPath(); // blade tip
+    }
+
+    // ── Rim Light & Polish ──
+    // Helmet rim — bright edge on top
+    g.fillStyle(P.wSt4, 0.5);
+    g.fillRect(headX + 3, headY + 1, 6, 1);
+    // Pauldron rim
+    g.fillStyle(P.wSt4, 0.45);
+    g.fillRect(pauldronX + 2, pauldronY + 1, 8, 1);
+    // Visor ambient glow
+    g.fillStyle(P.wVisor2, 0.15);
+    g.fillRect(headX + 4, headY + 2, 10, 6);
+    // Cape fold line
+    g.fillStyle(P.wCa3, 0.4);
+    g.fillRect(10 + dx - capeDrift, 40 + dy + b, 1, 15);
+    // Knee highlight dot
+    g.fillStyle(P.wSt4, 0.5);
+    g.fillCircle(flKneeX, flKneeY - 1.5, 0.8);
+    // Sword edge gleam
+    if (!isAttacking) {
+      g.fillStyle(0x888899, 0.3);
+      g.fillRect(armX + 7, armY - 40, 1, 38);
     }
 
     this.tex(g, key, 96, 96);
@@ -1505,6 +1527,22 @@ export class TexturesGenerator {
       this.circ(g, armX, armY - 8, 2.5, P.mCo2);
     }
 
+    // ── Rim Light & Core Glow ──
+    // Core pulse aura
+    g.fillStyle(P.mCo1, 0.12);
+    g.fillCircle(coreX, coreY, 10);
+    g.fillStyle(P.mCo2, 0.08);
+    g.fillCircle(coreX, coreY, 6);
+    // Helmet crest rim
+    g.fillStyle(P.mPl2, 0.4);
+    g.fillRect(headX + 2, headY + 1, 10, 1);
+    // Pauldron top edge (pauldronX/Y defined above)
+    g.fillStyle(P.mPl2, 0.35);
+    g.fillRect(pauldronX + 2, pauldronY + 1, 10, 1);
+    // Gold belt highlight
+    g.fillStyle(P.mGo, 0.5);
+    g.fillRect(torsoX + 1, torsoY + torsoH - 1, torsoW - 2, 1);
+
     this.tex(g, key, 128, 128);
   }
 
@@ -1979,6 +2017,31 @@ export class TexturesGenerator {
     this.rect(g, 16, 70, 8, 26, 2, 0x2a1133);
     g.fillStyle(0x551144); g.fillTriangle(10, 96, 16, 98, 13, 108);
     g.fillStyle(0x551144); g.fillTriangle(20, 96, 26, 98, 23, 108);
+
+    // ── Corruption Details ──
+    // Core corruption veins
+    g.fillStyle(0xff1166, 0.25);
+    g.fillCircle(60, 74, 14);
+    // Energy tendrils spreading from core
+    g.lineStyle(1.5, 0xff2266, 0.35);
+    g.beginPath(); g.moveTo(60, 62); g.lineTo(55, 55); g.strokePath();
+    g.beginPath(); g.moveTo(60, 62); g.lineTo(72, 58); g.strokePath();
+    g.beginPath(); g.moveTo(60, 86); g.lineTo(54, 95); g.strokePath();
+    // Cracked armor lines
+    g.lineStyle(1, 0x442244, 0.6);
+    g.beginPath(); g.moveTo(32, 60); g.lineTo(40, 68); g.strokePath();
+    g.beginPath(); g.moveTo(88, 56); g.lineTo(80, 65); g.strokePath();
+    // Crown corruption — extra dark spikes
+    g.fillStyle(0x220011, 0.5);
+    for (let i = 0; i < 4; i++) {
+      const sx = 94 + i * 7;
+      g.fillTriangle(sx, -3, sx + 2, 8, sx + 4, 0);
+    }
+    // Eye glow bleed
+    g.fillStyle(0xff2288, 0.15);
+    g.fillCircle(102, 22, 6);
+    g.fillCircle(114, 22, 6);
+
     this.tex(g, 'boss', 128, 128);
   }
 

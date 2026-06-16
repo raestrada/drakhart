@@ -18,6 +18,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
+import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
 import { EchoFragment } from '../entities/EchoFragment';
@@ -64,6 +65,7 @@ export class GameScene2 extends BaseLevelScene {
   private lastHeatDamageSoundTime = 0;
   private emberTimer = 0;
   private bloom!: BloomSystem;
+  private terrainGen!: TerrainGenerator;
   private echoFragments: EchoFragment[] = [];
 
   private pendingMechaUnlock = true;
@@ -119,6 +121,7 @@ export class GameScene2 extends BaseLevelScene {
     });
 
     this.bloom = new BloomSystem(this);
+    this.terrainGen = new TerrainGenerator(this);
 
     this.input.keyboard?.on('keydown-T', () => {
       if (this.scene.isPaused()) return;
@@ -289,108 +292,39 @@ export class GameScene2 extends BaseLevelScene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    // === MECHA GRAVEYARD BACKGROUND LAYER ===
-    // Wide tiled silhouette of fallen giants, scrolls slowly
     const graveyardBg = this.add.tileSprite(0, 340, LEVEL_WIDTH, 400, 'bg-mecha-graveyard')
-      .setOrigin(0, 0)
-      .setScrollFactor(0.12, 0)
-      .setDepth(-18)
-      .setAlpha(0.75)
+      .setOrigin(0, 0).setScrollFactor(0.12, 0).setDepth(-18).setAlpha(0.75)
       .setTint(0xaa5533, 0x882211, 0x441100, 0x330800);
 
-    // === GROUND CORRIDORS — wide combat arenas ===
-    // The level is almost entirely flat ground with deliberate lava pit breaks.
-    // Warriors suffer the heat drain and cannot jump the lava pits.
-    // Mecha thrusters can fly over them trivially.
-    const groundSegments: PlatformDef[] = [
-      // Entry ruins corridor (0 - 1350)
-      { x: 0,    y: 736, width: 1360, height: 64, texture: 'tile-lava-ground' },
-      // After first lava pit (1500 - 2900)
-      { x: 1500, y: 736, width: 1420, height: 64, texture: 'tile-lava-ground' },
-      // After second lava pit (3060 - 4500)
-      { x: 3060, y: 736, width: 1460, height: 64, texture: 'tile-lava-ground' },
-      // After third lava pit (4660 - 6100)
-      { x: 4660, y: 736, width: 1460, height: 64, texture: 'tile-lava-ground' },
-      // Final gauntlet + shrine (6280 - 8000)
-      { x: 6280, y: 736, width: 1720, height: 64, texture: 'tile-lava-ground' },
-    ];
+    // Organic ground — refinery biome
+    const groundY = 736;
+    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 1360, 'refinery', 10);
+    this.terrainGen.generateGroundSegment(this.platforms, 1500, groundY, 1420, 'refinery', 11);
+    this.terrainGen.generateGroundSegment(this.platforms, 3060, groundY, 1460, 'refinery', 12);
+    this.terrainGen.generateGroundSegment(this.platforms, 4660, groundY, 1460, 'refinery', 13);
+    this.terrainGen.generateGroundSegment(this.platforms, 6280, groundY, 1720, 'refinery', 14);
 
-    // Elevated command platforms (now visible and reachable)
-    const commandPlatforms: PlatformDef[] = [
-      { x: 400,  y: 490, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 900,  y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 1700, y: 490, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 2400, y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 3300, y: 495, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 4100, y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 4900, y: 490, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 5700, y: 485, width: 96,  height: 16, texture: 'tile-refinery' },
-      { x: 6600, y: 490, width: 128, height: 16, texture: 'tile-refinery' },
-      { x: 7200, y: 480, width: 96,  height: 16, texture: 'tile-refinery' },
-      // Altar structure for Dragon Shrine
-      { x: 7350, y: 500, width: 256, height: 236, texture: 'tile-lava-ground' },
-    ];
+    // Organic platforms
+    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 6600,490,128, 7200,480,96, 7350,500,256].forEach((_,i,arr) => {
+      if (i%3===0) this.terrainGen.generatePlatform(this.platforms, arr[i], arr[i+1], arr[i+2], 'refinery');
+    });
 
-    const allPlatforms = [...groundSegments, ...commandPlatforms];
-    allPlatforms.forEach((p) => {
-      const textureKey = p.texture || 'tile-refinery';
-      const isGround = textureKey === 'tile-lava-ground';
-      const tileW = 32;
-      const tileH = isGround ? 32 : 16;
-
-      for (let tx = p.x; tx < p.x + p.width; tx += tileW) {
-        for (let ty = p.y; ty < p.y + p.height; ty += tileH) {
-          const tile = this.platforms.create(tx + tileW / 2, ty + tileH / 2, textureKey);
-          if (!isGround) {
-            (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
-            (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.left = false;
-            (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.right = false;
-          }
-        }
+    // Lava pits
+    const lavaPits = [{s:1360,e:1500},{s:2920,e:3060},{s:4500,e:4660},{s:6100,e:6280}];
+    lavaPits.forEach(pit => {
+      for (let tx = pit.s; tx < pit.e; tx += 32) {
+        const lava = this.hazards.create(tx + 16, 784, 'tile-refinery-lava');
+        (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
       }
     });
 
-    // === LAVA PITS (3 deliberate gaps, too wide to jump as warrior, trivial for Mecha) ===
-    // Pit 1: x 1360 to 1499 (140px)
-    for (let tx = 1360; tx < 1500; tx += 32) {
-      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
-      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
-    }
-    // Pit 2: x 2920 to 3059 (140px)
-    for (let tx = 2920; tx < 3060; tx += 32) {
-      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
-      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
-    }
-    // Pit 3: x 4500 to 4659 (160px)
-    for (let tx = 4500; tx < 4660; tx += 32) {
-      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
-      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
-    }
-    // Pit 4: x 6100 to 6279 (180px)
-    for (let tx = 6100; tx < 6280; tx += 32) {
-      const lava = this.hazards.create(tx + 16, 768 + 16, 'tile-refinery-lava');
-      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(32, 24);
-    }
-
-    // === THRUSTER BARRIERS (energy walls — warrior-proof, Mecha flies over) ===
-    // These are tall barriers from y=544 to y=736 (192px = 2 tiles wide)
-    // Warrior cannot jump over 192px of vertical barrier. Mecha boosts through the air above.
-    const barrierXPositions = [680, 1900, 3450, 5100, 6700];
-    barrierXPositions.forEach((bx) => {
-      // Stack tiles to form a 24px × 192px wall column
+    // Thruster barriers
+    [680,1900,3450,5100,6700].forEach((bx) => {
       for (let by = 544; by < 736; by += 96) {
         const barrier = this.hazards.create(bx + 12, by + 48, 'thruster-barrier');
         (barrier.body as Phaser.Physics.Arcade.StaticBody).setSize(24, 96);
         barrier.setDepth(3);
-        // Add a pulsing glow tween
-        this.tweens.add({
-          targets: barrier,
-          alpha: { from: 0.7, to: 1.0 },
-          duration: Phaser.Math.Between(500, 900),
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut'
-        });
+        this.tweens.add({ targets: barrier, alpha: { from: 0.7, to: 1.0 }, duration: Phaser.Math.Between(500, 900), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
   }

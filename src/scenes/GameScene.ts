@@ -21,6 +21,7 @@ import {
   spawnDeathExplosion,
 } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
+import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
 import {
   LEVEL_WIDTH,
@@ -87,6 +88,7 @@ export class GameScene extends BaseLevelScene {
   private fogWall: Phaser.GameObjects.Graphics | null = null;
   private ashEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private bloom!: BloomSystem;
+  private terrainGen!: TerrainGenerator;
 
   private pendingMechaUnlock = false;
   private pendingDragonUnlock = false;
@@ -141,6 +143,7 @@ export class GameScene extends BaseLevelScene {
     });
 
     this.bloom = new BloomSystem(this);
+    this.terrainGen = new TerrainGenerator(this);
 
     this.input.keyboard?.on('keydown-T', () => {
       if (this.scene.isPaused()) return;
@@ -256,6 +259,9 @@ export class GameScene extends BaseLevelScene {
       .setDepth(-10);
     this.bgRuins.setTint(0xdd5566, 0xff8899, 0x662c38, 0xbb4455);
 
+    // 6.2 Organic mid-ground — breaks tile repetition between backgrounds and ground
+    this.generateMidGroundForest();
+
     // 6.5 Moon Glow Layer 2 (large volumetric atmospheric bloom overlaying backgrounds)
     this.bgMoonGlow2 = this.add.image(0, 0, 'moon-glow')
       .setOrigin(0.5, 0.5)
@@ -346,97 +352,45 @@ export class GameScene extends BaseLevelScene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    const platforms: PlatformDef[] = [
-      // === SECTION 1: The Wakening (0-2000) ===
-      { x: 0, y: 768, width: 2000, height: 32, texture: 'tile-ground' },
-      { x: 300, y: 640, width: 160, height: 16, texture: 'tile-grass' },
-      { x: 550, y: 540, width: 128, height: 16, texture: 'tile-grass' },
-      { x: 750, y: 620, width: 192, height: 16, texture: 'tile-grass' },
-      { x: 1050, y: 520, width: 160, height: 16, texture: 'tile-grass' },
-      { x: 1350, y: 640, width: 160, height: 16, texture: 'tile-grass' },
-      { x: 1650, y: 520, width: 192, height: 16, texture: 'tile-grass' },
+    // Organic ground segments
+    const groundY = 768;
+    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 2000, 'forest', 1);
+    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 800, 'forest', 2);
+    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 900, 'forest', 3);
+    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 800, 'forest', 4);
+    this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
+    this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
 
-      // === SECTION 2: The Petrified Ascent & Thorn Chasms (2000-4500) ===
-      { x: 2000, y: 768, width: 300, height: 32, texture: 'tile-ground' },
-      // Gap 1 (2300-2800) has thorns
-      { x: 2800, y: 768, width: 300, height: 32, texture: 'tile-ground' },
-      // Gap 2 (3100-3700) has thorns
-      { x: 3700, y: 768, width: 300, height: 32, texture: 'tile-ground' },
-      // Gap 3 (4000-4500) has thorns
-
-      { x: 1950, y: 650, width: 96, height: 16, texture: 'tile-stump' },
-      { x: 2350, y: 650, width: 64, height: 16, texture: 'tile-stump' },
-      { x: 2680, y: 620, width: 64, height: 16, texture: 'tile-stump' },
-
-      { x: 2850, y: 650, width: 96, height: 16, texture: 'tile-stump' },
-      { x: 3440, y: 520, width: 64, height: 16, texture: 'tile-stump' },
-      { x: 3750, y: 650, width: 96, height: 16, texture: 'tile-stump' },
-
-      { x: 4080, y: 640, width: 64, height: 16, texture: 'tile-stump' },
-      { x: 4360, y: 620, width: 64, height: 16, texture: 'tile-stump' },
-
-      // === SECTION 3: The Sunken Ruins (4500-6800) ===
-      { x: 4500, y: 768, width: 2300, height: 32, texture: 'tile-ground' },
-      { x: 4600, y: 640, width: 160, height: 128, texture: 'tile-ruins' },
-      { x: 4850, y: 520, width: 192, height: 248, texture: 'tile-ruins' },
-      { x: 5150, y: 400, width: 160, height: 368, texture: 'tile-ruins' },
-      { x: 5400, y: 550, width: 224, height: 218, texture: 'tile-ruins' },
-      { x: 5750, y: 600, width: 160, height: 168, texture: 'tile-ruins' },
-      { x: 6050, y: 480, width: 192, height: 288, texture: 'tile-ruins' },
-      { x: 6350, y: 580, width: 160, height: 188, texture: 'tile-ruins' },
-
-      // === SECTION 4: The Altar of the Core (6800-8000) ===
-      { x: 6800, y: 768, width: 1200, height: 32, texture: 'tile-ground' },
-      { x: 6900, y: 660, width: 128, height: 16, texture: 'tile-altar' },
-      { x: 7100, y: 560, width: 128, height: 16, texture: 'tile-altar' },
-      { x: 7320, y: 460, width: 256, height: 308, texture: 'tile-altar' },
+    // Organic floating platforms
+    const platDefs: { x: number; y: number; w: number }[] = [
+      { x: 300, y: 640, w: 160 }, { x: 550, y: 540, w: 128 },
+      { x: 750, y: 620, w: 192 }, { x: 1050, y: 520, w: 160 },
+      { x: 1350, y: 640, w: 160 }, { x: 1650, y: 520, w: 192 },
+      { x: 1950, y: 650, w: 96 },  { x: 2350, y: 650, w: 64 },
+      { x: 2680, y: 620, w: 64 },  { x: 2850, y: 650, w: 96 },
+      { x: 3440, y: 520, w: 64 },  { x: 3750, y: 650, w: 96 },
+      { x: 4080, y: 640, w: 64 },  { x: 4360, y: 620, w: 64 },
+      { x: 4600, y: 640, w: 160 }, { x: 4850, y: 520, w: 192 },
+      { x: 5150, y: 400, w: 160 }, { x: 5400, y: 550, w: 224 },
+      { x: 5750, y: 600, w: 160 }, { x: 6050, y: 480, w: 192 },
+      { x: 6350, y: 580, w: 160 }, { x: 6900, y: 660, w: 128 },
+      { x: 7100, y: 560, w: 128 }, { x: 7320, y: 460, w: 256 },
     ];
+    platDefs.forEach(p => this.terrainGen.generatePlatform(this.platforms, p.x, p.y, p.w, 'forest'));
 
-    platforms.forEach((p) => {
-      const textureKey = p.texture || 'tile-platform';
-      const isGround = textureKey === 'tile-ground' || textureKey === 'ground-cave';
-      const isThorns = textureKey === 'tile-thorns';
-      
-      const tileW = 32;
-      const tileH = (isGround || isThorns) ? 32 : 16;
-
-      for (let tx = p.x; tx < p.x + p.width; tx += tileW) {
-        for (let ty = p.y; ty < p.y + p.height; ty += tileH) {
-          const tile = this.platforms.create(tx + tileW / 2, ty + tileH / 2, textureKey);
-          
-          if (!isGround && !isThorns && textureKey !== 'tile-ruins' && textureKey !== 'tile-altar') {
-            (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
-            (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.left = false;
-            (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.right = false;
-          }
-        }
+    // Thorns / hazards (keep tile-based)
+    const thornZones: { x: number; y: number; w: number }[] = [
+      { x: 2300, y: 784, w: 500 }, { x: 3100, y: 784, w: 600 },
+      { x: 4000, y: 784, w: 500 }, { x: 4900, y: 504, w: 64 },
+      { x: 5480, y: 534, w: 64 }, { x: 6100, y: 464, w: 64 },
+    ];
+    thornZones.forEach(tz => {
+      for (let tx = tz.x; tx < tz.x + tz.w; tx += 32) {
+        const tile = this.hazards.create(tx + 16, tz.y + 16, 'tile-thorns');
+        (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
+        tile.refreshBody();
       }
     });
-
-    // Spawn thorns in Section 2 gaps
-    for (let tx = 2300; tx < 2800; tx += 32) {
-      this.hazards.create(tx + 16, 784, 'tile-thorns');
-    }
-    for (let tx = 3100; tx < 3700; tx += 32) {
-      this.hazards.create(tx + 16, 784, 'tile-thorns');
-    }
-    for (let tx = 4000; tx < 4500; tx += 32) {
-      this.hazards.create(tx + 16, 784, 'tile-thorns');
-    }
-
-    // Spawn thorns on top of ruins for Hollow Knight challenge
-    // Ruin 2 (4850 to 5042) thorns at 4900 to 4964, y = 520 (sitting on top: center y = 504)
-    for (let tx = 4900; tx < 4964; tx += 32) {
-      this.hazards.create(tx + 16, 504, 'tile-thorns');
-    }
-    // Ruin 4 (5400 to 5624) thorns at 5480 to 5544, y = 550 (sitting on top: center y = 534)
-    for (let tx = 5480; tx < 5544; tx += 32) {
-      this.hazards.create(tx + 16, 534, 'tile-thorns');
-    }
-    // Ruin 6 (6050 to 6242) thorns at 6100 to 6164, y = 480 (sitting on top: center y = 464)
-    for (let tx = 6100; tx < 6164; tx += 32) {
-      this.hazards.create(tx + 16, 464, 'tile-thorns');
-    }
   }
 
   private createEnemies(): void {
@@ -866,6 +820,37 @@ export class GameScene extends BaseLevelScene {
           onComplete: () => leaf.destroy(),
         });
       }
+    }
+  }
+
+  private generateMidGroundForest(): void {
+    const rng = new Phaser.Math.RandomDataGenerator(['midground', '42']);
+    const g = this.add.graphics();
+    g.setDepth(-6);
+    g.setScrollFactor(1, 1);
+
+    for (let x = 0; x < LEVEL_WIDTH; x += rng.between(80, 160)) {
+      const h = rng.between(60, 180);
+      const w = rng.between(12, 30);
+      const baseY = 768;
+
+      // Dark silhouette
+      g.fillStyle(0x060408, 0.6 + rng.realInRange(-0.1, 0.1));
+      g.fillRect(x, baseY - h, w, h);
+
+      // Slight highlight edge
+      g.fillStyle(0x0a080c, 0.3);
+      g.fillRect(x + 2, baseY - h, w / 3, h);
+
+      // Canopy top
+      if (rng.between(0, 3) > 0) {
+        const cw = w + rng.between(6, 18);
+        g.fillStyle(0x08060a, 0.5);
+        g.fillTriangle(x - cw / 2, baseY - h + rng.between(4, 15), x + w + cw / 2, baseY - h + 5, x + w / 2, baseY - h - rng.between(0, 20));
+      }
+
+      // Skip some positions for natural gaps
+      if (rng.between(0, 5) === 0) x += rng.between(60, 120);
     }
   }
 

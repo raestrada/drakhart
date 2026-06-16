@@ -94,38 +94,64 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       currentScene: this.sceneKey
     });
 
-    // Play dramatic religious prayer BGM sweep
+    // Play dramatic religious prayer BGM sweep — stop normal BGM first
+    (this.scene as any).gameAudio?.stopBGM?.();
     (this.scene as any).gameAudio?.playChoirSave?.();
 
-    // Disable player controls & force kneeling pose
+    // Disable player controls & force kneeling pose at altar center
     player.setInputEnabled(false);
+    player.setVelocity(0, 0);
+    player.x = this.x;
     
-    // Check form
     const isMecha = player.formMachine.isMecha();
     player.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
-    const body = player.body as Phaser.Physics.Arcade.Body;
-    if (body) {
-      body.setVelocity(0, 0);
-    }
+    player.setScale(isMecha ? 1.0 : 0.75);
+    player.animState = 'kneeling';
 
     // Restore full HP & Energy
     player.health = 100;
     player.formMachine.energy.addEnergy(100);
 
-    // Create the holy light beam falling from the sky (depth behind player)
-    this.lightBeam = this.scene.add.graphics();
-    this.lightBeam.fillStyle(0xfffae0, 0.22); // golden-white translucent
-    this.lightBeam.fillRect(player.x - 24, 0, 48, player.y + 24);
-    this.lightBeam.setBlendMode(Phaser.BlendModes.ADD);
-    this.lightBeam.setDepth(player.depth - 1);
-    
-    this.lightBeamTween = this.scene.tweens.add({
-      targets: this.lightBeam,
-      alpha: 0.45,
-      duration: 700,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
+    // Create dramatic light beam from sky (trapezoid, multi-layer glow)
+    this.scene.time.delayedCall(300, () => {
+      if (!this.active || !this.isPraying) return;
+      this.lightBeam = this.scene.add.graphics();
+      this.lightBeam.setDepth(player.depth - 1);
+      this.lightBeam.setBlendMode(Phaser.BlendModes.ADD);
+      const cam = this.scene.cameras.main;
+      const topY = cam.scrollY;
+      const bottomY = player.y + 30;
+      const topW = 20;
+      const bottomW = 120;
+
+      // Outer glow
+      for (const l of [{ a: 0.04, tw: topW * 3, bw: bottomW * 2 }, { a: 0.08, tw: topW * 1.5, bw: bottomW * 1.4 }, { a: 0.12, tw: topW, bw: bottomW }]) {
+        this.lightBeam.fillStyle(0xfff8dc, l.a);
+        this.lightBeam.beginPath();
+        this.lightBeam.moveTo(player.x - l.tw / 2, topY);
+        this.lightBeam.lineTo(player.x + l.tw / 2, topY);
+        this.lightBeam.lineTo(player.x + l.bw / 2, bottomY);
+        this.lightBeam.lineTo(player.x - l.bw / 2, bottomY);
+        this.lightBeam.closePath(); this.lightBeam.fillPath();
+      }
+      // Core
+      this.lightBeam.fillStyle(0xffffff, 0.18);
+      this.lightBeam.beginPath();
+      this.lightBeam.moveTo(player.x - 6, topY);
+      this.lightBeam.lineTo(player.x + 6, topY);
+      this.lightBeam.lineTo(player.x + 32, bottomY);
+      this.lightBeam.lineTo(player.x - 32, bottomY);
+      this.lightBeam.closePath(); this.lightBeam.fillPath();
+      // Ground hit glow
+      this.lightBeam.fillStyle(0xfff8dc, 0.25);
+      this.lightBeam.fillEllipse(player.x, bottomY, bottomW, 12);
+
+      this.lightBeam.setAlpha(0);
+      this.scene.tweens.add({ targets: this.lightBeam, alpha: 1, duration: 500 });
+
+      this.lightBeamTween = this.scene.tweens.add({
+        targets: this.lightBeam, alpha: 0.7, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 500
+      });
     });
 
     // Spawn visual particles rising from altar
@@ -209,10 +235,15 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       });
     }
 
-    // Re-enable player controls
+    // Re-enable player controls — restore standing pose
     player.setInputEnabled(true);
     const isMecha = player.formMachine.isMecha();
-    player.setTexture(isMecha ? 'm-idle-0' : 'h-idle-0');
+    player.setTexture(isMecha ? 'player-mecha' : 'player-human');
+    player.setScale(isMecha ? 1.4 : 0.8);
+    player.animState = 'idle';
+    // Position standing in front of altar
+    player.x = this.x;
+    player.y = this.y;
     
     // Tiny delay before we allow praying again
     this.scene.time.delayedCall(250, () => {
