@@ -394,4 +394,140 @@ export class TerrainGenerator {
       g.fillRect(lx, ly, rng.between(0, 1) ? 4 : -4, 1);
     }
   }
+
+  generateBackgroundForest(y: number, levelWidth: number, seed = 50): Phaser.GameObjects.Graphics {
+    const rng = new Phaser.Math.RandomDataGenerator(['bgforest', seed.toString()]);
+    const g = this.scene.add.graphics();
+    g.setScrollFactor(0);
+    g.setDepth(-15);
+
+    const treeSpacing = rng.between(40, 70);
+    for (let tx = 0; tx < levelWidth; tx += treeSpacing) {
+      const th = rng.between(60, 200);
+      const tw = rng.between(8, 22);
+      const sway = rng.between(-6, 6);
+
+      // Tree trunk
+      g.fillStyle(0x0a0806, 0.55 + rng.realInRange(-0.1, 0.1));
+      g.fillRect(tx + sway, y - th, tw, th);
+
+      // Canopy — layered triangles
+      const canopyLayers = rng.between(2, 4);
+      for (let c = 0; c < canopyLayers; c++) {
+        const cy = y - th + c * rng.between(12, 22);
+        const cw = tw + rng.between(10, 30) - c * 3;
+        g.fillStyle(
+          rng.realInRange(0.35, 0.55),
+          0x0a0c06 + rng.between(-2, 2) * 0x010100
+        );
+        g.fillTriangle(tx + sway - cw / 2, cy, tx + sway + cw / 2, cy, tx + sway, cy - rng.between(14, 30));
+      }
+
+      // Skip some trees for variation
+      if (rng.between(0, 4) === 0) tx += rng.between(20, 60);
+    }
+    return g;
+  }
+
+  generateBackgroundRuins(y: number, levelWidth: number, seed = 60): Phaser.GameObjects.Graphics {
+    const rng = new Phaser.Math.RandomDataGenerator(['bgruins', seed.toString()]);
+    const g = this.scene.add.graphics();
+    g.setScrollFactor(0);
+    g.setDepth(-10);
+
+    let rx = 0;
+    while (rx < levelWidth) {
+      const gap = rng.between(80, 200);
+      rx += gap;
+
+      const buildingW = rng.between(30, 80);
+      const buildingH = rng.between(40, 160);
+
+      // Main building block
+      g.fillStyle(0x0c0a08, 0.5 + rng.realInRange(-0.08, 0.08));
+      g.fillRect(rx, y - buildingH, buildingW, buildingH);
+
+      // Spire
+      if (rng.between(0, 2) > 0) {
+        const spireH = rng.between(20, 50);
+        g.fillTriangle(
+          rx + buildingW / 2 - rng.between(4, 8), y - buildingH,
+          rx + buildingW / 2 + rng.between(4, 8), y - buildingH,
+          rx + buildingW / 2, y - buildingH - spireH
+        );
+      }
+
+      // Arch window
+      if (rng.between(0, 3) > 0) {
+        const wx = rx + rng.between(6, buildingW - 14);
+        const wy = y - rng.between(15, buildingH - 20);
+        g.fillStyle(0x060408, 0.6);
+        g.fillRect(wx, wy, rng.between(8, 14), rng.between(12, 20));
+      }
+
+      // Small tower companion
+      if (rng.between(0, 3) === 0) {
+        const tx = rx + buildingW + rng.between(5, 15);
+        g.fillStyle(0x0a0806, 0.4);
+        g.fillRect(tx, y - rng.between(20, 50), rng.between(8, 14), rng.between(20, 50));
+      }
+
+      rx += buildingW;
+    }
+    return g;
+  }
+
+  generateBackgroundMountains(y: number, levelWidth: number, seed = 70): Phaser.GameObjects.Graphics {
+    const rng = new Phaser.Math.RandomDataGenerator(['bgmountains', seed.toString()]);
+    const g = this.scene.add.graphics();
+    g.setScrollFactor(0);
+    g.setDepth(-20);
+
+    // Draw mountain range with overlapping peaks
+    const peakCount = Math.floor(levelWidth / 180);
+    const peaks: { x: number; h: number }[] = [];
+
+    for (let p = 0; p < peakCount; p++) {
+      peaks.push({
+        x: p * 180 + rng.between(-40, 40),
+        h: rng.between(100, 280),
+      });
+    }
+
+    // Far layer — lighter, taller
+    g.fillStyle(0x0a080e, 0.5);
+    g.beginPath();
+    g.moveTo(0, y + 200);
+    for (const p of peaks) {
+      g.lineTo(p.x, y - p.h);
+    }
+    g.lineTo(levelWidth, y + 200);
+    g.closePath();
+    g.fillPath();
+
+    // Near layer — darker, shorter
+    const nearPeaks = peaks.map(p => ({
+      x: p.x + rng.between(-20, 20),
+      h: p.h * rng.realInRange(0.5, 0.8),
+    }));
+    g.fillStyle(0x060408, 0.6);
+    g.beginPath();
+    g.moveTo(0, y + 200);
+    for (const p of nearPeaks) {
+      g.lineTo(p.x, y - p.h);
+    }
+    g.lineTo(levelWidth, y + 200);
+    g.closePath();
+    g.fillPath();
+
+    // Snow caps on highest peaks
+    g.fillStyle(0x1a1522, 0.3);
+    for (const p of peaks) {
+      if (p.h > 180) {
+        g.fillTriangle(p.x - 14, y - p.h + 20, p.x + 14, y - p.h + 20, p.x, y - p.h);
+      }
+    }
+
+    return g;
+  }
 }
