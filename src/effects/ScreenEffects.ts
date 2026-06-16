@@ -12,6 +12,19 @@ export function playFlash(scene: Phaser.Scene, duration = 200, r = 255, g = 255,
 export function playTransformScreenFx(scene: Phaser.Scene): void {
   scene.cameras.main.flash(400, 255, 100, 0);
   scene.cameras.main.shake(400, SHAKE.TRANSFORM.intensity);
+
+  if (scene.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
+    const pipeline = scene.cameras.main.getPostPipeline('CustomPostFX') as any;
+    if (pipeline) {
+      pipeline.aberration = 1.5;
+      scene.tweens.add({
+        targets: pipeline,
+        aberration: 0.0,
+        duration: 400,
+        ease: 'Power2'
+      });
+    }
+  }
 }
 
 export function playDamageScreenFx(scene: Phaser.Scene, heavy = false): void {

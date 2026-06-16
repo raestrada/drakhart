@@ -16,7 +16,7 @@ import { CoolingValve } from '../entities/CoolingValve';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
-import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
+import { spawnHitParticles, spawnDeathExplosion, spawnLavaSplash } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
@@ -65,6 +65,7 @@ export class GameScene2 extends BaseLevelScene {
   private heatWarningText!: Phaser.GameObjects.Text;
   private lastHeatDamageSoundTime = 0;
   private emberTimer = 0;
+  private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
   private bloom!: BloomSystem;
   private terrainGen!: TerrainGenerator;
   private echoFragments: EchoFragment[] = [];
@@ -102,8 +103,14 @@ export class GameScene2 extends BaseLevelScene {
 
   create(): void {
     super.create();
+    this.bulletLights.clear();
 
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+
+    if (this.lights) {
+      this.lights.enable();
+      this.lights.setAmbientColor(0x947c6d); // Warm bright industrial orange-brown
+    }
 
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
@@ -160,6 +167,7 @@ export class GameScene2 extends BaseLevelScene {
     this.setupCamera();
     this.setupCollisions();
     this.createVignette();
+    this.setupLightingAndPipelines();
 
     const cx = this.scale.width / 2;
     this.heatWarningText = this.add.text(cx, 120, '', {
@@ -553,6 +561,11 @@ export class GameScene2 extends BaseLevelScene {
     shadow.fillRect(0, LEVEL_HEIGHT - 80, LEVEL_WIDTH, 80); // bottom screen vignette
     shadow.setScrollFactor(0);
     shadow.setDepth(400);
+
+    const { width, height } = this.scale;
+    this.vignette = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
+    this.vignette.setScrollFactor(0);
+    this.vignette.setDepth(299);
   }
 
   update(time: number, delta: number): void {
@@ -578,6 +591,7 @@ export class GameScene2 extends BaseLevelScene {
     this.updateBloom();
     this.updateVignettePulse();
     this.updateMoltenDrips(delta);
+    this.updateBulletLights();
 
     // Apply extreme heat environmental damage to Warrior form
     if (this.player.active && this.player.alive) {
@@ -704,6 +718,122 @@ export class GameScene2 extends BaseLevelScene {
       ) {
         b.setActive(false);
         b.setVisible(false);
+      }
+    });
+  }
+
+  private setupLightingAndPipelines(): void {
+    if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
+      this.cameras.main.setPostPipeline('CustomPostFX');
+    }
+
+    if (!this.lights || !this.lights.active) return;
+
+    this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.hazards.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.barricades.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.enemies.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.steamVents.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.coolingValves.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.energyPickups.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+
+    if (this.player && this.player.active) {
+      this.player.setPipeline('Light2D');
+    }
+
+    // 1. Ambient furnace heat lights
+    this.lights.addLight(1000, 300, 900, 0xff5500, 0.7);
+    this.lights.addLight(3000, 300, 900, 0xff5500, 0.7);
+    this.lights.addLight(5000, 300, 900, 0xff5500, 0.7);
+    this.lights.addLight(7000, 300, 900, 0xff5500, 0.7);
+
+    // 2. Cauldron background lights
+    this.bgCauldrons.forEach(c => {
+      c.setPipeline('Light2D');
+      this.lights.addLight(c.x, c.y - 30, 220, 0xff4400, 1.4);
+    });
+
+    // 3. Lava Pits ambient heat glow (add a light in the middle of each pit)
+    const lavaPits = [{s:1360,e:1500},{s:2920,e:3060},{s:4500,e:4660},{s:6100,e:6280}];
+    lavaPits.forEach(pit => {
+      const midX = pit.s + (pit.e - pit.s) / 2;
+      const lLight = this.lights.addLight(midX, 750, 240, 0xff2200, 1.6);
+      this.tweens.add({
+        targets: lLight,
+        intensity: { from: 1.3, to: 1.9 },
+        duration: Phaser.Math.Between(1000, 1500),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    });
+
+    // 4. Steam Vents & Cooling Valves lights
+    this.steamVents.getChildren().forEach((v: any) => {
+      this.lights.addLight(v.x, v.y - 12, 100, 0xff5500, 1.15);
+    });
+    this.coolingValves.getChildren().forEach((v: any) => {
+      this.lights.addLight(v.x, v.y - 12, 100, 0x00aaff, 1.25);
+    });
+
+    // 5. SkyCore light
+    if (this.skyCore && this.skyCore.active) {
+      this.skyCore.setPipeline('Light2D');
+      const coreLight = this.lights.addLight(this.skyCore.x, this.skyCore.y, 160, 0x00ccff, 2.0);
+      this.tweens.add({
+        targets: coreLight,
+        intensity: { from: 1.5, to: 2.5 },
+        radius: { from: 140, to: 180 },
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
+    // 6. Tarot cards & crystal props
+    this.children.list.forEach((child: any) => {
+      if (child.texture && child.texture.key === 'prop-crystal') {
+        child.setPipeline('Light2D');
+        const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
+        this.tweens.add({
+          targets: cLight,
+          intensity: { from: 0.85, to: 1.6 },
+          duration: Phaser.Math.Between(1600, 2600),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+      if (child.texture && child.texture.key === 'prop-card') {
+        child.setPipeline('Light2D');
+        this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+      }
+    });
+  }
+
+  private updateBulletLights(): void {
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        bullet.setPipeline('Light2D');
+        if (this.lights && this.lights.active) {
+          let light = this.bulletLights.get(bullet);
+          if (!light) {
+            light = this.lights.addLight(bullet.x, bullet.y, 100, 0xff5500, 1.4);
+            this.bulletLights.set(bullet, light);
+          } else {
+            light.x = bullet.x;
+            light.y = bullet.y;
+            light.setIntensity(1.4);
+          }
+        }
+      } else {
+        const light = this.bulletLights.get(bullet);
+        if (light) {
+          if (this.lights) this.lights.removeLight(light);
+          this.bulletLights.delete(bullet);
+        }
       }
     });
   }
@@ -1281,6 +1411,7 @@ export class GameScene2 extends BaseLevelScene {
   }
 
   private createBackgroundEffects(): void {
+    this.bgCauldrons = [];
     const cauldronSpots = [
       { x: 1000, y: 500 },
       { x: 2200, y: 490 },
@@ -1340,18 +1471,7 @@ export class GameScene2 extends BaseLevelScene {
     this.moltenDroplets.getChildren().forEach((dobj) => {
       const d = dobj as Phaser.GameObjects.Rectangle;
       if (d.y >= 736) {
-        for (let i = 0; i < 4; i++) {
-          const spark = this.add.rectangle(d.x, 736, 2, 2, 0xff5500);
-          spark.setDepth(-6);
-          this.tweens.add({
-            targets: spark,
-            x: spark.x + Phaser.Math.Between(-15, 15),
-            y: spark.y - Phaser.Math.Between(5, 20),
-            alpha: 0,
-            duration: Phaser.Math.Between(150, 300),
-            onComplete: () => spark.destroy()
-          });
-        }
+        spawnLavaSplash(this, d.x, 736);
         d.destroy();
       }
     });

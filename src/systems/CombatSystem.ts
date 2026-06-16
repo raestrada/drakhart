@@ -93,6 +93,23 @@ export class CombatSystem {
     slash.setBlendMode(Phaser.BlendModes.ADD);
     if (!facingRight) slash.setFlipX(true);
 
+    // Dynamic glowing spark trail along the slash range
+    const sparks = this.scene.add.particles(px, py, 'px-4', {
+      speed: { min: 20, max: 80 },
+      scale: { start: 1.0, end: 0 },
+      alpha: { start: 0.85, end: 0 },
+      tint: [0xffffff, 0x99ffee, 0x22ffaa],
+      lifespan: { min: 100, max: 250 },
+      frequency: 15,
+      emitting: true,
+      blendMode: Phaser.BlendModes.ADD,
+      emitZone: {
+        type: 'random',
+        source: new Phaser.Geom.Rectangle(-SWORD_RANGE / 2, -10, SWORD_RANGE, 20)
+      } as any
+    });
+    this.scene.time.delayedCall(SWORD_DURATION, () => sparks.destroy());
+
     this.scene.tweens.add({
       targets: slash,
       alpha: 0,
@@ -164,6 +181,23 @@ export class CombatSystem {
     slash.setAlpha(0.9);
     slash.setBlendMode(Phaser.BlendModes.ADD);
     if (!facingRight) slash.setFlipX(true);
+
+    // Glowing mechanical energist spark trail along the heavy slash range
+    const sparks = this.scene.add.particles(px, py, 'px-4', {
+      speed: { min: 40, max: 120 },
+      scale: { start: 1.3, end: 0 },
+      alpha: { start: 0.9, end: 0 },
+      tint: [0xffffff, 0xff5533, 0xff0000], // Crimson red / orange sparks
+      lifespan: { min: 150, max: 350 },
+      frequency: 10,
+      emitting: true,
+      blendMode: Phaser.BlendModes.ADD,
+      emitZone: {
+        type: 'random',
+        source: new Phaser.Geom.Rectangle(-MECHA_SWORD_RANGE / 2, -16, MECHA_SWORD_RANGE, 32)
+      } as any
+    });
+    this.scene.time.delayedCall(MECHA_SWORD_DURATION, () => sparks.destroy());
 
     this.scene.tweens.add({
       targets: slash,

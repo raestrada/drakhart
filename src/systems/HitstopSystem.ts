@@ -13,12 +13,19 @@ export class HitstopSystem {
     this.frozen = true;
 
     this.scene.physics.world.pause();
+    this.scene.anims.pauseAll();
+    this.scene.tweens.pauseAll();
     this.scene.cameras.main.shake(duration, intensity);
 
-    this.scene.time.delayedCall(duration, () => {
-      this.scene.physics.world.resume();
+    // Use window.setTimeout instead of scene.time to bypass the paused scene clock
+    window.setTimeout(() => {
+      if (this.scene && this.scene.sys && this.scene.sys.isActive()) {
+        this.scene.physics.world.resume();
+        this.scene.anims.resumeAll();
+        this.scene.tweens.resumeAll();
+      }
       this.frozen = false;
-    });
+    }, duration);
   }
 
   destroy(): void {

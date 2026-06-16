@@ -20,6 +20,16 @@ export class TexturesGenerator {
   private tri(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, col: number): void {
     g.fillStyle(col); g.fillTriangle(x1, y1, x2, y2, x3, y3);
   }
+  private ditherRect(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, col: number): void {
+    g.fillStyle(col);
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        if ((dx + dy) % 2 === 0) {
+          g.fillRect(x + dx, y + dy, 1, 1);
+        }
+      }
+    }
+  }
 
   // ═══ Palette ═══
   private P = {
@@ -2049,78 +2059,102 @@ export class TexturesGenerator {
   private drawTerrainTextures(): void {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
 
-    // Ground — dark earth with roots
+    // Ground — dark earth with roots & stipple shading
     g.fillStyle(0x14100c);
     g.fillRect(0, 0, 32, 32);
     g.fillStyle(0x1a1510);
     g.fillRect(0, 0, 32, 4);
     g.fillStyle(0x0d0a08);
     g.fillRect(0, 28, 32, 4);
+    // Dithered shadow on ground bottom
+    this.ditherRect(g, 0, 24, 32, 4, 0x070504);
     // Surface detail: small rocks
     g.fillStyle(0x1c1612);
     g.fillCircle(6, 6, 2);
     g.fillCircle(18, 7, 1.5);
     g.fillCircle(28, 5, 1.8);
-    // Root
-    g.fillStyle(0x1a120c, 0.7);
-    g.fillRect(14, 2, 2, 4);
-    g.fillRect(16, 2, 1, 3);
-    // Crack
-    g.fillStyle(0x0a0705, 0.6);
+    // Mossy patches
+    g.fillStyle(0x1a2e18, 0.45);
+    g.fillCircle(10, 5, 3);
+    g.fillCircle(22, 6, 2.5);
+    // Organic Root lines
+    g.fillStyle(0x1a120c, 0.85);
+    g.fillRect(14, 2, 2, 7);
+    g.fillRect(16, 2, 1, 4);
+    g.fillRect(12, 6, 2, 2);
+    // Stone crack lines
+    g.fillStyle(0x0a0705, 0.7);
     g.fillRect(22, 10, 2, 4);
+    g.fillRect(24, 12, 3, 2);
     this.tex(g, 'tile-ground', 32, 32);
 
-    // Rock platform — natural stone
+    // Rock platform — natural stone with cracks and specular highlight
     g.fillStyle(0x1c1814);
     g.fillRect(0, 0, 32, 16);
     g.fillStyle(0x26201a);
     g.fillRect(0, 0, 32, 3);
     g.fillStyle(0x120e0a);
     g.fillRect(0, 14, 32, 2);
-    // Rock texture spots
-    g.fillStyle(0x201a15, 0.5);
+    // Dither shadow
+    this.ditherRect(g, 0, 11, 32, 3, 0x0d0a08);
+    // Rock texture spots & cracks
+    g.fillStyle(0x201a15, 0.6);
     g.fillCircle(8, 7, 2);
     g.fillCircle(22, 6, 2.5);
-    g.fillStyle(0x16120e, 0.4);
-    g.fillCircle(14, 9, 1.5);
+    g.fillStyle(0x0d0a08, 0.7);
+    g.fillRect(12, 3, 1, 6);
+    g.fillRect(13, 8, 3, 1);
     // Moss
-    g.fillStyle(0x1a2818, 0.3);
+    g.fillStyle(0x1a2818, 0.4);
     g.fillCircle(28, 4, 2);
     g.fillCircle(30, 5, 1);
     this.tex(g, 'tile-platform', 32, 16);
 
-    // Grass-topped earth platform
+    // Grass-topped earth platform with blades & stipple
     g.fillStyle(0x181a14);
     g.fillRect(0, 0, 32, 16);
     g.fillStyle(0x1a2014);
     g.fillRect(0, 0, 32, 4);
     g.fillStyle(0x0e100a);
     g.fillRect(0, 14, 32, 2);
-    // Grass blades
-    g.fillStyle(0x1a3018, 0.5);
+    this.ditherRect(g, 0, 12, 32, 2, 0x080906);
+    // Detailed grass blades
+    g.fillStyle(0x1a3018, 0.75);
     g.fillRect(4, 1, 1, 3);
-    g.fillRect(10, 0, 1, 2);
+    g.fillRect(5, 0, 1, 2);
+    g.fillRect(10, 0, 1, 3);
     g.fillRect(16, 1, 1, 4);
-    g.fillRect(22, 0, 1, 2);
+    g.fillRect(17, 0, 1, 2);
+    g.fillRect(22, 0, 1, 3);
     g.fillRect(28, 1, 1, 3);
+    g.fillRect(29, 0, 1, 2);
     // Earth spots
-    g.fillStyle(0x141610, 0.4);
+    g.fillStyle(0x141610, 0.5);
     g.fillCircle(8, 8, 2);
+    g.fillCircle(24, 7, 1.8);
     this.tex(g, 'tile-grass', 32, 16);
 
-    // Stone ruins block — ancient carved stone
+    // Stone ruins block — ancient carved stone with runes & cracks
     g.fillStyle(0x201c18);
     g.fillRect(0, 0, 32, 16);
     g.fillStyle(0x2a241e);
     g.fillRect(0, 0, 32, 2);
     g.fillStyle(0x15120e);
     g.fillRect(0, 14, 32, 2);
-    // Carved line
-    g.fillStyle(0x252018, 0.3);
-    g.fillRect(4, 5, 24, 1);
-    // Weathering
-    g.fillStyle(0x1a1612, 0.5);
-    g.fillCircle(10, 8, 1.5);
+    this.ditherRect(g, 0, 11, 32, 3, 0x0e0c0a);
+    // Carved brick seams
+    g.fillStyle(0x15120e, 0.8);
+    g.fillRect(4, 2, 1, 12);
+    g.fillRect(20, 2, 1, 12);
+    g.fillRect(4, 7, 16, 1);
+    // Runic carvings in ruins
+    g.fillStyle(0xcc2222, 0.45); // glowing faint red runes
+    g.fillRect(10, 4, 3, 1);
+    g.fillRect(11, 4, 1, 4);
+    g.fillRect(24, 5, 1, 4);
+    // Weathering/noise
+    g.fillStyle(0x1a1612, 0.6);
+    g.fillCircle(10, 10, 1.5);
     g.fillCircle(26, 7, 1);
     this.tex(g, 'tile-ruins', 32, 16);
 
@@ -2491,10 +2525,10 @@ export class TexturesGenerator {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
     const W = 80, H = 28;
     const layers = [
-      { a: 0.20, c: 0x440a0a, mul: 13 }, // outer faint crimson glow
-      { a: 0.50, c: 0xaa2222, mul: 11 }, // mid-layer red
-      { a: 0.75, c: 0xff4422, mul: 8 },  // bright orange-red
-      { a: 0.95, c: 0xffcc44, mul: 4 },  // hot gold/yellow core
+      { a: 0.20, c: 0x0a4422, mul: 13 }, // outer faint green glow
+      { a: 0.50, c: 0x22aa55, mul: 11 }, // mid-layer green
+      { a: 0.75, c: 0x22ffaa, mul: 8 },  // bright green-cyan
+      { a: 0.95, c: 0xaaffdd, mul: 4 },  // hot mint core
     ];
     layers.forEach(l => {
       g.fillStyle(l.c, l.a);
@@ -2510,7 +2544,7 @@ export class TexturesGenerator {
     for (let x = 6; x < W - 6; x++) g.lineTo(x, H / 2 - Math.sin((x / W) * Math.PI) * 1.5);
     g.strokePath();
 
-    g.fillStyle(0xffcc44); g.fillCircle(3, H / 2, 2.0); g.fillCircle(W - 4, H / 2, 2.0);
+    g.fillStyle(0xaaffdd); g.fillCircle(3, H / 2, 2.0); g.fillCircle(W - 4, H / 2, 2.0);
     this.tex(g, 'sword-slash', W, H);
   }
 
@@ -3182,13 +3216,33 @@ export class TexturesGenerator {
     g.fillStyle(0x2d3436); g.fillRect(0, 0, 32, 16);
     g.fillStyle(0x636e72); g.fillRect(0, 0, 32, 2);
     g.fillStyle(0x1e272e); g.fillRect(0, 14, 32, 2);
+    this.ditherRect(g, 0, 11, 32, 3, 0x161c20);
     
-    // Grid lines
+    // Grid lines / metal plate borders
     g.fillStyle(0x3d4446);
-    g.fillRect(8, 2, 2, 12);
-    g.fillRect(16, 2, 2, 12);
-    g.fillRect(24, 2, 2, 12);
-    g.fillRect(2, 8, 28, 2);
+    g.fillRect(8, 2, 1, 12);
+    g.fillRect(16, 2, 1, 12);
+    g.fillRect(24, 2, 1, 12);
+    g.fillRect(2, 8, 28, 1);
+    
+    // Rivets on metal plates
+    g.fillStyle(0x1e272e);
+    g.fillRect(2, 3, 1, 1);
+    g.fillRect(6, 3, 1, 1);
+    g.fillRect(10, 3, 1, 1);
+    g.fillRect(14, 3, 1, 1);
+    g.fillRect(18, 3, 1, 1);
+    g.fillRect(22, 3, 1, 1);
+    g.fillRect(26, 3, 1, 1);
+    g.fillRect(30, 3, 1, 1);
+    g.fillRect(2, 13, 1, 1);
+    g.fillRect(30, 13, 1, 1);
+    
+    // Rust streaks
+    g.fillStyle(0x8b4513, 0.45);
+    g.fillRect(12, 4, 1, 3);
+    g.fillRect(17, 9, 1, 4);
+    g.fillRect(27, 2, 1, 2);
     this.tex(g, 'tile-refinery', 32, 16);
   }
 

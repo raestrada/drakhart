@@ -67,6 +67,7 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
     this.scene.cameras.main.shake(200, 0.006);
 
     // Spawn rubble particles
+    const platforms = (this.scene as any).platforms;
     for (let i = 0; i < 16; i++) {
       const p = this.scene.add.rectangle(
         this.x + Phaser.Math.Between(-12, 12),
@@ -78,11 +79,17 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
       );
       this.scene.physics.add.existing(p);
       const body = p.body as Phaser.Physics.Arcade.Body;
-      body.setVelocity(
-        Phaser.Math.Between(-120, 120),
-        Phaser.Math.Between(-250, -50)
-      );
-      body.setGravityY(400);
+      if (body) {
+        body.setVelocity(
+          Phaser.Math.Between(-120, 120),
+          Phaser.Math.Between(-250, -50)
+        );
+        body.setGravityY(450);
+        body.setBounce(0.55, 0.35);
+        if (platforms) {
+          this.scene.physics.add.collider(p, platforms);
+        }
+      }
 
       this.scene.tweens.add({
         targets: p,

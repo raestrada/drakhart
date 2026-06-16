@@ -83,6 +83,25 @@ export class TransitionScene12 extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.platforms);
 
+    if (this.lights) {
+      this.lights.enable();
+      this.lights.setAmbientColor(0x88809c);
+      this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+      if (this.player && this.player.active) this.player.setPipeline('Light2D');
+      this.saveAltar.setPipeline('Light2D');
+      
+      const altarLight = this.lights.addLight(W / 2, groundY - 180, 180, 0xff0044, 1.8);
+      this.tweens.add({
+        targets: altarLight,
+        intensity: { from: 1.2, to: 2.2 },
+        radius: { from: 150, to: 200 },
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
     // Camera bounds to match world and player follow
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
     this.cameras.main.setBounds(0, 0, W, H);

@@ -317,8 +317,8 @@ export class TerrainGenerator {
     const segW = 128;
     for (let tx = startX + segW / 2; tx < startX + width; tx += segW) {
       const w = Math.min(segW, startX + width - tx + segW / 2);
-      const body = group.create(tx, baseY + 8, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
-      body.setDisplaySize(w, 16);
+      const body = group.create(tx, baseY, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
+      body.setDisplaySize(w, 24);
       body.setAlpha(0.01);
       body.refreshBody();
     }
@@ -369,8 +369,8 @@ export class TerrainGenerator {
     }
 
     // Thin collision at platform surface
-    const body = group.create(x + width / 2, y + 8, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
-    body.setDisplaySize(width, 14);
+    const body = group.create(x + width / 2, y, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
+    body.setDisplaySize(width, 24);
     body.setAlpha(0.01);
     body.refreshBody();
   }

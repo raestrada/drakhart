@@ -60,6 +60,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private footstepTimer = 0;
   private visorGlowTween: Phaser.Tweens.Tween | null = null;
   private visorGlow: Phaser.GameObjects.Rectangle | null = null;
+  private visorLight: Phaser.GameObjects.Light | null = null;
+  private visorTrailTimer = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player-human');
@@ -78,10 +80,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setupInput(scene);
     this.createVisorGlow(scene);
+    this.setupVisorLight(scene);
+  }
+
+  private setupVisorLight(scene: Phaser.Scene): void {
+    if (scene.lights && scene.lights.active) {
+      this.visorLight = scene.lights.addLight(this.x, this.y, 120, 0x00ffcc, 1.1);
+    }
   }
 
   private createVisorGlow(scene: Phaser.Scene): void {
-    this.visorGlow = scene.add.rectangle(this.x + 8, this.y - 18, 14, 4, 0xff3322, 0);
+    this.visorGlow = scene.add.rectangle(this.x + 8, this.y - 18, 14, 4, 0x00ffcc, 0);
     this.visorGlow.setBlendMode(Phaser.BlendModes.ADD);
     this.visorGlow.setDepth(this.depth + 1);
 
@@ -170,6 +179,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.updateAnimation(delta);
       this.updateJuice(delta);
       this.updateVisorGlowPosition();
+      this.updateVisorTrail(delta);
       return;
     }
 
@@ -198,6 +208,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.updateAura(delta);
     this.updateAfterimage(delta);
     this.updateVisorGlowPosition();
+    this.updateVisorTrail(delta);
   }
 
   private updateHuman(delta: number): void {
@@ -490,16 +501,37 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const state = this.formMachine.state;
     if (state === FormState.DRAGON) {
       this.visorGlow.setVisible(false);
+      if (this.visorLight) this.visorLight.setIntensity(0);
       return;
     }
     this.visorGlow.setVisible(true);
     const dir = this.facingRight ? 1 : -1;
+    let lx = this.x;
+    let ly = this.y;
     if (state === FormState.MECHA) {
-      this.visorGlow.setPosition(this.x + dir * 4, this.y - 8);
-      this.visorGlow.fillColor = 0x00ffcc;
-    } else {
-      this.visorGlow.setPosition(this.x + dir * 8, this.y - 18);
+      lx = this.x + dir * 4;
+      ly = this.y - 8;
+      this.visorGlow.setPosition(lx, ly);
       this.visorGlow.fillColor = 0xff3322;
+      if (this.visorLight) {
+        this.visorLight.setColor(0xff3322);
+        this.visorLight.setRadius(180);
+        this.visorLight.setIntensity(1.5);
+      }
+    } else {
+      lx = this.x + dir * 8;
+      ly = this.y - 18;
+      this.visorGlow.setPosition(lx, ly);
+      this.visorGlow.fillColor = 0x00ffcc;
+      if (this.visorLight) {
+        this.visorLight.setColor(0x00ffcc);
+        this.visorLight.setRadius(120);
+        this.visorLight.setIntensity(1.1);
+      }
+    }
+    if (this.visorLight) {
+      this.visorLight.x = lx;
+      this.visorLight.y = ly;
     }
   }
 
@@ -509,6 +541,62 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.footstepTimer >= interval) {
       this.footstepTimer = 0;
       (this.scene as any).gameAudio?.playFootstep?.(surface, heavy);
+      this.spawnFootstepParticles(surface, heavy);
+    }
+  }
+
+  private spawnFootstepParticles(surface: 'stone' | 'metal' | 'ash', heavy: boolean): void {
+    const count = heavy ? 8 : 4;
+    const px = this.x;
+    const py = this.y + (heavy ? 40 : 30);
+
+    for (let i = 0; i < count; i++) {
+      let color = 0x554433;
+      let blendMode = Phaser.BlendModes.NORMAL;
+      let alpha = 0.6;
+      let size = Phaser.Math.Between(2, 4);
+      let duration = Phaser.Math.Between(300, 600);
+
+      if (surface === 'stone') {
+        color = Math.random() > 0.4 ? 0x224411 : 0x4a3c31;
+      } else if (surface === 'metal') {
+        color = Math.random() > 0.5 ? 0xffaa00 : 0xff5500;
+        blendMode = Phaser.BlendModes.ADD;
+        alpha = 0.95;
+        size = Phaser.Math.Between(1.5, 3);
+      } else if (surface === 'ash') {
+        color = Math.random() > 0.5 ? 0x1f1b1a : 0xee3300;
+        blendMode = Math.random() > 0.5 ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL;
+        alpha = 0.8;
+      }
+
+      const p = this.scene.add.rectangle(
+        px + Phaser.Math.Between(-8, 8),
+        py,
+        size,
+        size,
+        color,
+        alpha
+      );
+      p.setDepth(this.depth - 1);
+      p.setBlendMode(blendMode);
+
+      this.scene.physics.add.existing(p);
+      const pBody = p.body as Phaser.Physics.Arcade.Body;
+      if (pBody) {
+        pBody.allowGravity = (surface !== 'ash');
+        const vx = Phaser.Math.Between(-80, 80);
+        const vy = surface === 'ash' ? Phaser.Math.Between(-50, -20) : Phaser.Math.Between(-120, -50);
+        pBody.setVelocity(vx, vy);
+      }
+
+      this.scene.tweens.add({
+        targets: p,
+        alpha: 0,
+        scale: 0.1,
+        duration: duration,
+        onComplete: () => p.destroy()
+      });
     }
   }
 
@@ -670,6 +758,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.cameras.main.shake(120, isMecha ? 0.002 : 0.004);
 
+    if (this.scene.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
+      const pipeline = this.scene.cameras.main.getPostPipeline('CustomPostFX') as any;
+      if (pipeline) {
+        pipeline.aberration = isMecha ? 0.6 : 1.2;
+        this.scene.tweens.add({
+          targets: pipeline,
+          aberration: 0.0,
+          duration: 300,
+          ease: 'Sine.easeOut'
+        });
+      }
+    }
+
     this.setTint(0xff0000);
     this.scene.time.delayedCall(80, () => {
       if (this.active) this.clearTint();
@@ -749,11 +850,54 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  private updateVisorTrail(delta: number): void {
+    if (this.formMachine.state === FormState.DRAGON) return;
+    
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (!body) return;
+    
+    const speed = Math.abs(body.velocity.x);
+    if (speed < 120) return; // Only trail when running fast
+    
+    this.visorTrailTimer += delta;
+    if (this.visorTrailTimer < 35) return;
+    this.visorTrailTimer = 0;
+    
+    if (!this.visorGlow) return;
+    
+    // Spawn a trail element at the visor glow's current position
+    const isMecha = this.formMachine.state === FormState.MECHA;
+    const col = isMecha ? 0xff3322 : 0x00ffcc;
+    
+    const trail = this.scene.add.rectangle(
+      this.visorGlow.x,
+      this.visorGlow.y,
+      isMecha ? 14 : 10,
+      isMecha ? 4 : 3,
+      col
+    );
+    trail.setDepth(this.depth + 1);
+    trail.setBlendMode(Phaser.BlendModes.ADD);
+    
+    this.scene.tweens.add({
+      targets: trail,
+      alpha: 0,
+      scaleX: 0.2,
+      scaleY: 0.2,
+      duration: 250,
+      ease: 'Sine.easeOut',
+      onComplete: () => trail.destroy()
+    });
+  }
+
   destroy(fromScene?: boolean): void {
     this.formMachine.destroy();
     this.combatSystem.destroy();
     if (this.visorGlowTween) this.visorGlowTween.stop();
     if (this.visorGlow) this.visorGlow.destroy();
+    if (this.visorLight && this.scene && this.scene.lights) {
+      this.scene.lights.removeLight(this.visorLight);
+    }
     super.destroy(fromScene);
   }
 }

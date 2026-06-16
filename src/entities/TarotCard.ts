@@ -79,67 +79,114 @@ export class TarotCard extends Phaser.Physics.Arcade.Sprite {
 
   collect(player: Player): void {
     const card = this.cardDef;
+    const cam = this.scene.cameras.main;
+    const screenCX = cam.scrollX + cam.width / 2;
+    const screenCY = cam.scrollY + cam.height / 2;
 
-    // Screen flash — gold
-    this.scene.cameras.main.flash(300, 255, 200, 50);
+    // Stop player input & movement during cinematic card unlock
+    player.setInputEnabled(false);
+    const body = player.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocity(0, 0);
+    }
 
-    // Card name text
-    const nameText = this.scene.add.text(
-      this.x, this.y - 40,
-      `${card.arcana} — ${card.name}`,
-      {
-        fontSize: '14px',
-        fontFamily: 'monospace',
-        color: '#ffcc00',
-      }
-    ).setOrigin(0.5).setScrollFactor(0);
+    // Hide and disable the physical world card sprite
+    this.disableBody(true, true);
 
-    // Effect text
-    const effectText = this.scene.add.text(
-      this.x, this.y - 24,
-      card.effect,
-      {
-        fontSize: '10px',
-        fontFamily: 'monospace',
-        color: '#ccaa66',
-      }
-    ).setOrigin(0.5).setScrollFactor(0);
+    // Create a large, high-depth screen overlay card for the cinematic display
+    const overlayCard = this.scene.add.image(this.x, this.y, 'destiny-echo');
+    overlayCard.setDepth(400);
+    overlayCard.setBlendMode(Phaser.BlendModes.ADD);
 
-    // Lore text
-    const loreText = this.scene.add.text(
-      this.x, this.y - 8,
-      `"${card.lore}"`,
-      {
-        fontSize: '8px',
-        fontFamily: 'monospace',
-        color: '#887755',
-        fontStyle: 'italic',
-      }
-    ).setOrigin(0.5).setScrollFactor(0);
-
-    // Fade all texts
+    // 1. Zoom and spin the card to the center of the screen
     this.scene.tweens.add({
-      targets: [nameText, effectText, loreText],
-      y: '-=30',
-      alpha: 0,
-      duration: 3000,
-      delay: 500,
+      targets: overlayCard,
+      x: screenCX,
+      y: screenCY,
+      scaleX: 2.5,
+      scaleY: 3.5,
+      angle: 720,
+      duration: 800,
+      ease: 'Cubic.easeOut',
       onComplete: () => {
-        nameText.destroy();
-        effectText.destroy();
-        loreText.destroy();
-      },
-    });
+        // Gold screen flash upon card arrival
+        cam.flash(350, 255, 215, 80);
 
-    // Spin and scale up, then destroy
-    this.scene.tweens.add({
-      targets: this,
-      angle: 360,
-      scaleX: 1.8,
-      scaleY: 1.8,
-      alpha: 0,
-      duration: 600,
-      onComplete: () => this.destroy(),
+        // Create card title and effect labels below the card
+        const nameText = this.scene.add.text(
+          screenCX, screenCY + 75,
+          `${card.arcana} — ${card.name}`.toUpperCase(),
+          {
+            fontSize: '16px',
+            fontFamily: 'monospace',
+            color: '#ffcc00',
+            stroke: '#000000',
+            strokeThickness: 4,
+          }
+        ).setOrigin(0.5).setDepth(400);
+
+        const effectText = this.scene.add.text(
+          screenCX, screenCY + 95,
+          card.effect,
+          {
+            fontSize: '11px',
+            fontFamily: 'monospace',
+            color: '#ccaa66',
+            stroke: '#000000',
+            strokeThickness: 3,
+          }
+        ).setOrigin(0.5).setDepth(400);
+
+        const loreText = this.scene.add.text(
+          screenCX, screenCY + 115,
+          `"${card.lore}"`,
+          {
+            fontSize: '9px',
+            fontFamily: 'monospace',
+            color: '#887755',
+            fontStyle: 'italic',
+            stroke: '#000000',
+            strokeThickness: 2,
+          }
+        ).setOrigin(0.5).setDepth(400);
+
+        // 2. Pause to allow reading, then fade texts and fly card to HUD
+        this.scene.time.delayedCall(1800, () => {
+          this.scene.tweens.add({
+            targets: [nameText, effectText, loreText],
+            alpha: 0,
+            y: '+=15',
+            duration: 350,
+            onComplete: () => {
+              nameText.destroy();
+              effectText.destroy();
+              loreText.destroy();
+            }
+          });
+
+          // Fly the card toward the Tarot count display in the top-right corner of the HUD
+          const destX = cam.scrollX + cam.width - 60;
+          const destY = cam.scrollY + 16;
+
+          this.scene.tweens.add({
+            targets: overlayCard,
+            x: destX,
+            y: destY,
+            scaleX: 0.12,
+            scaleY: 0.18,
+            angle: 1440,
+            alpha: 0.1,
+            duration: 800,
+            ease: 'Back.easeIn',
+            onComplete: () => {
+              overlayCard.destroy();
+              // Re-enable player movement/control
+              player.setInputEnabled(true);
+              this.destroy();
+            }
+          });
+        });
+      }
     });
   }
 }

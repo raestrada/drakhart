@@ -70,6 +70,7 @@ export class GameScene3 extends BaseLevelScene {
   private bgReactor!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
+  private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
   private bloom!: BloomSystem;
   private echoFragments: EchoFragment[] = [];
   private terrainGen!: TerrainGenerator;
@@ -126,6 +127,7 @@ export class GameScene3 extends BaseLevelScene {
 
   create(): void {
     super.create();
+    this.bulletLights.clear();
 
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
 
@@ -136,6 +138,11 @@ export class GameScene3 extends BaseLevelScene {
     this.keyA = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.keyS = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keyD = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+
+    if (this.lights) {
+      this.lights.enable();
+      this.lights.setAmbientColor(0x7a6d8c); // Bright gorge reactor purple
+    }
 
     // Initialize/resume Audio system
     this.gameAudio = new GameAudio();
@@ -202,6 +209,7 @@ export class GameScene3 extends BaseLevelScene {
     this.setupCollisions();
     this.createVignette();
     this.showIntroText();
+    this.setupLightingAndPipelines();
 
     this.scene.launch('UIScene', {
       player: this.player,
@@ -498,6 +506,11 @@ export class GameScene3 extends BaseLevelScene {
     shadow.fillRect(0, LEVEL_HEIGHT - 80, LEVEL_WIDTH, 80);
     shadow.setScrollFactor(0);
     shadow.setDepth(400);
+
+    const { width, height } = this.scale;
+    this.vignette = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
+    this.vignette.setScrollFactor(0);
+    this.vignette.setDepth(299);
   }
 
   private showIntroText(): void {
@@ -747,6 +760,7 @@ export class GameScene3 extends BaseLevelScene {
     this.updateEmbers(delta);
     this.updateBloom();
     this.updateVignettePulse();
+    this.updateBulletLights();
     
     // Update active steam pipes & check steam hits
     this.steamPipes.forEach((pipe) => {
@@ -863,8 +877,6 @@ export class GameScene3 extends BaseLevelScene {
         b.setVisible(false);
       }
     });
-
-    // Dreadnought lasers clean themselves up
   }
 
   private updateEmbers(delta: number): void {
@@ -873,6 +885,109 @@ export class GameScene3 extends BaseLevelScene {
       this.emberTimer = 0;
       this.spawnAshEmber();
     }
+  }
+
+  private setupLightingAndPipelines(): void {
+    if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
+      this.cameras.main.setPostPipeline('CustomPostFX');
+    }
+
+    if (!this.lights || !this.lights.active) return;
+
+    this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.hazards.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.enemies.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.laserBeams.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.pistons.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.energyPickups.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+
+    if (this.player && this.player.active) {
+      this.player.setPipeline('Light2D');
+    }
+
+    // 1. Ambient reactor core light
+    if (this.bgReactor) {
+      this.bgReactor.setPipeline('Light2D');
+      const rLight = this.lights.addLight(this.bgReactor.x, this.bgReactor.y, 450, 0x9900ff, 2.2);
+      this.tweens.add({
+        targets: rLight,
+        intensity: { from: 1.6, to: 2.6 },
+        radius: { from: 380, to: 480 },
+        duration: 2000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
+    // 2. Add some giant spotlight sources for gorge ambient
+    this.lights.addLight(2000, 300, 1000, 0x660099, 0.65);
+    this.lights.addLight(5000, 300, 1000, 0x660099, 0.65);
+    this.lights.addLight(8000, 300, 1000, 0x660099, 0.65);
+    this.lights.addLight(11000, 300, 1000, 0x660099, 0.65);
+
+    // 3. Steam Pipes, Laser Gates, Pistons lights
+    this.steamPipes.forEach((p: any) => {
+      if (p.pipeSprite) {
+        p.pipeSprite.setPipeline('Light2D');
+        this.lights.addLight(p.x, p.y - (p.isCeiling ? -15 : 15), 110, 0xff5500, 1.2);
+      }
+    });
+
+    this.laserGates.forEach((g: any) => {
+      if (g.nodeTop) g.nodeTop.setPipeline('Light2D');
+      if (g.nodeBottom) g.nodeBottom.setPipeline('Light2D');
+      if (g.beam) g.beam.setPipeline('Light2D');
+      // Add red glowing warning lights
+      this.lights.addLight(g.nodeTop.x, g.nodeTop.y + 12, 100, 0xff0033, 1.4);
+      this.lights.addLight(g.nodeBottom.x, g.nodeBottom.y - 12, 100, 0xff0033, 1.4);
+    });
+
+    // 4. Tarot cards & crystals
+    this.children.list.forEach((child: any) => {
+      if (child.texture && child.texture.key === 'prop-crystal') {
+        child.setPipeline('Light2D');
+        const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
+        this.tweens.add({
+          targets: cLight,
+          intensity: { from: 0.85, to: 1.6 },
+          duration: Phaser.Math.Between(1600, 2600),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+      if (child.texture && child.texture.key === 'prop-card') {
+        child.setPipeline('Light2D');
+        this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+      }
+    });
+  }
+
+  private updateBulletLights(): void {
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        bullet.setPipeline('Light2D');
+        if (this.lights && this.lights.active) {
+          let light = this.bulletLights.get(bullet);
+          if (!light) {
+            light = this.lights.addLight(bullet.x, bullet.y, 100, 0xff5500, 1.4);
+            this.bulletLights.set(bullet, light);
+          } else {
+            light.x = bullet.x;
+            light.y = bullet.y;
+            light.setIntensity(1.4);
+          }
+        }
+      } else {
+        const light = this.bulletLights.get(bullet);
+        if (light) {
+          if (this.lights) this.lights.removeLight(light);
+          this.bulletLights.delete(bullet);
+        }
+      }
+    });
   }
 
   private spawnAshEmber(): void {

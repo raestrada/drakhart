@@ -104,6 +104,38 @@ export class FormStateMachine {
     }
   }
 
+  private triggerVortexParticles(targetColor: number): void {
+    const pX = this.player.x;
+    const pY = this.player.y;
+
+    // Spawn 24 energy particles around the player and pull them in
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.2;
+      const dist = Phaser.Math.Between(70, 120);
+      const startX = pX + Math.cos(angle) * dist;
+      const startY = pY + Math.sin(angle) * dist;
+
+      const size = Phaser.Math.Between(3, 6);
+      const spark = this.scene.add.rectangle(startX, startY, size, size, targetColor, 0.9);
+      spark.setBlendMode(Phaser.BlendModes.ADD);
+      spark.setDepth(this.player.depth + 1);
+
+      // Suck into player's chest core position
+      this.scene.tweens.add({
+        targets: spark,
+        x: pX,
+        y: pY - 8,
+        scale: 0.1,
+        angle: 360,
+        duration: Phaser.Math.Between(350, 500),
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+          spark.destroy();
+        }
+      });
+    }
+  }
+
   private beginTransformToMecha(): void {
     this.currentState = FormState.TRANSFORMING;
     this.player.setVelocity(0, 0);
@@ -113,6 +145,8 @@ export class FormStateMachine {
 
     this.scene.cameras.main.shake(400, SHAKE.TRANSFORM.intensity);
     playFlash(this.scene, 400, 255, 255, 255);
+
+    this.triggerVortexParticles(0xff0066); // Crimson Mecha core vortex
 
     this.scene.time.delayedCall(400, () => {
       this.enterMecha();
@@ -147,6 +181,8 @@ export class FormStateMachine {
 
     this.scene.cameras.main.shake(TRANSFORM_DURATION, SHAKE.TRANSFORM.intensity);
     playFlash(this.scene, TRANSFORM_DURATION, 255, 0, 100); // magenta flash for mecha-dragon
+
+    this.triggerVortexParticles(0xff5500); // Orange Dragon core vortex
 
     this.scene.time.delayedCall(TRANSFORM_DURATION, () => {
       this.enterDragon();

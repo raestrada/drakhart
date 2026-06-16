@@ -81,6 +81,7 @@ export class GameScene extends BaseLevelScene {
   }> = [];
   private nextMeteorTime = 0;
   private emberTimer = 0;
+  private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
 
   private shmupZoneActive = false;
   private crumblingPlatforms: CrumblingPlatform[] = [];
@@ -122,8 +123,14 @@ export class GameScene extends BaseLevelScene {
 
   create(): void {
     super.create();
+    this.bulletLights.clear();
 
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+
+    if (this.lights) {
+      this.lights.enable();
+      this.lights.setAmbientColor(0x88809c); // Bright purple twilight
+    }
 
     // Initialize Game Audio system
     this.gameAudio = new GameAudio();
@@ -183,6 +190,7 @@ export class GameScene extends BaseLevelScene {
     this.setupCollisions();
     this.showIntroText();
     this.createVignette();
+    this.setupLightingAndPipelines();
 
     this.scene.launch('UIScene', {
       player: this.player,
@@ -337,6 +345,10 @@ export class GameScene extends BaseLevelScene {
 
     g.setDepth(100);
     g.setScrollFactor(0);
+
+    this.vignette = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
+    this.vignette.setScrollFactor(0);
+    this.vignette.setDepth(299);
   }
 
   private createPlayer(): void {
@@ -772,26 +784,8 @@ export class GameScene extends BaseLevelScene {
     if (key === 'rock-destructible' || key === 'rock-large') {
       this.gameAudio?.playDestruction();
       const isLarge = key === 'rock-large';
-      const particleCount = isLarge ? 12 : 8;
       const shakeForce = isLarge ? 0.004 : 0.002;
-      const maxDist = isLarge ? 60 : 40;
-      
-      for (let i = 0; i < particleCount; i++) {
-        const shard = this.add.rectangle(
-          x + Phaser.Math.Between(-12, 12), y + Phaser.Math.Between(-12, 12),
-          Phaser.Math.Between(3, isLarge ? 8 : 6), Phaser.Math.Between(3, isLarge ? 8 : 6),
-          Phaser.Math.Between(0, 1) ? 0x2e2d35 : 0xaa2211
-        );
-        this.tweens.add({
-          targets: shard,
-          x: shard.x + Phaser.Math.Between(-maxDist, maxDist),
-          y: shard.y - Phaser.Math.Between(10, 40),
-          alpha: 0,
-          angle: Phaser.Math.Between(-180, 180),
-          duration: Phaser.Math.Between(300, 700),
-          onComplete: () => shard.destroy(),
-        });
-      }
+      this.spawnBouncingDebris(x, y, 0x2e2d35, isLarge);
       this.cameras.main.shake(80, shakeForce);
     } else {
       this.gameAudio?.playBushRustle();
@@ -816,6 +810,59 @@ export class GameScene extends BaseLevelScene {
           onComplete: () => leaf.destroy(),
         });
       }
+    }
+  }
+
+  private rustleFoliage(sprite: Phaser.Physics.Arcade.Sprite): void {
+    if (sprite.getData('rustling')) return;
+    sprite.setData('rustling', true);
+
+    const originalAngle = sprite.angle;
+    this.tweens.add({
+      targets: sprite,
+      angle: { from: originalAngle - 8, to: originalAngle + 8 },
+      duration: 100,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        sprite.setAngle(originalAngle);
+        this.time.delayedCall(600, () => {
+          if (sprite.active) sprite.setData('rustling', false);
+        });
+      }
+    });
+  }
+
+  private spawnBouncingDebris(x: number, y: number, color: number, isLarge: boolean): void {
+    const count = isLarge ? 8 : 5;
+    for (let i = 0; i < count; i++) {
+      const size = Phaser.Math.Between(4, isLarge ? 10 : 6);
+      const shard = this.add.rectangle(x + Phaser.Math.Between(-8, 8), y + Phaser.Math.Between(-8, 8), size, size, color);
+      shard.setDepth(15);
+      
+      this.physics.add.existing(shard);
+      const body = shard.body as Phaser.Physics.Arcade.Body;
+      if (body) {
+        body.setBounce(0.55, 0.35);
+        body.setCollideWorldBounds(true);
+        body.setVelocity(
+          Phaser.Math.Between(-120, 120),
+          Phaser.Math.Between(-180, -80)
+        );
+        body.setDrag(10, 0);
+        this.physics.add.collider(shard, this.platforms);
+      }
+
+      this.time.delayedCall(Phaser.Math.Between(800, 1200), () => {
+        this.tweens.add({
+          targets: shard,
+          alpha: 0,
+          scale: 0.1,
+          duration: 300,
+          onComplete: () => shard.destroy()
+        });
+      });
     }
   }
 
@@ -1016,6 +1063,13 @@ export class GameScene extends BaseLevelScene {
         spawnHitParticles(this, (_enemy as BaseEnemy).x, (_enemy as BaseEnemy).y);
       }
     );
+
+    this.physics.add.overlap(this.player, this.destructibles, (_player, _destructible) => {
+      const sprite = _destructible as Phaser.Physics.Arcade.Sprite;
+      if (sprite.texture.key === 'bush' || sprite.texture.key === 'bush-large') {
+        this.rustleFoliage(sprite);
+      }
+    });
   }
 
   private setupCamera(): void {
@@ -1495,6 +1549,7 @@ export class GameScene extends BaseLevelScene {
     this.updateBloom();
     this.updateVignettePulse();
     this.updateShmupZone(delta, time);
+    this.updateBulletLights();
 
     if (this.player.active) {
       if (this.player.y > LEVEL_HEIGHT + 60) {
@@ -1890,6 +1945,99 @@ export class GameScene extends BaseLevelScene {
       ) {
         b.setActive(false);
         b.setVisible(false);
+      }
+    });
+  }
+
+  private setupLightingAndPipelines(): void {
+    if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
+      this.cameras.main.setPostPipeline('CustomPostFX');
+    }
+
+    if (!this.lights || !this.lights.active) return;
+
+    this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.hazards.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.destructibles.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.solidDestructibles.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.barricades.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.enemies.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+
+    if (this.player && this.player.active) {
+      this.player.setPipeline('Light2D');
+    }
+
+    // 1. Ambient large moonlight spots
+    this.lights.addLight(1500, 300, 800, 0x882244, 0.65);
+    this.lights.addLight(4500, 300, 800, 0x882244, 0.65);
+    this.lights.addLight(7000, 300, 800, 0x882244, 0.65);
+
+    // 2. Crystal lights that pulse
+    this.children.list.forEach((child: any) => {
+      if (child.texture && child.texture.key === 'prop-crystal') {
+        child.setPipeline('Light2D');
+        const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
+        this.tweens.add({
+          targets: cLight,
+          intensity: { from: 0.85, to: 1.6 },
+          radius: { from: 100, to: 120 },
+          duration: Phaser.Math.Between(1600, 2600),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+      if (child.texture && child.texture.key === 'prop-chain') {
+        child.setPipeline('Light2D');
+      }
+    });
+
+    // 3. Dragon Core light
+    if (this.dragonCore && this.dragonCore.active) {
+      this.dragonCore.setPipeline('Light2D');
+      const coreLight = this.lights.addLight(this.dragonCore.x, this.dragonCore.y, 160, 0xffaa00, 2.0);
+      this.tweens.add({
+        targets: coreLight,
+        intensity: { from: 1.5, to: 2.5 },
+        radius: { from: 140, to: 180 },
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
+    // 4. Tarot cards lights
+    this.children.list.forEach((child: any) => {
+      if (child.texture && child.texture.key === 'prop-card') {
+        child.setPipeline('Light2D');
+        this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+      }
+    });
+  }
+
+  private updateBulletLights(): void {
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        bullet.setPipeline('Light2D');
+        if (this.lights && this.lights.active) {
+          let light = this.bulletLights.get(bullet);
+          if (!light) {
+            light = this.lights.addLight(bullet.x, bullet.y, 100, 0xff5500, 1.4);
+            this.bulletLights.set(bullet, light);
+          } else {
+            light.x = bullet.x;
+            light.y = bullet.y;
+            light.setIntensity(1.4);
+          }
+        }
+      } else {
+        const light = this.bulletLights.get(bullet);
+        if (light) {
+          if (this.lights) this.lights.removeLight(light);
+          this.bulletLights.delete(bullet);
+        }
       }
     });
   }

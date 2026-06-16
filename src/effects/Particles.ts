@@ -11,14 +11,21 @@ function ensureEmitterTextures(scene: Phaser.Scene): void {
   if (!scene.textures.exists('px-4')) {
     const g = scene.add.graphics();
     g.fillStyle(0xffffff, 1);
-    g.fillRect(0, 0, 4, 4);
+    // Diamond spark shape
+    g.fillRect(1, 0, 2, 4);
+    g.fillRect(0, 1, 4, 2);
     g.generateTexture('px-4', 4, 4);
     g.destroy();
   }
   if (!scene.textures.exists('px-8')) {
     const g = scene.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(0, 0, 8, 8);
+    // Soft circular glow drawing radial fading rings
+    g.fillStyle(0xffffff, 0.2);
+    g.fillCircle(4, 4, 4);
+    g.fillStyle(0xffffff, 0.55);
+    g.fillCircle(4, 4, 2.5);
+    g.fillStyle(0xffffff, 1.0);
+    g.fillCircle(4, 4, 1.2);
     g.generateTexture('px-8', 8, 8);
     g.destroy();
   }
@@ -130,6 +137,13 @@ export function spawnEmbers(scene: Phaser.Scene, x: number, y: number): void {
       type: 'random',
       source: new Phaser.Geom.Rectangle(-60, -10, 120, 10),
     } as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig['emitZone'],
+    x: {
+      onEmit: (particle: any) => particle.x,
+      onUpdate: (particle: any, key: string, t: number, value: number) => {
+        // Horizontal sine sway based on particle age
+        return value + Math.sin(particle.lifeCurrent * 0.008) * 0.45;
+      }
+    }
   });
 
   scene.time.delayedCall(6000, () => {
@@ -200,5 +214,26 @@ export function spawnDragonExhaust(scene: Phaser.Scene, x: number, y: number, ti
     scene.time.delayedCall(450, () => {
       if (emitter.active) emitter.destroy();
     });
+  });
+}
+
+export function spawnLavaSplash(scene: Phaser.Scene, x: number, y: number): void {
+  ensure(scene);
+  const emitter = scene.add.particles(x, y, 'px-4', {
+    speed: { min: 40, max: 120 },
+    angle: { min: 220, max: 320 }, // Splashes upwards and slightly outwards
+    scale: { start: 1.0, end: 0 },
+    alpha: { start: 0.9, end: 0 },
+    tint: [0xff3300, 0xff6600, 0xffaa00],
+    lifespan: { min: 200, max: 450 },
+    quantity: 6,
+    emitting: false,
+    gravityY: 200,
+  });
+
+  emitter.explode(6);
+
+  scene.time.delayedCall(600, () => {
+    emitter.destroy();
   });
 }

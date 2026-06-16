@@ -277,10 +277,11 @@ export class UIScene extends Phaser.Scene {
       this.healthFill.setFillStyle(0xcc3333);
     }
 
-    // Damage flash: pulse panel border on damage
+    // Damage flash: pulse panel border and shake UI camera on damage
     if (this.player.health < this.prevHealth) {
       this.healthFill.setFillStyle(0xffffff);
-      this.time.delayedCall(60, () => {
+      this.cameras.main.shake(150, 0.007);
+      this.time.delayedCall(80, () => {
         if (this.healthFill && this.healthFill.active) {
           this.healthFill.setFillStyle(0xcc3333);
         }
@@ -308,6 +309,27 @@ export class UIScene extends Phaser.Scene {
       this.heatFill.setFillStyle(0xff2200, pulse);
     } else {
       this.heatFill.setFillStyle(0xff4400);
+    }
+
+    // Overheat steam venting particles from HUD heat bar
+    if (heatLevel === 'warning' || heatLevel === 'danger') {
+      if (Math.random() > 0.78) {
+        const hX = this.pad + this.panelX + this.displayHeatW;
+        const hY = this.pad + this.panelY + (70 + 12) * this.scaleFactor;
+        const size = Phaser.Math.Between(2, 4) * this.scaleFactor;
+        const steam = this.add.rectangle(hX, hY, size, size, 0xcccccc, 0.55);
+        steam.setDepth(200);
+
+        this.tweens.add({
+          targets: steam,
+          x: hX + Phaser.Math.Between(-8, 8) * this.scaleFactor,
+          y: hY - Phaser.Math.Between(15, 30) * this.scaleFactor,
+          alpha: 0,
+          scale: 1.6,
+          duration: Phaser.Math.Between(550, 950),
+          onComplete: () => steam.destroy()
+        });
+      }
     }
 
     const { state } = this.player.formMachine;
