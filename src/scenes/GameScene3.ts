@@ -13,6 +13,7 @@ import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
+import { EchoFragment } from '../entities/EchoFragment';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -68,6 +69,7 @@ export class GameScene3 extends BaseLevelScene {
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
   private bloom!: BloomSystem;
+  private echoFragments: EchoFragment[] = [];
 
   // Autoscroll & coordinates
   private scrollX = 0;
@@ -171,6 +173,7 @@ export class GameScene3 extends BaseLevelScene {
     this.createLevel();
     this.createInteractiveObjects();
     this.createDecorations();
+    this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
 
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
@@ -466,7 +469,18 @@ export class GameScene3 extends BaseLevelScene {
     }
   }
 
+  private createEchoFragments(): void {
+    const e1 = new EchoFragment(this, 3500, 350, 2);
+    this.echoFragments.push(e1);
+  }
+
   private setupCollisions(): void {
+    this.echoFragments.forEach((echo) => {
+      this.physics.add.overlap(this.player, echo, () => {
+        if (echo.active) echo.collect();
+      });
+    });
+
     // Overlap checks for gorge platforms/walls to apply dragging speed penalty
     this.physics.add.overlap(this.player, this.platforms, (_player, _platform) => {
       if (this.player.formMachine.state !== FormState.DRAGON) return;
@@ -833,6 +847,7 @@ export class GameScene3 extends BaseLevelScene {
     this.updateBulletCleanup();
     this.updateEmbers(delta);
     this.updateBloom();
+    this.updateVignettePulse();
     
     // Update active steam pipes & check steam hits
     this.steamPipes.forEach((pipe) => {
@@ -1012,6 +1027,22 @@ export class GameScene3 extends BaseLevelScene {
     }
 
     this.bloom.update();
+  }
+
+  private updateVignettePulse(): void {
+    if (!this.vignette) return;
+    const hpRatio = this.player.health / this.player.maxHealth;
+    let alpha = 0;
+
+    if (hpRatio < 0.3) {
+      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
+      this.vignette.setFillStyle(0x880000, alpha);
+    } else if (hpRatio < 0.5) {
+      alpha = 0.15;
+      this.vignette.setFillStyle(0x000000, alpha);
+    }
+
+    this.vignette.setAlpha(alpha);
   }
 
   private updateWaves(): void {

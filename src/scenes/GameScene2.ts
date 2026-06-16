@@ -20,6 +20,7 @@ import { spawnHitParticles, spawnDeathExplosion } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
+import { EchoFragment } from '../entities/EchoFragment';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -63,6 +64,7 @@ export class GameScene2 extends BaseLevelScene {
   private lastHeatDamageSoundTime = 0;
   private emberTimer = 0;
   private bloom!: BloomSystem;
+  private echoFragments: EchoFragment[] = [];
 
   private pendingMechaUnlock = true;
   private pendingDragonUnlock = false;
@@ -131,6 +133,7 @@ export class GameScene2 extends BaseLevelScene {
     this.createDecorations();
     this.createLevel();
     this.createInteractiveObjects();
+    this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
 
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
@@ -530,6 +533,11 @@ export class GameScene2 extends BaseLevelScene {
     this.cameras.main.setZoom(CAMERA_ZOOM_MECHA);
   }
 
+  private createEchoFragments(): void {
+    const e1 = new EchoFragment(this, 3800, 630, 2);
+    this.echoFragments.push(e1);
+  }
+
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.enemies, this.platforms);
@@ -543,6 +551,12 @@ export class GameScene2 extends BaseLevelScene {
 
       const knockDir = player.x < enemy.x ? -1 : 1;
       player.takeDamage(enemy.attackDamage, knockDir);
+    });
+
+    this.echoFragments.forEach((echo) => {
+      this.physics.add.overlap(this.player, echo, () => {
+        if (echo.active) echo.collect();
+      });
     });
 
     // Overlap checks for hazards (Lava: instant kill for human warrior, damage for mecha)
@@ -627,6 +641,7 @@ export class GameScene2 extends BaseLevelScene {
     this.updateBulletCleanup();
     this.updateEmbers(delta);
     this.updateBloom();
+    this.updateVignettePulse();
     this.updateMoltenDrips(delta);
 
     // Apply extreme heat environmental damage to Warrior form
@@ -784,6 +799,31 @@ export class GameScene2 extends BaseLevelScene {
     }
 
     this.bloom.update();
+  }
+
+  private updateVignettePulse(): void {
+    if (!this.vignette) return;
+    const hpRatio = this.player.health / this.player.maxHealth;
+    const heatLevel = this.player.formMachine.heat.level;
+    let alpha = 0;
+
+    if (hpRatio < 0.3) {
+      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
+      this.vignette.setFillStyle(0x880000, alpha);
+    } else if (hpRatio < 0.5) {
+      alpha = 0.15;
+      this.vignette.setFillStyle(0x000000, alpha);
+    }
+
+    if (heatLevel === 'danger') {
+      alpha = Math.max(alpha, 0.3 + 0.15 * Math.sin(Date.now() * 0.015));
+      this.vignette.setFillStyle(0xff2200, alpha);
+    } else if (heatLevel === 'warning') {
+      alpha = Math.max(alpha, 0.12 + 0.06 * Math.sin(Date.now() * 0.008));
+      this.vignette.setFillStyle(0x880000, alpha);
+    }
+
+    this.vignette.setAlpha(alpha);
   }
 
   private spawnSmeltingEmber(): void {

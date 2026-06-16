@@ -257,10 +257,29 @@ export class TransitionScene23 extends Phaser.Scene {
       alpha: { from: 0, to: 0.9 },
       duration: 300,
       yoyo: true,
-      hold: 400,
+      hold: 600,
     });
 
-    this.cameras.main.fade(900, 0, 0, 0);
+    const { width, height } = this.scale;
+    const maxRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+
+    this.tweens.addCounter({
+      from: 0,
+      to: maxRadius,
+      duration: 900,
+      ease: 'Power3',
+      onUpdate: (tween) => {
+        const r = tween.getValue();
+        if (r == null) return;
+        const g = this.add.graphics();
+        g.setDepth(500);
+        g.setScrollFactor(0);
+        g.fillStyle(0x000000, 1);
+        g.fillCircle(width / 2, height / 2, r);
+        this.time.delayedCall(50, () => g.destroy());
+      },
+    });
+
     this.time.delayedCall(900, onComplete);
   }
 }

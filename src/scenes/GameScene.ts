@@ -1466,6 +1466,7 @@ export class GameScene extends BaseLevelScene {
     this.checkCrumblingPlatforms();
     this.updateEmbers(delta);
     this.updateBloom();
+    this.updateVignettePulse();
     this.updateShmupZone(delta, time);
 
     if (this.player.active) {
@@ -1795,6 +1796,31 @@ export class GameScene extends BaseLevelScene {
     }
 
     this.bloom.update();
+  }
+
+  private updateVignettePulse(): void {
+    if (!this.vignette) return;
+    const hpRatio = this.player.health / this.player.maxHealth;
+    const heatLevel = this.player.formMachine.heat.level;
+    let alpha = 0;
+
+    if (hpRatio < 0.3) {
+      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
+      this.vignette.setFillStyle(0x880000, alpha);
+    } else if (hpRatio < 0.5) {
+      alpha = 0.15;
+      this.vignette.setFillStyle(0x000000, alpha);
+    }
+
+    if (heatLevel === 'danger') {
+      alpha = Math.max(alpha, 0.3 + 0.15 * Math.sin(Date.now() * 0.015));
+      this.vignette.setFillStyle(0xff2200, alpha);
+    } else if (heatLevel === 'warning') {
+      alpha = Math.max(alpha, 0.12 + 0.06 * Math.sin(Date.now() * 0.008));
+      this.vignette.setFillStyle(0x880000, alpha);
+    }
+
+    this.vignette.setAlpha(alpha);
   }
 
   private updateSwordVsEnemies(): void {
