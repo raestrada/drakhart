@@ -349,12 +349,15 @@ export class GameScene extends BaseLevelScene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    // Organic ground segments
+    // Organic ground segments WITH gaps for thorn pits
     const groundY = 768;
     this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 2000, 'forest', 1);
-    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 800, 'forest', 2);
-    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 900, 'forest', 3);
-    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 800, 'forest', 4);
+    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 300, 'forest', 2);
+    // Gap 2300-2800 (thorns)
+    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 300, 'forest', 3);
+    // Gap 3100-3700 (thorns)
+    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 300, 'forest', 4);
+    // Gap 4000-4500 (thorns)
     this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
 
@@ -375,17 +378,20 @@ export class GameScene extends BaseLevelScene {
     ];
     platDefs.forEach(p => this.terrainGen.generatePlatform(this.platforms, p.x, p.y, p.w, 'forest'));
 
-    // Thorns / hazards (keep tile-based)
-    const thornZones: { x: number; y: number; w: number }[] = [
-      { x: 2300, y: 784, w: 500 }, { x: 3100, y: 784, w: 600 },
-      { x: 4000, y: 784, w: 500 }, { x: 4900, y: 504, w: 64 },
-      { x: 5480, y: 534, w: 64 }, { x: 6100, y: 464, w: 64 },
+    // Thorns in gaps — player falls through and dies
+    const thornGaps: { x: number; w: number }[] = [
+      { x: 2300, w: 500 }, { x: 3100, w: 600 }, { x: 4000, w: 500 },
     ];
-    thornZones.forEach(tz => {
+    thornGaps.forEach(gap => {
+      for (let tx = gap.x; tx < gap.x + gap.w; tx += 32) {
+        this.hazards.create(tx + 16, 784, 'tile-thorns');
+      }
+    });
+
+    // Thorns on top of ruins
+    [{ x: 4900, y: 504, w: 64 }, { x: 5480, y: 534, w: 64 }, { x: 6100, y: 464, w: 64 }].forEach(tz => {
       for (let tx = tz.x; tx < tz.x + tz.w; tx += 32) {
-        const tile = this.hazards.create(tx + 16, tz.y + 16, 'tile-thorns');
-        (tile.body as Phaser.Physics.Arcade.StaticBody).checkCollision.down = false;
-        tile.refreshBody();
+        this.hazards.create(tx + 16, tz.y + 16, 'tile-thorns');
       }
     });
   }
