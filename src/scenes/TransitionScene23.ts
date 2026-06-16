@@ -84,9 +84,9 @@ export class TransitionScene23 extends Phaser.Scene {
 
     // ── Camera ──
     this.cameras.main.setBounds(0, 0, W, 800);
-    this.cameras.main.setZoom(1.6);
-    this.cameras.main.scrollX = 200;
-    this.cameras.main.scrollY = 100;
+    this.cameras.main.setZoom(1.45);
+    this.cameras.main.scrollX = 150;
+    this.cameras.main.scrollY = 50;
 
     const vig = this.add.graphics().setDepth(100);
     vig.fillStyle(0x000000, 0.35);

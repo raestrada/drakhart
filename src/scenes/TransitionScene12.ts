@@ -91,9 +91,9 @@ export class TransitionScene12 extends Phaser.Scene {
 
     // ── Camera — centered on altar area, closer zoom ──
     this.cameras.main.setBounds(0, 0, W, 800);
-    this.cameras.main.setZoom(1.6);
-    this.cameras.main.scrollX = 300;
-    this.cameras.main.scrollY = 100;
+    this.cameras.main.setZoom(1.45);
+    this.cameras.main.scrollX = 250;
+    this.cameras.main.scrollY = 50;
 
     // ── Vignette ──
     const vig = this.add.graphics().setDepth(100);
