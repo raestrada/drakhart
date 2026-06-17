@@ -210,7 +210,7 @@ export class GameScene extends BaseLevelScene {
     this.cameras.main.setBackgroundColor('#080610');
 
     // 1. Sky Gradient and stars
-    this.bgSky = this.add.tileSprite(0, 0, LEVEL_WIDTH, 1200, 'bg-sky')
+    this.bgSky = this.add.tileSprite(0, 0, 12000, 1200, 'bg-sky')
       .setOrigin(0, 0)
       .setScrollFactor(0.05, 0)
       .setDepth(-30);
@@ -1742,7 +1742,7 @@ export class GameScene extends BaseLevelScene {
     const h = this.scale.height;
 
     // Dynamically adjust tile width/height to ensure 100% viewport coverage
-    const desiredWidth = w * cam.zoom * 2.0;
+    const desiredWidth = w * cam.zoom * 3.5;
     const desiredHeight = h * cam.zoom;
 
     if (this.bgSky) {

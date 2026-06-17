@@ -23,6 +23,9 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   protected slowTimer = 0;
   protected slowMultiplier = 1.0;
 
+  private lastDamageTime = 0;
+  private readonly damageCooldown = 400;
+
   // Health bar UI
   protected hpBarBg: Phaser.GameObjects.Rectangle | null = null;
   protected hpBarFill: Phaser.GameObjects.Rectangle | null = null;
@@ -213,6 +216,10 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount: number): void {
     if (this.health <= 0) return;
+
+    const now = this.scene.time.now;
+    if (now - this.lastDamageTime < this.damageCooldown) return;
+    this.lastDamageTime = now;
 
     this.prevHealthForChip = this.health;
     this.health -= amount;
