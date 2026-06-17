@@ -142,9 +142,11 @@ export class DreadnoughtBoss extends BaseEnemy {
   private fixedX: number;
   private fixedY: number;
   private coreLight: any = null;
+  private bossHpBar: Phaser.GameObjects.Rectangle | null = null;
+  private bossHpFill: Phaser.GameObjects.Rectangle | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
-    super(scene, x, y, 'boss', player, {
+    super(scene, x, y, 'enemy-mecha', player, {
       health: 600,
       speed: 0,
       detectRange: 9999,
@@ -156,12 +158,17 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.fixedX = x;
     this.fixedY = y;
 
-    this.setScale(2.5);
+    this.setScale(4.0);
     this.setAlpha(1);
     this.setTint(0x8899aa, 0x445566, 0x223344, 0x667788);
     this.setDepth(10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-    (this.body as Phaser.Physics.Arcade.Body).setSize(100, 100);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(60, 60);
+    (this.body as Phaser.Physics.Arcade.Body).enable = false; // Shielded: no collision
+
+    this.bossHpBar = scene.add.rectangle(x, y - 80, 200, 8, 0x000000, 0.8).setDepth(20);
+    this.bossHpFill = scene.add.rectangle(x - 100, y - 80, 200, 8, 0x8899aa)
+      .setOrigin(0, 0.5).setDepth(21).setVisible(false);
   }
 
   public activate(): void {
@@ -184,7 +191,8 @@ export class DreadnoughtBoss extends BaseEnemy {
     if (this.cannonsActive <= 0 && this.phase === 'shielded') {
       this.phase = 'vulnerable';
       this.setAlpha(1);
-      this.setTint(0xff6622);
+      this.setTint(0xff5500);
+      (this.body as Phaser.Physics.Arcade.Body).enable = true; // Now hittable!
       this.scene.cameras.main.flash(500, 255, 100, 0);
       this.scene.cameras.main.shake(800, 0.02);
 
@@ -260,6 +268,14 @@ export class DreadnoughtBoss extends BaseEnemy {
       this.coreLight.x = this.x;
       this.coreLight.y = this.y;
     }
+    if (this.bossHpBar) {
+      this.bossHpBar.setPosition(this.x, this.y - 90);
+      this.bossHpFill?.setPosition(this.x - 100, this.y - 90);
+      this.bossHpFill!.width = 200 * Math.max(0, this.health / this.maxHealth);
+      const show = this.phase === 'vulnerable';
+      this.bossHpBar.setVisible(show);
+      this.bossHpFill?.setVisible(show);
+    }
 
     if (this.phase === 'vulnerable') {
       if (time - this.fireTimer > this.attackCooldown) {
@@ -325,6 +341,8 @@ export class DreadnoughtBoss extends BaseEnemy {
   destroy(fromScene?: boolean): void {
     const scene = this.scene;
     if (this.coreLight && scene?.lights) scene.lights.removeLight(this.coreLight);
+    if (this.bossHpBar) this.bossHpBar.destroy();
+    if (this.bossHpFill) this.bossHpFill.destroy();
     super.destroy(fromScene);
   }
 }

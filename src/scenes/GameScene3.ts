@@ -1189,48 +1189,60 @@ export class GameScene3 extends BaseLevelScene {
     this.gameAudio?.playBossWarning();
     this.time.delayedCall(2400, () => this.gameAudio?.playBossBGM());
 
-    // Play Boss warning text
     const cam = this.cameras.main;
     const cx = cam.scrollX + cam.width / 2;
-    const cy = 200;
+    const cy = cam.scrollY + cam.height / 2;
 
-    const alertText = this.add.text(cx, cy, t('story.bossAlert') || 'BOSS ALERT', {
-      fontSize: '20px',
-      fontFamily: 'monospace',
-      color: '#cc0055',
-      align: 'center',
-      stroke: '#000000',
-      strokeThickness: 3
-    })
-    .setOrigin(0.5)
-    .setScrollFactor(0);
+    // Red flash
+    this.cameras.main.flash(400, 200, 0, 0);
+
+    // WARNING banner
+    const warn = this.add.text(cx, cy - 60, '⚠ WARNING ⚠', {
+      fontSize: '32px', fontFamily: 'monospace', color: '#ff0000',
+      stroke: '#000000', strokeThickness: 6,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
+
+    const bossName = this.add.text(cx, cy, 'DREADNOUGHT CLASS — DRAKHART', {
+      fontSize: '18px', fontFamily: 'monospace', color: '#ff6600',
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
+
+    const hint = this.add.text(cx, cy + 40, 'DESTROY THE CANNONS — THEN THE CORE!', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#ffaa44',
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
     this.tweens.add({
-      targets: alertText,
-      scaleX: 1.2,
-      scaleY: 1.2,
-      yoyo: true,
-      repeat: 4,
-      duration: 300,
-      onComplete: () => alertText.destroy()
+      targets: warn, alpha: { from: 0, to: 1 }, scaleX: { from: 0.5, to: 1 }, scaleY: { from: 0.5, to: 1 },
+      duration: 300, yoyo: true, hold: 800, repeat: 2,
+      onComplete: () => warn.destroy(),
+    });
+    this.tweens.add({
+      targets: bossName, alpha: { from: 0, to: 1 },
+      duration: 400, delay: 200, yoyo: true, hold: 1500,
+      onComplete: () => bossName.destroy(),
+    });
+    this.tweens.add({
+      targets: hint, alpha: { from: 0, to: 1 },
+      duration: 400, delay: 400, yoyo: true, hold: 1400,
+      onComplete: () => hint.destroy(),
     });
 
-    // Spawn Boss centered in visible area, zoom out for full view
+    // Spawn Boss
     const bossX = this.scrollX + cam.width * 0.65;
     this.boss = new DreadnoughtBoss(this, bossX, 350, this.player);
     this.enemies.add(this.boss);
-    this.boss.activate();
+    this.time.delayedCall(2200, () => this.boss?.activate());
 
     this.cameras.main.zoomTo(1.0, 800, 'Cubic.easeInOut');
 
-    // Modify die method of Boss to trigger Level 3 victory
-    const originalDie = (this.boss as any).die.bind(this.boss);
-    (this.boss as any).die = () => {
+    const boss = this.boss;
+    if (!boss) return;
+    const originalDie = (boss as any).die.bind(boss);
+    (boss as any).die = () => {
       originalDie();
       this.triggerLevel3Victory();
     };
-
-    // Note: Boss lasers overlap is handled inside DreadnoughtBoss logic
   }
 
   private triggerLevel3Victory(): void {
