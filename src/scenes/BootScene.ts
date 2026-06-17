@@ -177,6 +177,7 @@ export class BootScene extends Phaser.Scene {
       { name: 'Iron Arteries', file: 'Iron_Arteries', desc: 'Level 2 — Smelting Refinery' },
       { name: 'Orbit Unbound', file: 'Orbit_Unbound', desc: 'Level 3 — Ashen Gorge' },
       { name: 'The Last Steeple', file: 'The_Last_Steeple', desc: 'Boss — Dreadnought' },
+      { name: 'Silentium Draconis', file: 'Silentium_Draconis', desc: 'Sacred Altar — Dragon Core' },
     ];
 
     let currentAudio: HTMLAudioElement | null = null;
@@ -186,7 +187,7 @@ export class BootScene extends Phaser.Scene {
     const trackDescs: Phaser.GameObjects.Text[] = [];
 
     tracks.forEach((track, i) => {
-      const yPos = height * 0.38 + i * height * 0.09;
+      const yPos = height * 0.34 + i * height * 0.08;
       const btn = this.add.text(width / 2, yPos, track.name, {
         fontSize: `${Math.round(14 * scale)}px`,
         fontFamily: 'monospace',
