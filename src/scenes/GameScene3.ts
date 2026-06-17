@@ -264,17 +264,17 @@ export class GameScene3 extends BaseLevelScene {
     this.hazards = this.physics.add.staticGroup();
 
     // Organic floor — gorge surface
-    this.terrainGen.generateGroundSegment(this.platforms, 0, 704, 13000, 'gorge', 40);
+    this.terrainGen.generateGroundSegment(this.platforms, 0, 704, 16000, 'gorge', 40);
 
     // Ceiling — solid top boundary (platforms group for collision)
-    for (let tx = 0; tx < 13000; tx += 256) {
+    for (let tx = 0; tx < 16000; tx += 256) {
       const ceil = this.platforms.create(tx + 128, 32, 'tile-lava-ground') as Phaser.Physics.Arcade.Sprite;
       ceil.setDisplaySize(256, 64); ceil.refreshBody(); ceil.setDepth(3);
     }
 
     // Spawn Steam Pipes
     let currentX = 1200;
-    while (currentX < 11800) {
+    while (currentX < 14800) {
       const isCeiling = Math.random() > 0.5;
       const pipeY = isCeiling ? 96 : 704;
       this.steamPipes.push(new SteamPipeHazard(this, currentX, pipeY, isCeiling));
@@ -283,7 +283,7 @@ export class GameScene3 extends BaseLevelScene {
 
     // Spawn Pistons
     currentX = 1600;
-    while (currentX < 11800) {
+    while (currentX < 14800) {
       const isCeiling = Math.random() > 0.5;
       const pistonY = isCeiling ? 96 : 704;
       this.pistons.add(new PistonHazard(this, currentX, pistonY, isCeiling));
@@ -292,7 +292,7 @@ export class GameScene3 extends BaseLevelScene {
 
     // Spawn Laser Gates
     currentX = 2500;
-    while (currentX < 11800) {
+    while (currentX < 14800) {
       const gate = new LaserGate(this, currentX);
       this.laserGates.push(gate);
       this.laserBeams.add(gate.beam);
@@ -307,7 +307,7 @@ export class GameScene3 extends BaseLevelScene {
 
     // Spawn Energy pickups along the gorge corridor
     let currentPX = 500;
-    while (currentPX < 11800) {
+    while (currentPX < 14800) {
       const y = Phaser.Math.Between(200, 600);
       this.energyPickups.add(new EnergyPickup(this, currentPX, y));
       currentPX += Phaser.Math.Between(400, 800);
@@ -703,11 +703,11 @@ export class GameScene3 extends BaseLevelScene {
         // 1. Autoscroll horizontal camera
         if (!this.bossActive) {
           // Accelerate speed based on scrollX: starting at 210, ending at 300 near 12000
-          const progress = Math.min(this.scrollX / 12000, 1);
+          const progress = Math.min(this.scrollX / 15000, 1);
           const currentSpeed = 210 + progress * 90; // 210 to 300 px/s
           this.scrollX += currentSpeed * dt;
-          if (this.scrollX >= 12000) {
-            this.scrollX = 12000;
+          if (this.scrollX >= 15000) {
+            this.scrollX = 15000;
             this.activateBoss();
           }
         }
