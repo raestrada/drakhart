@@ -51,31 +51,27 @@ export class SpitterEnemy extends BaseEnemy {
   private fireBullet(): void {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
-    // Muzzle flash light
-    if (this.scene.lights) {
-      const flash = this.scene.lights.addLight(this.x, this.y - 4, 60, 0x00ff88, 0.6);
-      this.scene.time.delayedCall(80, () => this.scene.lights.removeLight(flash));
+    const scene = this.scene;
+
+    if (scene.lights) {
+      const flash = scene.lights.addLight(this.x, this.y - 4, 60, 0x00ff88, 0.6);
+      scene.time.delayedCall(80, () => scene.lights.removeLight(flash));
     }
 
-    const bullet = this.scene.physics.add.sprite(this.x, this.y - 4, 'bullet-fire');
+    const bullet = scene.physics.add.sprite(this.x, this.y - 4, 'bullet-fire');
     bullet.setTint(0x00ff88);
     bullet.setScale(0.9);
-
-    const body = bullet.body as Phaser.Physics.Arcade.Body;
-    body.allowGravity = false;
+    (bullet.body as Phaser.Physics.Arcade.Body).allowGravity = false;
 
     const dx = this.player.x - this.x;
     const dy = (this.player.y - 10) - this.y;
     const angle = Math.atan2(dy, dx);
-    const bulletSpeed = 160;
+    bullet.setVelocity(Math.cos(angle) * 160, Math.sin(angle) * 160);
 
-    bullet.setVelocity(Math.cos(angle) * bulletSpeed, Math.sin(angle) * bulletSpeed);
-
-    const trail = spawnProjectileTrail(this.scene, bullet.x, bullet.y, [0x00ff88, 0x44ff66], 300);
-
+    const trail = spawnProjectileTrail(scene, bullet.x, bullet.y, [0x00ff88, 0x44ff66], 300);
     bullet.setData('trail', trail);
 
-    this.scene.time.addEvent({
+    const trailTimer = scene.time.addEvent({
       delay: 30,
       repeat: 100,
       callback: () => {
@@ -84,24 +80,22 @@ export class SpitterEnemy extends BaseEnemy {
       },
     });
 
-    this.scene.physics.add.overlap(this.player, bullet, () => {
+    scene.physics.add.overlap(this.player, bullet, () => {
       if (!bullet.active) return;
+      trailTimer.destroy();
       const impactX = bullet.x;
       const impactY = bullet.y;
-      const trailRef = bullet.getData('trail') as Phaser.GameObjects.Particles.ParticleEmitter;
-      if (trailRef?.active) { trailRef.stop(); this.scene.time.delayedCall(400, () => trailRef.destroy()); }
+      if (trail.active) { trail.stop(); scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
       bullet.destroy();
-      spawnProjectileImpact(this.scene, impactX, impactY, [0x00ff88, 0x44ff66], 6);
+      spawnProjectileImpact(scene, impactX, impactY, [0x00ff88, 0x44ff66], 6);
       const knockDir = this.player.x < this.x ? -1 : 1;
       this.player.takeDamage(this.attackDamage, knockDir);
     });
 
-    this.scene.time.delayedCall(3000, () => {
-      if (bullet.active) {
-        const trailRef = bullet.getData('trail') as Phaser.GameObjects.Particles.ParticleEmitter;
-        if (trailRef?.active) { trailRef.stop(); this.scene.time.delayedCall(400, () => { if (trailRef.active) trailRef.destroy(); }); }
-        bullet.destroy();
-      }
+    scene.time.delayedCall(3000, () => {
+      trailTimer.destroy();
+      if (trail.active) { trail.stop(); scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
+      if (bullet.active) bullet.destroy();
     });
   }
 

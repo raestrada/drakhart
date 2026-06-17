@@ -63,29 +63,26 @@ export class FlyingEnemy extends BaseEnemy {
   private fireBullet(): void {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
-    if (this.scene.lights) {
-      const flash = this.scene.lights.addLight(this.x, this.y, 50, 0xcc00ff, 0.6);
-      this.scene.time.delayedCall(80, () => this.scene.lights.removeLight(flash));
+    const scene = this.scene;
+
+    if (scene.lights) {
+      const flash = scene.lights.addLight(this.x, this.y, 50, 0xcc00ff, 0.6);
+      scene.time.delayedCall(80, () => scene.lights.removeLight(flash));
     }
 
-    const bullet = this.scene.physics.add.sprite(this.x, this.y, 'bullet-fire');
+    const bullet = scene.physics.add.sprite(this.x, this.y, 'bullet-fire');
     bullet.setTint(0xcc00ff);
     bullet.setScale(0.8);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
-
-    const body = bullet.body as Phaser.Physics.Arcade.Body;
-    body.allowGravity = false;
+    (bullet.body as Phaser.Physics.Arcade.Body).allowGravity = false;
 
     const dx = this.player.x - this.x;
     const dy = this.player.y - this.y;
     const angle = Math.atan2(dy, dx);
-    const bulletSpeed = 200;
+    bullet.setVelocity(Math.cos(angle) * 200, Math.sin(angle) * 200);
 
-    bullet.setVelocity(Math.cos(angle) * bulletSpeed, Math.sin(angle) * bulletSpeed);
-
-    const trail = spawnProjectileTrail(this.scene, bullet.x, bullet.y, [0xcc00ff, 0xff44ff], 250);
-
-    this.scene.time.addEvent({
+    const trail = spawnProjectileTrail(scene, bullet.x, bullet.y, [0xcc00ff, 0xff44ff], 250);
+    const trailTimer = scene.time.addEvent({
       delay: 30,
       repeat: 80,
       callback: () => {
@@ -94,22 +91,22 @@ export class FlyingEnemy extends BaseEnemy {
       },
     });
 
-    this.scene.physics.add.overlap(this.player, bullet, () => {
+    scene.physics.add.overlap(this.player, bullet, () => {
       if (!bullet.active) return;
+      trailTimer.destroy();
       const impactX = bullet.x;
       const impactY = bullet.y;
-      if (trail.active) { trail.stop(); this.scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
+      if (trail.active) { trail.stop(); scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
       bullet.destroy();
-      spawnProjectileImpact(this.scene, impactX, impactY, [0xcc00ff, 0xff44ff], 6);
+      spawnProjectileImpact(scene, impactX, impactY, [0xcc00ff, 0xff44ff], 6);
       const knockDir = this.player.x < this.x ? -1 : 1;
       this.player.takeDamage(this.attackDamage, knockDir);
     });
 
-    this.scene.time.delayedCall(2500, () => {
-      if (bullet.active) {
-        if (trail.active) { trail.stop(); this.scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
-        bullet.destroy();
-      }
+    scene.time.delayedCall(2500, () => {
+      trailTimer.destroy();
+      if (trail.active) { trail.stop(); scene.time.delayedCall(400, () => { if (trail.active) trail.destroy(); }); }
+      if (bullet.active) bullet.destroy();
     });
   }
 
@@ -120,19 +117,22 @@ export class FlyingEnemy extends BaseEnemy {
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x663388);
 
-    // Falling debris
+    const scene = this.scene;
+    const ex = this.x;
+    const ey = this.y;
+
     for (let i = 0; i < 6; i++) {
-      this.scene.time.delayedCall(i * 60, () => {
-        const dx = this.x + Phaser.Math.Between(-20, 20);
-        const debris = this.scene.add.rectangle(dx, this.y + Phaser.Math.Between(-10, 10), 4, 4, 0x8844cc, 0.8);
+      scene.time.delayedCall(i * 60, () => {
+        const dx = ex + Phaser.Math.Between(-20, 20);
+        const debris = scene.add.rectangle(dx, ey + Phaser.Math.Between(-10, 10), 4, 4, 0x8844cc, 0.8);
         debris.setBlendMode(Phaser.BlendModes.ADD);
-        this.scene.physics.add.existing(debris);
+        scene.physics.add.existing(debris);
         const dBody = debris.body as Phaser.Physics.Arcade.Body;
         if (dBody) {
           dBody.setVelocity(Phaser.Math.Between(-80, 80), Phaser.Math.Between(-120, -40));
           dBody.setGravityY(200);
         }
-        this.scene.tweens.add({
+        scene.tweens.add({
           targets: debris,
           alpha: 0,
           duration: 800,
