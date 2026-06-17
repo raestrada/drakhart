@@ -566,13 +566,13 @@ export class GameScene extends BaseLevelScene {
     const e18 = new ShieldEnemy(this, 8100, 738, this.player, {
       health: 75, damage: 18, speed: 45, patrolMinX: 8050, patrolMaxX: 8350
     });
-    const e19 = new SpitterEnemy(this, 8600, 776, this.player, {
+    const e19 = new SpitterEnemy(this, 8600, 786, this.player, {
       health: 65, damage: 16, speed: 55, patrolMinX: 8500, patrolMaxX: 8750
     });
-    const e20 = new LeaperEnemy(this, 9000, 824, this.player, {
+    const e20 = new LeaperEnemy(this, 9000, 834, this.player, {
       health: 80, damage: 20, speed: 85, patrolMinX: 8900, patrolMaxX: 9100
     });
-    const e21 = new BaseEnemy(this, 9350, 792, 'enemy-sentry', this.player, {
+    const e21 = new BaseEnemy(this, 9350, 802, 'enemy-sentry', this.player, {
       health: 65, damage: 16, speed: 70, patrolMinX: 9250, patrolMaxX: 9450
     });
 
