@@ -210,8 +210,8 @@ export class GameScene2 extends BaseLevelScene {
     if (this.textures.exists('image-refinery-sun')) {
       this.refinerySunImage = this.add.image(0, 0, 'image-refinery-sun')
         .setOrigin(0.5, 0.5)
-        .setDepth(-29);
-      this.refinerySunImage.setTint(0xffaa99, 0xff8877, 0x552222, 0x442222);
+        .setDepth(-29)
+        .setAlpha(0.7);
     }
 
     // 2. Smelting Furnace background (procedural silhouette towers, slow scroll)
@@ -225,8 +225,8 @@ export class GameScene2 extends BaseLevelScene {
     if (this.textures.exists('image-furnace')) {
       this.furnaceImage = this.add.image(0, 0, 'image-furnace')
         .setOrigin(0.5, 0.5)
-        .setDepth(-19);
-      this.furnaceImage.setTint(0xff8866, 0xff88aa, 0x66222c, 0x883344);
+        .setDepth(-19)
+        .setAlpha(0.6);
     }
 
     // 3. Furnace Pipes background (procedural girders & pipes, medium scroll)
@@ -240,8 +240,8 @@ export class GameScene2 extends BaseLevelScene {
     if (this.textures.exists('image-furnace-pipes')) {
       this.pipesImage = this.add.image(0, 0, 'image-furnace-pipes')
         .setOrigin(0.5, 0.5)
-        .setDepth(-9);
-      this.pipesImage.setTint(0xbb5544, 0xdd6644, 0x221111, 0x331111);
+        .setDepth(-9)
+        .setAlpha(0.5);
     }
   }
 
