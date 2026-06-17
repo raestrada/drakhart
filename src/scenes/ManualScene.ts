@@ -17,45 +17,35 @@ export class ManualScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    const scale = width / 800;
     const cx = width / 2;
     const cy = height / 2;
 
     this.cameras.main.setBackgroundColor('#c8b896');
-
-    // Full parchment overlay
     this.add.rectangle(cx, cy, width - 16, height - 16, 0xc8b896).setStrokeStyle(2, 0x3a2a1a);
 
-    // Page content
     this.pageContainer = this.add.container(0, 0);
-    this.drawCurrentPage(width, height, scale);
+    this.drawCurrentPage(width, height);
 
-    // Page number
     const pageText = this.add.text(width * 0.95, height * 0.97, '', {
-      fontSize: `${Math.round(13 * scale)}px`,
+      fontSize: `${Math.round(13 * width / 800)}px`,
       fontFamily: 'Georgia, serif',
       color: '#5a4a3a',
     }).setOrigin(1, 0.5).setDepth(2);
 
-    // Navigation arrows
-    const arrowStyle = {
-      fontSize: `${Math.round(28 * scale)}px`,
-      fontFamily: 'Georgia, serif',
-      color: '#3a2a1a',
-    };
-
-    const leftArrow = this.add.text(width * 0.04, cy, '◄', arrowStyle)
-      .setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
-    const rightArrow = this.add.text(width * 0.96, cy, '►', arrowStyle)
-      .setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
-
-    leftArrow.on('pointerover', () => leftArrow.setColor('#8a6a4a'));
-    leftArrow.on('pointerout', () => leftArrow.setColor('#3a2a1a'));
-    leftArrow.on('pointerdown', () => this.prevPage());
-
-    rightArrow.on('pointerover', () => rightArrow.setColor('#8a6a4a'));
-    rightArrow.on('pointerout', () => rightArrow.setColor('#3a2a1a'));
-    rightArrow.on('pointerdown', () => this.nextPage());
+    const arrows = [
+      { x: width * 0.04, text: '◄', cb: () => this.prevPage() },
+      { x: width * 0.96, text: '►', cb: () => this.nextPage() },
+    ];
+    arrows.forEach(a => {
+      const btn = this.add.text(a.x, cy, a.text, {
+        fontSize: `${Math.round(28 * width / 800)}px`,
+        fontFamily: 'Georgia, serif',
+        color: '#3a2a1a',
+      }).setOrigin(0.5).setDepth(2).setInteractive({ useHandCursor: true });
+      btn.on('pointerover', () => btn.setColor('#8a6a4a'));
+      btn.on('pointerout', () => btn.setColor('#3a2a1a'));
+      btn.on('pointerdown', a.cb);
+    });
 
     this.input.keyboard!.on('keydown-LEFT', () => this.prevPage());
     this.input.keyboard!.on('keydown-RIGHT', () => this.nextPage());
@@ -63,348 +53,280 @@ export class ManualScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ENTER', () => this.scene.stop());
 
     const closeBtn = this.add.text(width * 0.96, height * 0.04, '✕', {
-      fontSize: `${Math.round(20 * scale)}px`,
+      fontSize: `${Math.round(20 * width / 800)}px`,
       fontFamily: 'Georgia, serif',
       color: '#5a3a2a',
     }).setOrigin(1, 0.5).setDepth(2).setInteractive({ useHandCursor: true });
     closeBtn.on('pointerdown', () => this.scene.stop());
 
-    const updatePage = () => {
-      pageText.setText(`— ${this.currentPage + 1} / ${this.pages.length} —`);
-      leftArrow.setVisible(this.currentPage > 0);
-      rightArrow.setVisible(this.currentPage < this.pages.length - 1);
-    };
-    updatePage();
+    pageText.setText(`— ${this.currentPage + 1} / ${this.pages.length} —`);
   }
 
-  private buildPages(): void {
-    // Page 0: Cover
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 120, 'D R A K H A R T', '#6a1a1a', 30);
-        s.addTitle(cx, cy - 60, 'INSTRUCTION MANUAL', '#5a3a2a', 14);
-        s.addDivider(cx, cy - 30, 200);
-        s.addText(cx, cy + 10, 'A Dark Fantasy Action-Platformer', 'Georgia', '#8a5a3a', 13, true);
-        s.addText(cx, cy + 40, 'For the Dragon Core Awaits', 'Georgia', '#6a4a3a', 12, true);
-        s.addDivider(cx, cy + 80, 150);
-        s.addText(cx, h - 80, '"In the old world, only ash remains."', 'Georgia', '#5a3a2a', 11, true);
-      },
-    });
+  // ── Helpers ──
 
-    // Page 1: The Warrior (forms)
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'THE FORMS OF DRAKHART', '#6a1a1a', 18);
-
-        // Warrior
-        s.addSprite(cx - 130, cy - 60, 'player-human', 2.0);
-        s.addTitle(cx - 20, cy - 80, 'THE WARRIOR', '#5a2a1a', 13);
-        s.addParagraph(cx - 20, cy - 55, 230,
-          'Agile and swift. Master of the blade. Excels at' +
-          ' platforming and sword combat. Find the Dragon Core' +
-          ' to unlock transformation.'
-        );
-
-        // Mecha
-        s.addSprite(cx - 130, cy + 40, 'player-mecha', 1.6);
-        s.addTitle(cx - 20, cy + 20, 'THE DRACONEL', '#8a3a2a', 13);
-        s.addParagraph(cx - 20, cy + 45, 230,
-          'Heavy mecha form. Wields the Claymore (75 dmg).' +
-          ' Shatters barricades. Hover jets for slow flight.' +
-          ' Watch your HEAT gauge — overheat shuts you down.'
-        );
-
-        // Dragon
-        s.addSprite(cx + 230, cy - 10, 'player-dragon', 1.3);
-        s.addTitle(cx + 230, cy + 80, 'THE DRAGON', '#3a5a8a', 12);
-        s.addParagraph(cx + 170, cy + 105, 130,
-          'Flight form. Fire Breath. Free movement. ' +
-          'Requires Flight Core. Energy drains while airborne.'
-        );
-      },
-    });
-
-    // Page 2: Controls Layout
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'CONTROLS', '#6a1a1a', 18);
-
-        const leftCol = cx - 160;
-
-        const controls = [
-          ['ARROWS / WASD', 'Move'],
-          ['UP / W', 'Jump (Hold = Hover in Mecha)'],
-          ['X', 'Attack (Sword / Fire Breath)'],
-          ['C', 'Cycle Form'],
-          ['T', 'View War Echoes (Tarot)'],
-          ['ESC', 'Pause Menu'],
-          ['E (near Altar)', 'Pray / Save Progress'],
-        ];
-
-        let yPos = cy - 100;
-        s.addTitle(leftCol, yPos, 'KEYBOARD', '#5a2a1a', 11);
-        yPos += 14;
-        controls.forEach(([key, desc]) => {
-          s.addText(leftCol, yPos, key, 'monospace', '#8a4a2a', 9);
-          s.addText(leftCol + 130, yPos, desc, 'Georgia', '#3a2a1a', 9);
-          yPos += 22;
-        });
-
-        s.addDivider(cx, cy + 70, 300);
-
-        // Tips box
-        s.addTitle(cx, cy + 85, 'PRO TIPS', '#6a1a1a', 13);
-        s.addParagraph(cx - 120, cy + 110, 240,
-          '• Hold X in Dragon form for continuous auto-fire (12.5 shots/sec).\n' +
-          '• Use Steam Vents (refinery) to boost Mecha jumps.\n' +
-          '• Cooling Valves reset Mecha heat instantly.\n' +
-          '• Pray at Altars to save progress + restore HP/Energy.\n' +
-          '• War Echoes (Tarot Cards) grant permanent upgrades.\n' +
-          '• Gamepad: D-pad / Left Stick to move. X = Attack. C = Transform.'
-        );
-      },
-    });
-
-    // Page 3: Story
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'THE STORY SO FAR', '#6a1a1a', 18);
-
-        s.addTitle(cx - 140, cy - 100, 'THE OLD WORLD', '#5a2a1a', 13);
-        s.addParagraph(cx - 140, cy - 75, 280,
-          'The old world is ash. The Empire\'s industrial war machines have consumed ' +
-          'the land, burning ancient forests and crushing sacred temples beneath ' +
-          'smelting refineries. Their modern military technology — brutalist steel ' +
-          'plating, diesel generators, physical railguns — dominates all.'
-        );
-
-        s.addTitle(cx - 140, cy - 20, 'THE DRAGON CORE', '#5a2a1a', 13);
-        s.addParagraph(cx - 140, cy + 5, 280,
-          'But beneath the ruined altar lies the Dragon Core — a pulsating crimson ' +
-          'crystal of biomechanical power. Bond with it and awaken the Draconel: an ' +
-          'ancient mecha forged of dragon bone, steel, and core fire. Only this ' +
-          'forgotten technology can challenge the Empire\'s industrial onslaught.'
-        );
-
-        s.addSprite(cx + 230, cy - 30, 'dragon-core', 3.0);
-        s.addText(cx + 230, cy + 55, 'Dragon Core', 'Georgia', '#8a3a2a', 9);
-      },
-    });
-
-    // Page 4: Bestiary (enemies with sprites)
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'BESTIARY', '#6a1a1a', 18);
-
-        const enemies = [
-          { txt: 'enemy-sentry', scale: 1.8, name: 'SENTRY', desc: 'Standard patrol. Attacks on sight.' },
-          { txt: 'enemy-leaper', scale: 1.6, name: 'LEAPER', desc: 'Agile hunter. Leaps at prey.' },
-          { txt: 'enemy-spitter', scale: 1.6, name: 'SPITTER', desc: 'Ranged acid. Stay mobile.' },
-          { txt: 'enemy-shield', scale: 1.6, name: 'SHIELD', desc: 'Frontal shield. Strike from behind!' },
-          { txt: 'enemy-mecha', scale: 1.4, name: 'MECHA', desc: 'Heavy guard. HUMAN immune.' },
-          { txt: 'enemy-sentry', scale: 1.4, name: 'FLYING SENTRY', desc: 'Aerial threat. Purple bolts.' },
-        ];
-
-        let row = 0; let col = 0;
-        enemies.forEach((e) => {
-          const sx = cx - 170 + col * 180;
-          const sy = cy - 100 + row * 140;
-          s.addSprite(sx, sy, e.txt, e.scale);
-          s.addText(sx, sy + 30, e.name, 'monospace', '#5a2a1a', 8);
-          s.addParagraph(sx - 55, sy + 45, 110, e.desc);
-          col++;
-          if (col >= 3) { col = 0; row++; }
-        });
-      },
-    });
-
-    // Page 5: Bosses
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'BOSSES', '#6a1a1a', 18);
-
-        // Left: Elite Mecha
-        s.addSprite(cx - 130, cy - 40, 'elite-mecha', 1.4);
-        s.addTitle(cx - 20, cy - 70, 'DRACONEL BASTION', '#8a3a2a', 12);
-        s.addParagraph(cx - 20, cy - 48, 200,
-          'Level 2 mini-boss. 1200 HP. Immune to HUMAN form. ' +
-          'Use Mecha claymore. The core crystal cycles green→yellow→orange→red.' +
-          ' When RED (every 3 attacks): CORE EXPOSED — double damage!'
-        );
-
-        // Right: Dreadnought
-        s.addSprite(cx + 150, cy - 30, 'boss', 2.0);
-        s.addTitle(cx + 150, cy + 70, 'DREADNOUGHT', '#6a1a1a', 12);
-        s.addParagraph(cx + 90, cy + 95, 140,
-          'Level 3 final boss. 800 HP. Protected by 2 cannons. ' +
-          'Destroy BOTH cannons → core becomes vulnerable. ' +
-          'Then attack relentlessly!'
-        );
-      },
-    });
-
-    // Page 6: Items & Collectibles
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'ITEMS & COLLECTIBLES', '#6a1a1a', 18);
-
-        const items = [
-          { txt: 'dragon-core', scale: 2.2, name: 'Dragon Core', desc: 'Unlocks Draconel Mecha form' },
-          { txt: 'sky-core', scale: 2.2, name: 'Flight Core', desc: 'Unlocks Dragon flight form' },
-          { txt: 'energy-pickup', scale: 2.0, name: 'Energy Crystal', desc: 'Restores Energy for flight/mecha' },
-          { txt: 'destiny-echo', scale: 1.4, name: 'War Echo (Tarot)', desc: 'Permanent character upgrades' },
-          { txt: 'altar-save', scale: 0.6, name: 'Save Altar', desc: 'Pray to save & restore HP' },
-          { txt: 'cool-valve', scale: 2.0, name: 'Cooling Valve', desc: 'Instantly resets Mecha heat' },
-        ];
-
-        let col = 0; let row = 0;
-        items.forEach((item) => {
-          const ix = cx - 200 + col * 140;
-          const iy = cy - 90 + row * 110;
-          s.addSprite(ix, iy, item.txt, item.scale);
-          s.addText(ix, iy + 30, item.name, 'monospace', '#5a2a1a', 7);
-          s.addParagraph(ix - 50, iy + 42, 100, item.desc);
-          col++;
-          if (col >= 3) { col = 0; row++; }
-        });
-      },
-    });
-
-    // Page 7: The World Map
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 140, 'THE WORLD', '#6a1a1a', 18);
-
-        s.addTitle(cx - 140, cy - 100, 'ZONE 1 — ASHEN WOODS', '#5a2a1a', 13);
-        s.addParagraph(cx - 140, cy - 78, 280,
-          'Dark gothic forest. Ruins of an ancient civilization. Classic platforming ' +
-          'across thorn gaps and crumbling pillars. Find the Dragon Core in the Altar ' +
-          'of the Core at the end. Watch for Leapers on rooftops.'
-        );
-
-        s.addTitle(cx - 140, cy - 10, 'ZONE 2 — SMELTING REFINERY', '#5a2a1a', 13);
-        s.addParagraph(cx - 140, cy + 12, 280,
-          'The Empire\'s industrial heart. Lava pits, steam vents, and heavy Mecha ' +
-          'guards. Break barricades with the Draconel claymore. Defeat the Draconel ' +
-          'Bastion to claim the Flight Core. Use cooling valves to manage heat.'
-        );
-
-        s.addTitle(cx - 140, cy + 80, 'ZONE 3 — ASHEN GORGE', '#5a2a1a', 13);
-        s.addParagraph(cx - 140, cy + 102, 280,
-          'Frenetic auto-scrolling flight zone. Soar through the canyon in Dragon ' +
-          'form, blasting through waves of aerial enemies. The Industrial Defense ' +
-          'Zone escalates until the Dreadnought appears. Hold X for auto-fire!'
-        );
-      },
-    });
-
-    // Page 8: Credits
-    this.pages.push({
-      draw: (s, cx, cy, w, h, sc) => {
-        s.drawOrnamentalBorder(cx, cy, w, h);
-        s.addTitle(cx, cy - 130, 'DRAKHART', '#6a1a1a', 24);
-        s.addTitle(cx, cy - 90, 'A Dark Fantasy Action-Platformer', '#5a3a2a', 13);
-        s.addDivider(cx, cy - 50, 300);
-
-        s.addTitle(cx, cy - 25, 'BUILT WITH', '#5a2a1a', 12);
-        s.addText(cx, cy, 'Phaser 3 + TypeScript + Vite', 'Georgia', '#3a2a1a', 11);
-
-        s.addTitle(cx, cy + 35, 'INSPIRED BY', '#5a2a1a', 12);
-        s.addText(cx, cy + 55, 'Draconus (Atari, 1988) × Escaflowne (Anime, 1996)', 'Georgia', '#6a4a3a', 10, true);
-
-        s.addTitle(cx, cy + 85, 'SOUNDTRACK', '#5a2a1a', 12);
-        s.addText(cx, cy + 105, 'Available in Main Menu → Soundtrack', 'Georgia', '#3a2a1a', 10);
-
-        s.addDivider(cx, cy + 130, 200);
-        s.addText(cx, cy + 155, '"Only the Dragon Core remains."', 'Georgia', '#8a5a3a', 11, true);
-        s.addText(cx, h - 50, '© 2026 — Forged in Fire and Ash', 'monospace', '#5a4a3a', 9);
-      },
-    });
+  private fs(n: number): string {
+    return `${Math.round(n * this.scale.width / 800)}px`;
   }
 
-  private drawOrnamentalBorder(cx: number, cy: number, w: number, h: number): void {
+  private border(cx: number, cy: number, w: number, h: number): void {
     const g = this.add.graphics();
-    const m = 20;
-    // Double border
-    g.lineStyle(2, 0x3a2a1a, 0.3);
-    g.strokeRect(cx - w / 2 + m, cy - h / 2 + m, w - m * 2, h - m * 2);
-    g.lineStyle(1, 0x5a4a3a, 0.2);
-    g.strokeRect(cx - w / 2 + m + 5, cy - h / 2 + m + 5, w - (m + 5) * 2, h - (m + 5) * 2);
+    g.lineStyle(2, 0x3a2a1a, 0.25);
+    g.strokeRect(cx - w / 2 + 18, cy - h / 2 + 18, w - 36, h - 36);
+    g.lineStyle(1, 0x5a4a3a, 0.15);
+    g.strokeRect(cx - w / 2 + 23, cy - h / 2 + 23, w - 46, h - 46);
     this.pageContainer.add(g);
   }
 
-  private addDivider(cx: number, y: number, width: number): void {
-    const g = this.add.graphics();
-    g.lineStyle(1, 0x5a3a2a, 0.3);
-    g.lineBetween(cx - width / 2, y, cx + width / 2, y);
-    g.lineStyle(1, 0x5a3a2a, 0.15);
-    g.lineBetween(cx - width / 2, y + 2, cx + width / 2, y + 2);
-    this.pageContainer.add(g);
-  }
-
-  private addSprite(x: number, y: number, key: string, scale: number): void {
-    try {
-      const spr = this.add.image(x, y, key).setScale(scale);
-      this.pageContainer.add(spr);
-    } catch (_) {}
-  }
-
-  private addTitle(x: number, y: number, text: string, color: string, size: number): void {
-    const t = this.add.text(x, y, text, {
-      fontSize: `${Math.round(size * (this.scale.width / 800))}px`,
-      fontFamily: 'Georgia, serif',
-      color,
-    }).setOrigin(0.5, 0);
+  private title(x: number, y: number, text: string, color: string, size: number): Phaser.GameObjects.Text {
+    const t = this.add.text(x, y, text, { fontSize: this.fs(size), fontFamily: 'Georgia, serif', color }).setOrigin(0.5, 0);
     this.pageContainer.add(t);
+    return t;
   }
 
-  private addText(x: number, y: number, text: string, font: string, color: string, size: number, italic: boolean = false): void {
-    const t = this.add.text(x, y, text, {
-      fontSize: `${Math.round(size * (this.scale.width / 800))}px`,
-      fontFamily: font,
-      color,
-      fontStyle: italic ? 'italic' : 'normal',
-    }).setOrigin(0.5, 0);
+  private label(x: number, y: number, text: string, color: string, size: number): Phaser.GameObjects.Text {
+    const t = this.add.text(x, y, text, { fontSize: this.fs(size), fontFamily: 'monospace', color }).setOrigin(0, 0);
     this.pageContainer.add(t);
+    return t;
   }
 
-  private addParagraph(x: number, y: number, maxWidth: number, text: string): void {
+  private body(x: number, y: number, text: string, size: number, maxW: number): Phaser.GameObjects.Text {
     const t = this.add.text(x, y, text, {
-      fontSize: `${Math.round(9.5 * (this.scale.width / 800))}px`,
-      fontFamily: 'Georgia',
-      color: '#3a2a1a',
-      wordWrap: { width: maxWidth },
-      lineSpacing: 4,
+      fontSize: this.fs(size), fontFamily: 'Georgia, serif', color: '#3a2a1a',
+      wordWrap: { width: maxW }, lineSpacing: 5,
     }).setOrigin(0, 0);
     this.pageContainer.add(t);
+    return t;
   }
 
-  private drawCurrentPage(w: number, h: number, sc: number): void {
+  private italic(x: number, y: number, text: string, size: number): Phaser.GameObjects.Text {
+    const t = this.add.text(x, y, text, {
+      fontSize: this.fs(size), fontFamily: 'Georgia, serif', color: '#6a4a3a', fontStyle: 'italic',
+    }).setOrigin(0.5, 0);
+    this.pageContainer.add(t);
+    return t;
+  }
+
+  private divider(cx: number, y: number, width: number): void {
+    const g = this.add.graphics();
+    g.lineStyle(1, 0x4a3a2a, 0.2);
+    g.lineBetween(cx - width / 2, y, cx + width / 2, y);
+    this.pageContainer.add(g);
+  }
+
+  private sprite(x: number, y: number, key: string, scale: number): void {
+    try { this.pageContainer.add(this.add.image(x, y, key).setScale(scale)); } catch (_) {}
+  }
+
+  // ── Pages ──
+
+  private buildPages(): void {
+    const S = (this.scale?.width || 1920) / 800;
+
+    // 0: Cover
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 140, 'D R A K H A R T', '#6a1a1a', 30);
+        s.title(cx, cy - 78, 'INSTRUCTION MANUAL', '#5a3a2a', 15);
+        s.divider(cx, cy - 46, 220);
+        s.title(cx, cy - 20, 'A Dark Fantasy Action-Platformer', '#8a5a3a', 14);
+        s.italic(cx, cy + 12, 'For the Dragon Core Awaits', 13);
+        s.divider(cx, cy + 50, 180);
+        s.italic(cx, cy + 80, '"In the old world, only ash remains."', 12);
+      },
+    });
+
+    // 1: The Forms
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'THE FORMS OF DRAKHART', '#6a1a1a', 18);
+
+        const y0 = cy - 90;
+        s.sprite(cx - 140, y0, 'player-human', 1.8);
+        s.title(cx - 80, y0 - 18, 'WARRIOR', '#5a2a1a', 14);
+        s.body(cx - 80, y0 + 8, 'Agile sword fighter. Find the\nDragon Core to transform.', 10, 180);
+
+        const y1 = y0 + 100;
+        s.sprite(cx - 140, y1, 'player-mecha', 1.5);
+        s.title(cx - 80, y1 - 18, 'DRACONEL MECHA', '#8a3a2a', 14);
+        s.body(cx - 80, y1 + 8, 'Heavy combat. Claymore (75 dmg).\nHover jets. Watch HEAT gauge!', 10, 180);
+
+        const y2 = y1 + 100;
+        s.sprite(cx + 180, cy - 10, 'player-dragon', 1.2);
+        s.title(cx + 100, cy - 40, 'DRAGON', '#3a5a8a', 14);
+        s.body(cx + 100, cy - 14, 'Free flight. Fire Breath.\nEnergy drains while airborne.', 10, 150);
+      },
+    });
+
+    // 2: Controls
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'CONTROLS', '#6a1a1a', 18);
+
+        const keys = [
+          'ARROWS / WASD         Move',
+          'UP / W                       Jump (Hold = Hover)',
+          'X                               Attack (Sword / Fire)',
+          'C                               Cycle Form',
+          'T                               War Echoes (Tarot)',
+          'ESC                          Pause Menu',
+          'E (near Altar)           Pray / Save',
+        ];
+        let y = cy - 100;
+        keys.forEach(k => { s.label(cx - 120, y, k, '#3a2a1a', 11); y += 28; });
+
+        s.divider(cx, cy + 60, 320);
+
+        s.title(cx, cy + 80, 'PRO TIPS', '#6a1a1a', 15);
+        const tips = 'Hold X in Dragon form = auto-fire (12.5/sec).  Use Steam Vents to boost Mecha jumps.  Cooling Valves reset Mecha heat.  Pray at Altars to save + restore HP/Energy.  War Echoes (Tarot Cards) = permanent upgrades.';
+        s.body(cx - 150, cy + 110, tips, 10, 300);
+      },
+    });
+
+    // 3: Story
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'THE STORY SO FAR', '#6a1a1a', 18);
+
+        s.title(cx - 150, cy - 100, 'THE OLD WORLD', '#5a2a1a', 14);
+        s.body(cx - 150, cy - 72, 'The Empire\'s industrial war machines have consumed the land, burning ancient forests and crushing sacred temples beneath smelting refineries. Their modern military technology — brutalist steel plating, diesel generators, physical railguns — dominates all.', 10, 360);
+
+        s.title(cx - 150, cy + 0, 'THE DRAGON CORE', '#5a2a1a', 14);
+        s.body(cx - 150, cy + 28, 'Beneath the ruined altar lies a pulsating crimson crystal of biomechanical power. Bond with it and awaken the Draconel: an ancient mecha forged of dragon bone, steel, and core fire. Only this forgotten technology can challenge the Empire.', 10, 360);
+
+        s.sprite(cx + 200, cy + 50, 'dragon-core', 2.5);
+      },
+    });
+
+    // 4: Bestiary
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'BESTIARY', '#6a1a1a', 18);
+
+        const enemies: [string, number, string, string][] = [
+          ['enemy-sentry', 1.6, 'SENTRY', 'Patrols.\nAttacks on sight.'],
+          ['enemy-leaper', 1.4, 'LEAPER', 'Agile.\nLeaps at prey.'],
+          ['enemy-spitter', 1.4, 'SPITTER', 'Ranged acid.\nStay mobile.'],
+          ['enemy-shield', 1.4, 'SHIELD', 'Frontal shield.\nStrike from behind.'],
+          ['enemy-mecha', 1.2, 'MECHA', 'Heavy guard.\nHUMAN immune.'],
+          ['enemy-sentry', 1.2, 'FLY SENTRY', 'Aerial.\nPurple bolts.'],
+        ];
+        enemies.forEach(([key, scl, name, desc], i) => {
+          const col = i % 3;
+          const row = Math.floor(i / 3);
+          const x = cx - 180 + col * 185;
+          const y = cy - 100 + row * 160;
+          s.sprite(x, y, key, scl);
+          s.label(x, y + 32, name, '#5a2a1a', 9);
+          s.body(x - 40, y + 46, desc, 8, 90);
+        });
+      },
+    });
+
+    // 5: Bosses
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'BOSSES', '#6a1a1a', 18);
+
+        s.sprite(cx - 140, cy - 50, 'elite-mecha', 1.4);
+        s.title(cx - 70, cy - 80, 'DRACONEL BASTION', '#8a3a2a', 14);
+        s.body(cx - 70, cy - 52, 'Level 2 mini-boss. 1200 HP.\nImmune to HUMAN. Use MECHA.\nCore crystal cycles green→red.\nEvery 3 attacks: CORE EXPOSED.\nDouble damage during window!', 10, 200);
+
+        s.sprite(cx + 160, cy - 40, 'boss', 2.0);
+        s.title(cx + 160, cy + 55, 'DREADNOUGHT', '#6a1a1a', 14);
+        s.body(cx + 100, cy + 80, 'Level 3 final boss. 800 HP.\nProtected by 2 cannons.\nDestroy BOTH → core vulnerable.\nThen attack relentlessly!', 10, 180);
+      },
+    });
+
+    // 6: Items
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'ITEMS & COLLECTIBLES', '#6a1a1a', 18);
+
+        const items: [string, number, string, string][] = [
+          ['dragon-core', 2.0, 'Dragon Core', 'Unlocks\nDraconel Mecha'],
+          ['sky-core', 2.0, 'Flight Core', 'Unlocks\nDragon flight'],
+          ['energy-pickup', 1.8, 'Energy Crystal', 'Restores\nflight/mecha'],
+          ['destiny-echo', 1.3, 'War Echo', 'Permanent\ncharacter upgrades'],
+          ['altar-save', 0.6, 'Save Altar', 'Pray to save\n+ restore HP'],
+          ['cool-valve', 1.8, 'Cool Valve', 'Resets\nMecha heat'],
+        ];
+        items.forEach(([key, scl, name, desc], i) => {
+          const col = i % 3;
+          const row = Math.floor(i / 3);
+          const x = cx - 190 + col * 190;
+          const y = cy - 100 + row * 160;
+          s.sprite(x, y, key, scl);
+          s.label(x, y + 34, name, '#5a2a1a', 9);
+          s.body(x - 40, y + 48, desc, 8, 90);
+        });
+      },
+    });
+
+    // 7: World Map
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 150, 'THE WORLD', '#6a1a1a', 18);
+
+        const y0 = cy - 105;
+        s.title(cx - 150, y0, 'ZONE 1 — ASHEN WOODS', '#5a2a1a', 14);
+        s.body(cx - 150, y0 + 22, 'Dark gothic forest. Platform across thorn gaps and crumbling pillars. Find the Dragon Core in the Altar at the end. Leapers lurk on rooftops.', 10, 330);
+
+        const y1 = y0 + 85;
+        s.title(cx - 150, y1, 'ZONE 2 — SMELTING REFINERY', '#5a2a1a', 14);
+        s.body(cx - 150, y1 + 22, 'Industrial hell. Lava pits, steam vents, heavy Mecha guards. Break barricades with Draconel claymore. Defeat the Bastion for the Flight Core.', 10, 330);
+
+        const y2 = y1 + 85;
+        s.title(cx - 150, y2, 'ZONE 3 — ASHEN GORGE', '#5a2a1a', 14);
+        s.body(cx - 150, y2 + 22, 'Auto-scrolling flight zone. Soar in Dragon form, blast waves of enemies. The Defense Zone escalates until the Dreadnought. HOLD X for auto-fire!', 10, 330);
+      },
+    });
+
+    // 8: Credits
+    this.pages.push({
+      draw: (s, cx, cy, w, h) => {
+        s.border(cx, cy, w, h);
+        s.title(cx, cy - 130, 'DRAKHART', '#6a1a1a', 26);
+        s.title(cx, cy - 88, 'A Dark Fantasy Action-Platformer', '#5a3a2a', 14);
+        s.divider(cx, cy - 54, 320);
+        s.title(cx, cy - 28, 'BUILT WITH', '#5a2a1a', 13);
+        s.title(cx, cy - 6, 'Phaser 3 + TypeScript + Vite', '#3a2a1a', 12);
+        s.title(cx, cy + 30, 'INSPIRED BY', '#5a2a1a', 13);
+        s.italic(cx, cy + 50, 'Draconus (Atari, 1988)  ×  Escaflowne (Anime, 1996)', 12);
+        s.divider(cx, cy + 78, 220);
+        s.title(cx, cy + 100, 'SOUNDTRACK', '#5a2a1a', 13);
+        s.title(cx, cy + 122, 'Available in Main Menu → Soundtrack', '#3a2a1a', 11);
+        s.italic(cx, cy + 155, '"Only the Dragon Core remains."', 12);
+        s.label(cx, h - 60, '© 2026 — Forged in Fire and Ash', '#5a4a3a', 9);
+      },
+    });
+  }
+
+  private drawCurrentPage(w: number, h: number): void {
     this.pageContainer.removeAll(true);
     const cx = w / 2;
     const cy = h / 2;
-    this.pages[this.currentPage]?.draw(this, cx, cy, w, h, sc);
+    this.pages[this.currentPage]?.draw(this, cx, cy, w, h, (w / 800));
   }
 
   private nextPage(): void {
     if (this.currentPage < this.pages.length - 1) {
       this.currentPage++;
-      this.drawCurrentPage(this.scale.width, this.scale.height, this.scale.width / 800);
+      this.drawCurrentPage(this.scale.width, this.scale.height);
     }
   }
 
   private prevPage(): void {
     if (this.currentPage > 0) {
       this.currentPage--;
-      this.drawCurrentPage(this.scale.width, this.scale.height, this.scale.width / 800);
+      this.drawCurrentPage(this.scale.width, this.scale.height);
     }
   }
 }
