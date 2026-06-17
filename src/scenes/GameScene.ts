@@ -130,7 +130,7 @@ export class GameScene extends BaseLevelScene {
     super.create();
     this.bulletLights.clear();
 
-    this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+    this.physics.world.setBounds(0, 0, 10000, LEVEL_HEIGHT);
 
     if (this.lights) {
       this.lights.enable();
@@ -382,6 +382,12 @@ export class GameScene extends BaseLevelScene {
     // Gap: 4000-4500 with thorns below
     this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
+    // New Section 5 — The Descent (post-altar, 8000-10000)
+    this.terrainGen.generateGroundSegment(this.platforms, 8000, groundY, 400, 'forest', 7);
+    // Descending platforms (stairway down into darkness)
+    this.terrainGen.generateGroundSegment(this.platforms, 8450, groundY + 48, 300, 'forest', 8);
+    this.terrainGen.generateGroundSegment(this.platforms, 8800, groundY + 96, 350, 'forest', 9);
+    this.terrainGen.generateGroundSegment(this.platforms, 9200, groundY + 64, 800, 'forest', 10);
 
     // Organic floating platforms
     const platDefs: { x: number; y: number; w: number }[] = [
@@ -538,7 +544,43 @@ export class GameScene extends BaseLevelScene {
     giantSentry.setScale(1.4);
     giantSentry.refreshBody();
 
-    this.enemies.addMultiple([e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, giantSentry]);
+    // Section 3 ground reinforcements (redensify the long runway)
+    const eG1 = new BaseEnemy(this, 4700, 738, 'enemy-sentry', this.player, {
+      health: 50, damage: 12, speed: 65, patrolMinX: 4550, patrolMaxX: 4850
+    });
+    const eG2 = new LeaperEnemy(this, 5100, 738, this.player, {
+      health: 55, damage: 14, speed: 85, patrolMinX: 4950, patrolMaxX: 5250
+    });
+    const eG3 = new SpitterEnemy(this, 5600, 738, this.player, {
+      health: 50, damage: 13, speed: 50, patrolMinX: 5450, patrolMaxX: 5750
+    });
+
+    // Mini-boss — Giant Leaper blocking the path in Section 3
+    const eMiniBoss = new LeaperEnemy(this, 5950, 738, this.player, {
+      health: 140, damage: 22, speed: 70, attackRange: 55, patrolMinX: 5800, patrolMaxX: 6100
+    });
+    eMiniBoss.setScale(1.3);
+    (eMiniBoss.body as Phaser.Physics.Arcade.Body).setSize(48, 72);
+
+    // Section 5 — The Descent (post-altar, 8000-10000)
+    const e18 = new ShieldEnemy(this, 8100, 738, this.player, {
+      health: 75, damage: 18, speed: 45, patrolMinX: 8050, patrolMaxX: 8350
+    });
+    const e19 = new SpitterEnemy(this, 8600, 776, this.player, {
+      health: 65, damage: 16, speed: 55, patrolMinX: 8500, patrolMaxX: 8750
+    });
+    const e20 = new LeaperEnemy(this, 9000, 824, this.player, {
+      health: 80, damage: 20, speed: 85, patrolMinX: 8900, patrolMaxX: 9100
+    });
+    const e21 = new BaseEnemy(this, 9350, 792, 'enemy-sentry', this.player, {
+      health: 65, damage: 16, speed: 70, patrolMinX: 9250, patrolMaxX: 9450
+    });
+
+    // Final barricade before exit
+    const b3 = new Barricade(this, 9850, 704);
+    this.barricades.add(b3);
+
+    this.enemies.addMultiple([e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, giantSentry, eG1, eG2, eG3, eMiniBoss, e18, e19, e20, e21]);
   }
 
   private createDragonCore(): void {
@@ -577,6 +619,26 @@ export class GameScene extends BaseLevelScene {
       const cp = new CrumblingPlatform(this, this.platforms, def.x, def.y);
       this.crumblingPlatforms.push(cp);
     });
+
+    this.createMovingPlatforms();
+  }
+
+  private movingPlatforms: { sprite: Phaser.Physics.Arcade.Sprite; minX: number; maxX: number; speed: number }[] = [];
+
+  private createMovingPlatforms(): void {
+    const defs = [
+      { x: 2500, y: 580, minX: 2450, maxX: 2700, speed: 30 },
+      { x: 3250, y: 600, minX: 3180, maxX: 3400, speed: -40 },
+      { x: 3570, y: 560, minX: 3500, maxX: 3620, speed: 25 },
+      { x: 4200, y: 580, minX: 4150, maxX: 4280, speed: -35 },
+    ];
+
+    defs.forEach(def => {
+      const plat = this.platforms.create(def.x, def.y, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      plat.setDisplaySize(48, 12);
+      plat.refreshBody();
+      this.movingPlatforms.push({ sprite: plat, minX: def.minX, maxX: def.maxX, speed: def.speed });
+    });
   }
 
   private checkCrumblingPlatforms(): void {
@@ -588,6 +650,18 @@ export class GameScene extends BaseLevelScene {
           cp.trigger();
         }
       }
+    });
+  }
+
+  private updateMovingPlatforms(delta: number): void {
+    this.movingPlatforms.forEach(mp => {
+      const dt = delta / 1000;
+      mp.sprite.x += mp.speed * dt;
+      if (mp.sprite.x > mp.maxX || mp.sprite.x < mp.minX) {
+        mp.speed *= -1;
+        mp.sprite.x = Phaser.Math.Clamp(mp.sprite.x, mp.minX, mp.maxX);
+      }
+      (mp.sprite.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
     });
   }
 
@@ -1010,9 +1084,19 @@ export class GameScene extends BaseLevelScene {
     const magicianCard = new TarotCard(this, 680, 720, 'magician');
     magicianCard.setDepth(1);
 
+    const chariotCard = new TarotCard(this, 9100, 804, 'chariot');
+    chariotCard.setDepth(1);
+
     this.physics.add.overlap(this.player, magicianCard, () => {
       magicianCard.collect(this.player);
       this.tarotSystem.collect('magician', this.player);
+      this.gameAudio?.playCardCollect();
+      this.requestSave();
+    });
+
+    this.physics.add.overlap(this.player, chariotCard, () => {
+      chariotCard.collect(this.player);
+      this.tarotSystem.collect('chariot', this.player);
       this.gameAudio?.playCardCollect();
       this.requestSave();
     });
@@ -1110,7 +1194,7 @@ export class GameScene extends BaseLevelScene {
     this.cameras.main.setFollowOffset(0, -80);
     this.cameras.main.setDeadzone(80, 60);
     this.cameras.main.setZoom(CAMERA_ZOOM_HUMAN);
-    this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+    this.cameras.main.setBounds(0, 0, 10000, LEVEL_HEIGHT);
   }
 
   private showIntroText(): void {
@@ -1580,6 +1664,7 @@ export class GameScene extends BaseLevelScene {
     this.checkBushDestruction();
     this.updateBulletCleanup();
     this.checkCrumblingPlatforms();
+    this.updateMovingPlatforms(delta);
     this.updateEmbers(delta);
     this.updateBloom();
     this.updateVignettePulse();
@@ -1590,7 +1675,7 @@ export class GameScene extends BaseLevelScene {
       if (this.player.y > LEVEL_HEIGHT + 60) {
         this.player.takeDamage(100, 0);
       }
-      if (this.player.x >= 7950) {
+      if (this.player.x >= 9950) {
         this.transitionToLevel2();
       }
     }

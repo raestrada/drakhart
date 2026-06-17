@@ -11,6 +11,7 @@ export class GamepadSystem {
   public jumpPressed = false;
   public jumpJustDown = false;
   public attackJustDown = false;
+  public attackPressed = false;
   public transformJustDown = false;
 
   constructor(scene: Phaser.Scene) {
@@ -55,6 +56,7 @@ export class GamepadSystem {
     // X button (2) = Attack
     const attackDown = b[2]?.pressed ?? false;
     this.attackJustDown = attackDown && !(this.prevButtons[2] ?? false);
+    this.attackPressed = attackDown;
     this.prevButtons[2] = attackDown;
 
     // Y button (3) = Transform
@@ -71,6 +73,7 @@ export class GamepadSystem {
     this.jumpPressed = false;
     this.jumpJustDown = false;
     this.attackJustDown = false;
+    this.attackPressed = false;
     this.transformJustDown = false;
   }
 

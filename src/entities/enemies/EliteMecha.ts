@@ -17,7 +17,7 @@ export class EliteMecha extends BaseEnemy {
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, 'elite-mecha', player, {
-      health: 2500,
+      health: 1200,
       speed: 40,
       detectRange: 480,
       attackRange: 180,
@@ -25,10 +25,8 @@ export class EliteMecha extends BaseEnemy {
       attackCooldown: 1600,
     });
 
-    // Colossal scale (1.8x)
     this.setScale(1.8);
 
-    // Position physics body within 128x128 texture
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(60, 72);
     body.setOffset(34, 50);
@@ -36,6 +34,41 @@ export class EliteMecha extends BaseEnemy {
     this.setDepth(15);
 
     this.createFloatingUI();
+    this.createCoreIndicator();
+  }
+
+  // Core stagger mechanic
+  private attacksSinceLastStagger = 0;
+  private isStaggered = false;
+  private staggerVulnerable = false;
+  private coreGlow: Phaser.GameObjects.Rectangle | null = null;
+
+  private createCoreIndicator(): void {
+    this.coreGlow = this.scene.add.rectangle(this.x, this.y - 20, 10, 6, 0x00ff00, 0.5)
+      .setDepth(this.depth + 12)
+      .setScrollFactor(1.0);
+  }
+
+  private updateCoreGlow(): void {
+    if (!this.coreGlow || !this.coreGlow.active) return;
+
+    const stage = this.attacksSinceLastStagger;
+    let color = 0x00ff00; // green: safe
+    if (stage === 1) color = 0xffff00; // yellow
+    else if (stage === 2) color = 0xff8800; // orange
+    else if (stage >= 3 && this.staggerVulnerable) color = 0xff0000; // red exposed
+
+    this.coreGlow.setPosition(this.x, this.y - 24);
+    this.coreGlow.fillColor = color;
+
+    if (this.staggerVulnerable) {
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.02);
+      this.coreGlow.setAlpha(pulse);
+      this.coreGlow.setScale(2.0 + pulse * 1.5, 1.5 + pulse);
+    } else {
+      this.coreGlow.setAlpha(0.5);
+      this.coreGlow.setScale(1.0, 1.0);
+    }
   }
 
   private createFloatingUI(): void {
@@ -83,6 +116,8 @@ export class EliteMecha extends BaseEnemy {
     if (this.nameText && this.nameText.active) {
       this.nameText.setPosition(uiX, uiY - 14);
     }
+
+    this.updateCoreGlow();
 
     if (this.isAttacking) {
       this.play('elm-attack', true);
@@ -147,21 +182,69 @@ export class EliteMecha extends BaseEnemy {
       return;
     }
 
-    super.takeDamage(amount);
+    const damage = this.staggerVulnerable ? amount * 2 : amount;
+    super.takeDamage(damage);
   }
 
   protected doAttack(): void {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
+    this.attacksSinceLastStagger++;
+
+    if (this.attacksSinceLastStagger >= 3) {
+      this.triggerStagger();
+      return;
+    }
+
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
 
-    // Randomize attack style: 50% stomp (if player is close), 50% ranged plasma fire
     if (dist < 150 && Math.random() > 0.5) {
       this.executeStompAttack();
     } else {
       this.executePlasmaCannon();
     }
   }
+
+  private triggerStagger(): void {
+    this.staggerVulnerable = true;
+    this.isAttacking = false;
+
+    this.setTint(0xff6644);
+    (this.scene as any).gameAudio?.playShieldBlock?.();
+
+    this.scene.time.delayedCall(2000, () => {
+      this.staggerVulnerable = false;
+      this.attacksSinceLastStagger = 0;
+      if (this.active) this.clearTint();
+    });
+
+    // Tutorial banner on first stagger
+    if (!this._bannerShown) {
+      this._bannerShown = true;
+      const cam = this.scene.cameras.main;
+      const bx = cam.width / 2;
+      const by = cam.height * 0.25;
+      const banner = this.scene.add.text(bx, by, 'CORE EXPOSED — ATTACK!', {
+        fontSize: '16px',
+        fontFamily: 'monospace',
+        color: '#ff4444',
+        stroke: '#000000',
+        strokeThickness: 4,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
+
+      this.scene.tweens.add({
+        targets: banner,
+        alpha: { from: 0, to: 1 },
+        y: by - 10,
+        duration: 200,
+        yoyo: true,
+        hold: 1500,
+        onComplete: () => banner.destroy(),
+      });
+    }
+  }
+
+  private _bannerShown = false;
 
   private executePlasmaCannon(): void {
     this.isAttacking = true;
@@ -299,6 +382,7 @@ export class EliteMecha extends BaseEnemy {
     if (this.healthBarBg) this.healthBarBg.destroy();
     if (this.healthBarFill) this.healthBarFill.destroy();
     if (this.nameText) this.nameText.destroy();
+    if (this.coreGlow) { this.coreGlow.destroy(); this.coreGlow = null; }
   }
 
   protected die(): void {

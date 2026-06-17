@@ -478,11 +478,24 @@ export class GameScene3 extends BaseLevelScene {
       (_bullet, _enemy) => {
         const b = _bullet as Phaser.Physics.Arcade.Sprite;
         if (!b.active) return;
-        b.disableBody(true, true);
+
+        let pierce = (b.getData('pierce') as number) ?? 2;
+        pierce--;
+        b.setData('pierce', pierce);
+        if (pierce <= 0) b.disableBody(true, true);
 
         const target = _enemy as Phaser.Physics.Arcade.Sprite;
         if (typeof (target as any).takeDamage === 'function') {
           (target as any).takeDamage(this.player.combatSystem.getFireDamage());
+        } else if (target.getData('hp') !== undefined) {
+          const hp = (target.getData('hp') as number) - this.player.combatSystem.getFireDamage();
+          if (hp <= 0) {
+            target.destroy();
+          } else {
+            target.setData('hp', hp);
+            target.setTint(0xff0000);
+            this.time.delayedCall(60, () => { if (target.active) target.clearTint(); });
+          }
         } else {
           target.destroy();
         }
@@ -726,6 +739,10 @@ export class GameScene3 extends BaseLevelScene {
         // Force player position
         this.player.x = this.scrollX + this.playerScreenX;
         this.player.y = this.playerScreenY;
+
+        // Lock facing right during shmup
+        this.player.facingRight = true;
+        this.player.setFlipX(false);
 
         // enforce the pushback crush/off-screen death (bypass invincibility to prevent getting stuck)
         if (this.playerScreenX <= 55) {
@@ -1101,8 +1118,8 @@ export class GameScene3 extends BaseLevelScene {
         (enemy.body as Phaser.Physics.Arcade.Body).allowGravity = false;
         (enemy.body as Phaser.Physics.Arcade.Body).setSize(12, 12);
         enemy.setVelocityX(def.speedX ?? -240);
-        // Custom simple serpent logic
         enemy.setData('serpent', true);
+        enemy.setData('hp', 15);
         enemy.setData('damage', 15);
       } else if (def.type === 'spitter') {
         // Platform turret
@@ -1938,8 +1955,8 @@ class HeavyGunship extends FlyingEnemy {
     super(scene, x, y, player);
     this.setTexture('enemy-gunship');
     this.setScale(1.0);
-    this.health = 110;
-    this.maxHealth = 110;
+    this.health = 50;
+    this.maxHealth = 50;
     this.moveSpeed = 50;
     this.detectRange = 600;
     this.attackRange = 500;

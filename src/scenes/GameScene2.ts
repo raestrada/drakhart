@@ -79,6 +79,7 @@ export class GameScene2 extends BaseLevelScene {
   private pendingSpawnX = 100;
   private pendingSpawnY = 550;
   private bossIntroTriggered = false;
+  private bossEnergyAssistTimer = 0;
   private pendingCardsToCollect: string[] = [];
   private demoEnded = false;
   public isCutsceneActive = false;
@@ -323,7 +324,7 @@ export class GameScene2 extends BaseLevelScene {
     this.terrainGen.generateGroundSegment(this.platforms, 6280, groundY, 1720, 'refinery', 14);
 
     // Organic platforms
-    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 6600,490,128, 7000,640,96, 7180,560,96, 7350,500,256].forEach((_,i,arr) => {
+    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 7180,560,96, 7350,500,256].forEach((_,i,arr) => {
       if (i%3===0) this.terrainGen.generatePlatform(this.platforms, arr[i], arr[i+1], arr[i+2], 'refinery');
     });
 
@@ -337,7 +338,7 @@ export class GameScene2 extends BaseLevelScene {
     });
 
     // Thruster barriers
-    [680,1900,3450,5100,6700].forEach((bx) => {
+    [680,1900,3450,5100].forEach((bx) => {
       for (let by = 544; by < 736; by += 96) {
         const barrier = this.hazards.create(bx + 12, by + 48, 'thruster-barrier');
         (barrier.body as Phaser.Physics.Arcade.StaticBody).setSize(24, 96);
@@ -359,7 +360,7 @@ export class GameScene2 extends BaseLevelScene {
     const b2 = new Barricade(this, 2500, 704);  // Segment 2 chokepoint
     const b3 = new Barricade(this, 3800, 704);  // Segment 3 entrance
     const b4 = new Barricade(this, 5600, 704);  // Segment 4 chokepoint
-    const b5 = new Barricade(this, 6450, 704);  // Final gauntlet gate (gate to Elite Mecha arena)
+    const b5 = new Barricade(this, 6200, 704);  // Final gauntlet gate (gate to Elite Mecha arena)
 
     this.barricades.addMultiple([b1, b2, b3, b4, b5]);
 
@@ -584,6 +585,9 @@ export class GameScene2 extends BaseLevelScene {
     if (this.player && this.player.active && this.player.x >= 6520 && !this.bossIntroTriggered) {
       this.triggerBossIntro();
     }
+
+    // Auto-spawn energy near boss when player is low
+    this.updateBossEnergyAssist(delta);
 
     if (this.isCutsceneActive) return;
 
@@ -953,6 +957,33 @@ export class GameScene2 extends BaseLevelScene {
         }
       }
     });
+  }
+
+  private updateBossEnergyAssist(delta: number): void {
+    if (!this.player || !this.player.active) return;
+    if (this.player.x < 6200 || this.player.x > 7500) return;
+
+    const energyRatio = this.player.formMachine.energy.ratio;
+    if (energyRatio > 0.3) { this.bossEnergyAssistTimer = 0; return; }
+
+    this.bossEnergyAssistTimer += delta;
+    if (this.bossEnergyAssistTimer > 5000) {
+      this.bossEnergyAssistTimer = 0;
+      const pickup = this.physics.add.sprite(
+        this.player.x + Phaser.Math.Between(-80, 80),
+        650, 'energy-pickup'
+      );
+      pickup.setScale(1.0);
+      pickup.setDepth(5);
+      if (this.lights) pickup.setPipeline('Light2D');
+      this.physics.add.overlap(this.player, pickup, () => {
+        if (!pickup.active) return;
+        this.player.formMachine.energy.addEnergy(20);
+        (this.scene as any).gameAudio?.playCardCollect?.();
+        pickup.destroy();
+      });
+      this.time.delayedCall(8000, () => { if (pickup.active) pickup.destroy(); });
+    }
   }
 
   private spawnSmeltingEmber(): void {

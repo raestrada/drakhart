@@ -276,6 +276,7 @@ export class CombatSystem {
     bullet.setRotation(bulletAngleRad);
     bullet.setFlipX(false);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
+    bullet.setData('pierce', 2);
 
     const trail = spawnProjectileTrail(this.scene, bullet.x, bullet.y, [0xff4400, 0xff8800, 0xffcc00], 250);
     bullet.setData('trail', trail);

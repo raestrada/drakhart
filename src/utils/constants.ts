@@ -21,7 +21,7 @@ export const PLAYER_DRAGON_DAMPING = 0.92;
 export const ENERGY_MAX = 100;
 export const ENERGY_DRAIN_FLYING = 12;
 export const ENERGY_DRAIN_MECHA = 4;
-export const ENERGY_DRAIN_SHOOT = 0.8;
+export const ENERGY_DRAIN_SHOOT = 0.3;
 export const ENERGY_DRAIN_DAMAGED = 12;
 export const ENERGY_REGEN_HUMAN = 7;
 export const ENERGY_REGEN_GROUNDED = 14;
@@ -36,10 +36,10 @@ export const MECHA_SWORD_RANGE = 125;
 export const MECHA_SWORD_DURATION = 350;
 export const MECHA_SWORD_COOLDOWN = 650;
 
-export const FIRE_DAMAGE = 8;
+export const FIRE_DAMAGE = 12;
 export const FIRE_SPEED = 700;
 export const FIRE_LIFETIME = 1200;
-export const FIRE_COOLDOWN = 110;
+export const FIRE_COOLDOWN = 80;
 
 export const PLAYER_MAX_HEALTH = 100;
 export const INVINCIBILITY_DURATION = 600;

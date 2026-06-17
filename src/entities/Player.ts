@@ -40,7 +40,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private keyA!: Phaser.Input.Keyboard.Key;
   private keyS!: Phaser.Input.Keyboard.Key;
   private keyD!: Phaser.Input.Keyboard.Key;
-  private facingRight = true;
+  public facingRight = true;
   private jumpPressed = false;
 
   public animState: 'idle' | 'walk' | 'jump' | 'dragon' | 'kneeling' = 'idle';
@@ -411,7 +411,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setFlipX(false);
     }
 
-
+    // Auto-fire while holding X in dragon form
+    const keyX = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+    const gamepadFire = this.gamepadSystem.attackPressed;
+    if ((keyX?.isDown || gamepadFire) && this.inputEnabled) {
+      this.combatSystem.attack(this.formMachine.state, this.facingRight);
+    }
   }
 
   private updateAnimation(delta: number): void {
