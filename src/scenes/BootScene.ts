@@ -124,7 +124,13 @@ export class BootScene extends Phaser.Scene {
       color: '#aa8855'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    menuContainer.add([btnNewGame, btnContinue, btnSettings]);
+    const btnSoundtrack = this.add.text(width / 2, height * 0.76, t('ui.soundtrack'), {
+      fontSize: `${Math.round(15 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    menuContainer.add([btnNewGame, btnContinue, btnSettings, btnSoundtrack]);
 
     // Volume variables loading
     let bgmVol = 1.0;
@@ -163,6 +169,98 @@ export class BootScene extends Phaser.Scene {
 
     settingsContainer.add([langLabel, bgmLabel, sfxLabel, btnBack]);
 
+    // Soundtrack container
+    const soundtrackContainer = this.add.container(0, 0).setVisible(false);
+
+    const tracks = [
+      { name: 'Beneath the Weight', file: 'Beneath_the_Weight', desc: 'Level 1 — Ashen Woods' },
+      { name: 'Iron Arteries', file: 'Iron_Arteries', desc: 'Level 2 — Smelting Refinery' },
+      { name: 'Orbit Unbound', file: 'Orbit_Unbound', desc: 'Level 3 — Ashen Gorge' },
+      { name: 'The Last Steeple', file: 'The_Last_Steeple', desc: 'Boss — Dreadnought' },
+    ];
+
+    let currentAudio: HTMLAudioElement | null = null;
+    let nowPlayingText: Phaser.GameObjects.Text | null = null;
+
+    const trackButtons: Phaser.GameObjects.Text[] = [];
+    const trackDescs: Phaser.GameObjects.Text[] = [];
+
+    tracks.forEach((track, i) => {
+      const yPos = height * 0.38 + i * height * 0.09;
+      const btn = this.add.text(width / 2, yPos, track.name, {
+        fontSize: `${Math.round(14 * scale)}px`,
+        fontFamily: 'monospace',
+        color: '#ccaa66',
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+      const desc = this.add.text(width / 2, yPos + 14 * scale, track.desc, {
+        fontSize: `${Math.round(9 * scale)}px`,
+        fontFamily: 'monospace',
+        color: '#665544',
+      }).setOrigin(0.5);
+
+      btn.on('pointerover', () => { btn.setColor('#ffcc66'); btn.setScale(1.04); });
+      btn.on('pointerout', () => { btn.setColor('#ccaa66'); btn.setScale(1.0); });
+
+      btn.on('pointerdown', () => {
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio = null;
+        }
+        const audio = new Audio(`/soundtrack/${track.file}.mp3`);
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+        currentAudio = audio;
+
+        if (nowPlayingText) {
+          nowPlayingText.setText(`${t('ui.nowPlaying')}: ${track.name}`);
+          nowPlayingText.setVisible(true);
+          nowPlayingText.setAlpha(1);
+        }
+      });
+
+      trackButtons.push(btn);
+      trackDescs.push(desc);
+      soundtrackContainer.add([btn, desc]);
+    });
+
+    const btnStop = this.add.text(width / 2, height * 0.74, `■ ${t('ui.stop')}`, {
+      fontSize: `${Math.round(13 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#886644',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    btnStop.on('pointerover', () => btnStop.setColor('#cc8866'));
+    btnStop.on('pointerout', () => btnStop.setColor('#886644'));
+    btnStop.on('pointerdown', () => {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      if (nowPlayingText) nowPlayingText.setVisible(false);
+    });
+
+    nowPlayingText = this.add.text(width / 2, height * 0.82, '', {
+      fontSize: `${Math.round(10 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#ffaa44',
+    }).setOrigin(0.5).setVisible(false);
+
+    const btnSoundBack = this.add.text(width / 2, height * 0.90, t('ui.back'), {
+      fontSize: `${Math.round(13 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    btnSoundBack.on('pointerover', () => { btnSoundBack.setColor('#ffcc66'); btnSoundBack.setScale(1.06); btnSoundBack.setText(`> ${t('ui.back')} <`); });
+    btnSoundBack.on('pointerout', () => { btnSoundBack.setColor('#aa8855'); btnSoundBack.setScale(1.0); btnSoundBack.setText(t('ui.back')); });
+    btnSoundBack.on('pointerdown', () => {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      if (nowPlayingText) nowPlayingText.setVisible(false);
+      soundtrackContainer.setVisible(false);
+      menuContainer.setVisible(true);
+      updateMenuLabels();
+    });
+
+    soundtrackContainer.add([btnStop, nowPlayingText, btnSoundBack]);
+
     // Binds interactive behaviors to buttons
     const makeButtonGlow = (btn: Phaser.GameObjects.Text, originalTextKey: string) => {
       btn.on('pointerover', () => {
@@ -180,6 +278,7 @@ export class BootScene extends Phaser.Scene {
     makeButtonGlow(btnNewGame, 'ui.newGame');
     if (hasSave) makeButtonGlow(btnContinue, 'ui.continue');
     makeButtonGlow(btnSettings, 'ui.settings');
+    makeButtonGlow(btnSoundtrack, 'ui.soundtrack');
     makeButtonGlow(btnBack, 'ui.back');
 
     // Language and volume hover behaviors
@@ -203,6 +302,7 @@ export class BootScene extends Phaser.Scene {
       btnNewGame.setText(menuContainer.visible ? t('ui.newGame') : `> ${t('ui.newGame')} <`);
       btnContinue.setText(t('ui.continue'));
       btnSettings.setText(menuContainer.visible ? t('ui.settings') : `> ${t('ui.settings')} <`);
+      btnSoundtrack.setText(menuContainer.visible ? t('ui.soundtrack') : `> ${t('ui.soundtrack')} <`);
       btnBack.setText(t('ui.back'));
       langLabel.setText(`${t('ui.language')}: ${getLanguage().toUpperCase()}`);
       bgmLabel.setText(`${t('ui.bgmVolume')}: ${Math.round(bgmVol * 100)}%`);
@@ -214,6 +314,12 @@ export class BootScene extends Phaser.Scene {
     btnSettings.on('pointerdown', () => {
       menuContainer.setVisible(false);
       settingsContainer.setVisible(true);
+      updateMenuLabels();
+    });
+
+    btnSoundtrack.on('pointerdown', () => {
+      menuContainer.setVisible(false);
+      soundtrackContainer.setVisible(true);
       updateMenuLabels();
     });
 

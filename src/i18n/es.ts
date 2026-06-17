@@ -24,6 +24,9 @@ export const es: typeof en = {
     paused: 'PAUSA',
     resume: 'REANUDAR',
     quitToMenu: 'SALIR AL MENÚ',
+    soundtrack: 'BANDA SONORA',
+    nowPlaying: 'REPRODUCIENDO',
+    stop: 'PARAR',
   },
   story: {
     intro1: 'El viejo mundo es ceniza.',

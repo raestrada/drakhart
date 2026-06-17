@@ -22,6 +22,9 @@ export const en = {
     paused: 'PAUSED',
     resume: 'RESUME',
     quitToMenu: 'QUIT TO MENU',
+    soundtrack: 'SOUNDTRACK',
+    nowPlaying: 'NOW PLAYING',
+    stop: 'STOP',
   },
   story: {
     intro1: 'The old world is ash.',
