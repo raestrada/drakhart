@@ -227,8 +227,8 @@ export class GameScene extends BaseLevelScene {
       .setScrollFactor(0)
       .setDepth(-25)
       .setAlpha(0.92);
-    // Remove the tint so the original colors and details of bg-castle-raw.png are visible
-    this.bgCastle.clearTint();
+    // Apply a dual-tone gradient tint: silver-gray on the left, warm crimson on the right
+    this.bgCastle.setTint(0xccd5e0, 0xff8899, 0x384452, 0x602030);
 
     // 3.3 Moon Glow Layer 1 (behind castle, subtle corona)
     this.bgMoonGlow1 = this.add.image(0, 0, 'moon-glow')
