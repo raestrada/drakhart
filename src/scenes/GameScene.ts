@@ -221,14 +221,12 @@ export class GameScene extends BaseLevelScene {
       .setScrollFactor(0)
       .setDepth(-28);
 
-    // 3. Castle Silhouette (Unique, stays static vertically, slow horizontal scroll, integrated deeper)
-    this.bgCastle = this.add.image(0, 0, 'bg-castle')
+    // 3. Castle Silhouette — raw PNG as-is, no processing
+    this.bgCastle = this.add.image(0, 0, 'bg-castle-raw')
       .setOrigin(0.5, 0.5)
       .setScrollFactor(0)
       .setDepth(-25)
       .setAlpha(0.92);
-    // Apply a dual-tone gradient tint: silver-gray on the left, warm crimson on the right
-    this.bgCastle.setTint(0xccd5e0, 0xff8899, 0x384452, 0x602030);
 
     // 3.3 Moon Glow Layer 1 (behind castle, subtle corona)
     this.bgMoonGlow1 = this.add.image(0, 0, 'moon-glow')

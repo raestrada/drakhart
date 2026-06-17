@@ -108,8 +108,12 @@ export class TexturesGenerator {
       this.drawRedMoon();
     }
 
-    // Castle silhouette — always use procedural for consistent dark look
-    this.drawCastleSilhouette();
+    // Castle silhouette
+    if (this.scene.textures.exists('bg-castle-raw')) {
+      this.keyOutBlackAndScale('bg-castle-raw', 'bg-castle', 384, 384);
+    } else {
+      this.drawCastleSilhouette();
+    }
 
     // Refinery support images (un-tiled backdrops)
     if (this.scene.textures.exists('bg-refinery-sun-raw')) {
