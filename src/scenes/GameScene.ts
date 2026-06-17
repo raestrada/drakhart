@@ -657,7 +657,9 @@ export class GameScene extends BaseLevelScene {
         mp.speed *= -1;
         mp.sprite.x = Phaser.Math.Clamp(mp.sprite.x, mp.minX, mp.maxX);
       }
-      (mp.sprite.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+      if (mp.sprite.body) {
+        (mp.sprite.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+      }
     });
   }
 
