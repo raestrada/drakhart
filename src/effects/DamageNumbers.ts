@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
-const POOL_SIZE = 30;
-const TEXT_STYLE = {
+const TEXT_STYLE_BASE: Phaser.Types.GameObjects.Text.TextStyle = {
   fontSize: '16px',
   fontFamily: 'monospace',
   stroke: '#000000',
@@ -9,36 +8,9 @@ const TEXT_STYLE = {
   fontStyle: 'bold',
 };
 
-let pool: Phaser.GameObjects.Text[] = [];
-let poolInitialized = false;
 let comboCount = 0;
 let comboTimer = 0;
 const COMBO_TIMEOUT = 2000;
-
-function getFromPool(scene: Phaser.Scene): Phaser.GameObjects.Text {
-  if (!poolInitialized) {
-    for (let i = 0; i < POOL_SIZE; i++) {
-      const t = scene.add.text(0, 0, '', TEXT_STYLE).setOrigin(0.5).setDepth(200).setActive(false).setVisible(false);
-      pool.push(t);
-    }
-    poolInitialized = true;
-  }
-
-  for (const t of pool) {
-    if (!t.active) {
-      t.setActive(true).setVisible(true).setAlpha(1).setScale(1).clearTint();
-      return t;
-    }
-  }
-
-  const t = scene.add.text(0, 0, '', TEXT_STYLE).setOrigin(0.5).setDepth(200);
-  pool.push(t);
-  return t;
-}
-
-function releaseToPool(t: Phaser.GameObjects.Text): void {
-  t.setActive(false).setVisible(false);
-}
 
 export type DamageType = 'physical' | 'fire' | 'acid' | 'mecha' | 'crit';
 
@@ -60,16 +32,17 @@ export function spawnDamageNumber(
 ): void {
   const isCrit = damageType === 'crit' || amount >= 50;
   const color = isCrit ? TYPE_COLORS.crit : (TYPE_COLORS[damageType] || TYPE_COLORS.physical);
-  const fontSize = heavy ? 22 : (isCrit ? 20 : 16);
+  const fontSize = heavy ? '22px' : (isCrit ? '20px' : '16px');
   const riseY = heavy ? 55 : (isCrit ? 50 : 40);
 
-  const t = getFromPool(scene);
-  t.setPosition(x + Phaser.Math.Between(-8, 8), y);
-  t.setText(`-${amount}`);
-  t.setColor(color);
-  t.setFontSize(`${fontSize}px`);
-  t.setAlpha(1);
-  t.setScale(isCrit ? 1.5 : (heavy ? 1.2 : 1.0));
+  const t = scene.add.text(x + Phaser.Math.Between(-8, 8), y, `-${amount}`, {
+    ...TEXT_STYLE_BASE,
+    fontSize,
+    color,
+  }).setOrigin(0.5).setDepth(200);
+
+  if (isCrit) t.setScale(1.5);
+  else if (heavy) t.setScale(1.2);
 
   scene.tweens.add({
     targets: t,
@@ -79,17 +52,15 @@ export function spawnDamageNumber(
     alpha: 0,
     duration: 800,
     ease: 'Power2',
-    onComplete: () => releaseToPool(t),
+    onComplete: () => t.destroy(),
   });
 
   if (isCrit) {
-    const critLabel = getFromPool(scene);
-    critLabel.setPosition(x + 14, y - 8);
-    critLabel.setText('CRIT!');
-    critLabel.setColor('#ffdd00');
-    critLabel.setFontSize('14px');
-    critLabel.setAlpha(1);
-    critLabel.setScale(1.3);
+    const critLabel = scene.add.text(x + 14, y - 8, 'CRIT!', {
+      ...TEXT_STYLE_BASE,
+      fontSize: '14px',
+      color: '#ffdd00',
+    }).setOrigin(0.5).setDepth(200).setScale(1.3);
 
     scene.tweens.add({
       targets: critLabel,
@@ -98,7 +69,7 @@ export function spawnDamageNumber(
       duration: 600,
       delay: 100,
       ease: 'Power2',
-      onComplete: () => releaseToPool(critLabel),
+      onComplete: () => critLabel.destroy(),
     });
   }
 
@@ -106,13 +77,11 @@ export function spawnDamageNumber(
   comboTimer = COMBO_TIMEOUT;
 
   if (comboCount >= 3) {
-    const comboLabel = getFromPool(scene);
-    comboLabel.setPosition(x + 20, y + 14);
-    comboLabel.setText(`x${comboCount}`);
-    comboLabel.setColor('#ffcc44');
-    comboLabel.setFontSize(`${12 + Math.min(comboCount, 10)}px`);
-    comboLabel.setAlpha(0.9);
-    comboLabel.setScale(1.0);
+    const comboLabel = scene.add.text(x + 20, y + 14, `x${comboCount}`, {
+      ...TEXT_STYLE_BASE,
+      fontSize: `${Math.min(12 + comboCount, 22)}px`,
+      color: '#ffcc44',
+    }).setOrigin(0.5).setDepth(200);
 
     scene.tweens.add({
       targets: comboLabel,
@@ -121,7 +90,7 @@ export function spawnDamageNumber(
       alpha: 0,
       duration: 1200,
       ease: 'Power2',
-      onComplete: () => releaseToPool(comboLabel),
+      onComplete: () => comboLabel.destroy(),
     });
   }
 }
@@ -136,13 +105,11 @@ export function updateComboTimer(delta: number): void {
 }
 
 export function spawnHealNumber(scene: Phaser.Scene, x: number, y: number, amount: number): void {
-  const t = getFromPool(scene);
-  t.setPosition(x + Phaser.Math.Between(-4, 4), y);
-  t.setText(`+${amount}`);
-  t.setColor('#44ff88');
-  t.setFontSize('14px');
-  t.setAlpha(1);
-  t.setScale(1.0);
+  const t = scene.add.text(x + Phaser.Math.Between(-4, 4), y, `+${amount}`, {
+    ...TEXT_STYLE_BASE,
+    fontSize: '14px',
+    color: '#44ff88',
+  }).setOrigin(0.5).setDepth(200);
 
   scene.tweens.add({
     targets: t,
@@ -150,43 +117,39 @@ export function spawnHealNumber(scene: Phaser.Scene, x: number, y: number, amoun
     alpha: 0,
     duration: 900,
     ease: 'Sine.easeOut',
-    onComplete: () => releaseToPool(t),
+    onComplete: () => t.destroy(),
   });
 }
 
 export function spawnImmuneText(scene: Phaser.Scene, x: number, y: number): void {
-  const t = getFromPool(scene);
-  t.setPosition(x, y - 20);
-  t.setText('IMMUNE');
-  t.setColor('#3498db');
-  t.setFontSize('10px');
-  t.setAlpha(1);
-  t.setScale(1.0);
+  const t = scene.add.text(x, y - 20, 'IMMUNE', {
+    ...TEXT_STYLE_BASE,
+    fontSize: '10px',
+    color: '#3498db',
+  }).setOrigin(0.5).setDepth(200);
 
   scene.tweens.add({
     targets: t,
     y: t.y - 20,
     alpha: 0,
     duration: 700,
-    onComplete: () => releaseToPool(t),
+    onComplete: () => t.destroy(),
   });
 }
 
 export function spawnMissText(scene: Phaser.Scene, x: number, y: number): void {
-  const t = getFromPool(scene);
-  t.setPosition(x, y - 15);
-  t.setText('MISS');
-  t.setColor('#aaaaaa');
-  t.setFontSize('11px');
-  t.setAlpha(1);
-  t.setScale(1.0);
+  const t = scene.add.text(x, y - 15, 'MISS', {
+    ...TEXT_STYLE_BASE,
+    fontSize: '11px',
+    color: '#aaaaaa',
+  }).setOrigin(0.5).setDepth(200);
 
   scene.tweens.add({
     targets: t,
     y: t.y - 15,
     alpha: 0,
     duration: 500,
-    onComplete: () => releaseToPool(t),
+    onComplete: () => t.destroy(),
   });
 }
 
