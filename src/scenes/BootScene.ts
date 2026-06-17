@@ -178,6 +178,7 @@ export class BootScene extends Phaser.Scene {
       { name: 'Orbit Unbound', file: 'Orbit_Unbound', desc: 'Level 3 — Ashen Gorge' },
       { name: 'The Last Steeple', file: 'The_Last_Steeple', desc: 'Boss — Dreadnought' },
       { name: 'Silentium Draconis', file: 'Silentium_Draconis', desc: 'Sacred Altar — Dragon Core' },
+      { name: 'Vigil of the Fallen King', file: 'Vigil_of_the_Fallen_King', desc: 'Title Theme — Main Menu' },
     ];
 
     let currentAudio: HTMLAudioElement | null = null;
@@ -187,7 +188,7 @@ export class BootScene extends Phaser.Scene {
     const trackDescs: Phaser.GameObjects.Text[] = [];
 
     tracks.forEach((track, i) => {
-      const yPos = height * 0.34 + i * height * 0.08;
+      const yPos = height * 0.32 + i * height * 0.07;
       const btn = this.add.text(width / 2, yPos, track.name, {
         fontSize: `${Math.round(14 * scale)}px`,
         fontFamily: 'monospace',
