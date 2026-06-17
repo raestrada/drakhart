@@ -159,7 +159,7 @@ export class DreadnoughtBoss extends BaseEnemy {
 
     // Keep distance from player horizontally, but generally stay on right side of screen
     const cam = this.scene.cameras.main;
-    const targetX = cam.scrollX + cam.width - 150;
+    const targetX = cam.scrollX + (cam.width / cam.zoom) * 0.65;
     
     if (this.x > targetX + 10) {
       body.setVelocityX(-this.moveSpeed);

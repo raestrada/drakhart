@@ -382,12 +382,8 @@ export class GameScene extends BaseLevelScene {
     // Gap: 4000-4500 with thorns below
     this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
-    // New Section 5 — The Descent (post-altar, 8000-10000)
-    this.terrainGen.generateGroundSegment(this.platforms, 8000, groundY, 450, 'forest', 7);
-    // Descending platforms (stairway down into darkness)
-    this.terrainGen.generateGroundSegment(this.platforms, 8450, groundY + 48, 350, 'forest', 8);
-    this.terrainGen.generateGroundSegment(this.platforms, 8800, groundY + 96, 400, 'forest', 9);
-    this.terrainGen.generateGroundSegment(this.platforms, 9200, groundY + 64, 800, 'forest', 10);
+    // New Section 5 — The Descent (post-altar, 8000-10000, flat ground)
+    this.terrainGen.generateGroundSegment(this.platforms, 8000, groundY, 2000, 'forest', 11);
 
     // Organic floating platforms
     const platDefs: { x: number; y: number; w: number }[] = [
@@ -566,13 +562,13 @@ export class GameScene extends BaseLevelScene {
     const e18 = new ShieldEnemy(this, 8100, 738, this.player, {
       health: 75, damage: 18, speed: 45, patrolMinX: 8050, patrolMaxX: 8350
     });
-    const e19 = new SpitterEnemy(this, 8600, 786, this.player, {
+    const e19 = new SpitterEnemy(this, 8600, 738, this.player, {
       health: 65, damage: 16, speed: 55, patrolMinX: 8500, patrolMaxX: 8750
     });
-    const e20 = new LeaperEnemy(this, 9000, 834, this.player, {
+    const e20 = new LeaperEnemy(this, 9000, 738, this.player, {
       health: 80, damage: 20, speed: 85, patrolMinX: 8900, patrolMaxX: 9100
     });
-    const e21 = new BaseEnemy(this, 9350, 802, 'enemy-sentry', this.player, {
+    const e21 = new BaseEnemy(this, 9350, 738, 'enemy-sentry', this.player, {
       health: 65, damage: 16, speed: 70, patrolMinX: 9250, patrolMaxX: 9450
     });
 
@@ -957,7 +953,7 @@ export class GameScene extends BaseLevelScene {
     g.setDepth(-6);
     g.setScrollFactor(1, 1);
 
-    for (let x = 0; x < LEVEL_WIDTH; x += rng.between(80, 160)) {
+    for (let x = 0; x < 10000; x += rng.between(80, 160)) {
       const h = rng.between(60, 180);
       const w = rng.between(12, 30);
       const baseY = 768;
@@ -1023,12 +1019,31 @@ export class GameScene extends BaseLevelScene {
   }
 
   private createFogWall(): void {
-    this.fogWall = this.add.graphics()
-      .setDepth(90)
-      .setScrollFactor(1);
+    // Layered mist fog wall instead of black rectangle
+    for (let layer = 0; layer < 3; layer++) {
+      const mist = this.add.tileSprite(7900, 250 - layer * 60, 600, 500 + layer * 80, 'bg-mist')
+        .setOrigin(0, 0)
+        .setScrollFactor(0.95)
+        .setDepth(80 + layer)
+        .setAlpha(0.25 + layer * 0.15)
+        .setTint(0x112233);
 
-    this.fogWall.fillStyle(0x000000, 0.95);
-    this.fogWall.fillRect(7900, 0, 400, LEVEL_HEIGHT);
+      this.tweens.add({
+        targets: mist,
+        tilePositionX: { from: 0, to: -40 + layer * 20 },
+        duration: 4000 + layer * 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
+    this.fogWall = this.add.graphics()
+      .setDepth(83)
+      .setScrollFactor(0.95);
+
+    this.fogWall.fillStyle(0x080610, 0.7);
+    this.fogWall.fillRect(7900, 0, 600, 800);
   }
 
   private createAshParticles(): void {
@@ -1085,7 +1100,7 @@ export class GameScene extends BaseLevelScene {
     const magicianCard = new TarotCard(this, 680, 720, 'magician');
     magicianCard.setDepth(1);
 
-    const chariotCard = new TarotCard(this, 9100, 804, 'chariot');
+    const chariotCard = new TarotCard(this, 9100, 704, 'chariot');
     chariotCard.setDepth(1);
 
     this.physics.add.overlap(this.player, magicianCard, () => {
@@ -1810,8 +1825,8 @@ export class GameScene extends BaseLevelScene {
     // Calculate end of Zone 1 graphic transition values past x = 6500
     let overflow = 0;
     let bgAlphaMultiplier = 1;
-    if (cam.scrollX > 6500) {
-      overflow = cam.scrollX - 6500;
+    if (cam.scrollX > 9500) {
+      overflow = cam.scrollX - 9500;
       bgAlphaMultiplier = Math.max(0, 1 - overflow / 700);
     }
 

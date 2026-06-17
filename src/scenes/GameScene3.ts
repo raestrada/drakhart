@@ -62,6 +62,7 @@ export class GameScene3 extends BaseLevelScene {
   private steamPipes: SteamPipeHazard[] = [];
   private pistons!: Phaser.Physics.Arcade.Group;
   private lastLaserDamageTime = 0;
+  private lastTailShot = 0;
   private lastSteamDamageTime = 0;
   private lastPistonDamageTime = 0;
   private windLines!: Phaser.GameObjects.Graphics;
@@ -720,6 +721,7 @@ export class GameScene3 extends BaseLevelScene {
         // Horizontal control
         if (this.cursors.left.isDown || this.keyA.isDown) {
           this.playerScreenX -= speed * dt;
+          this.tailShot(); // dragon fires backward from tail
         } else if (this.cursors.right.isDown || this.keyD.isDown) {
           this.playerScreenX += speed * dt;
         }
@@ -904,6 +906,17 @@ export class GameScene3 extends BaseLevelScene {
       ) {
         b.setActive(false);
         b.setVisible(false);
+      }
+    });
+
+    // Cleanup enemies that passed the player off-screen (left edge)
+    this.enemies.getChildren().forEach((enemy) => {
+      const e = enemy as Phaser.Physics.Arcade.Sprite;
+      if (!e.active) return;
+      if (e.x < this.scrollX - 150) {
+        e.setActive(false);
+        e.setVisible(false);
+        e.destroy();
       }
     });
   }
@@ -1091,7 +1104,7 @@ export class GameScene3 extends BaseLevelScene {
     this.waves.forEach((wave) => {
       if (this.spawnedWaves.has(wave.triggerX)) return;
       // Spawn wave when camera reaches triggerX
-      if (this.scrollX + 600 >= wave.triggerX) {
+      if (this.scrollX + 1100 >= wave.triggerX) {
         this.spawnedWaves.add(wave.triggerX);
         this.spawnWave(wave);
       }
@@ -1148,6 +1161,22 @@ export class GameScene3 extends BaseLevelScene {
     this.energyPickups.add(obj);
   }
 
+  private tailShot(): void {
+    const now = this.time.now;
+    if (now - this.lastTailShot < 200) return;
+    this.lastTailShot = now;
+
+    const bullet = this.player.combatSystem.bullets.get(
+      this.player.x - 35, this.player.y, 'bullet-fire'
+    ) as Phaser.Physics.Arcade.Sprite;
+    if (!bullet) return;
+    bullet.enableBody(true, this.player.x - 35, this.player.y, true, true);
+    bullet.setVelocityX(-700);
+    bullet.setBlendMode(Phaser.BlendModes.ADD);
+    bullet.setData('pierce', 1);
+    this.time.delayedCall(800, () => { if (bullet.active) bullet.disableBody(true, true); });
+  }
+
   private activateBoss(): void {
     if (this.bossActive) return;
     this.bossActive = true;
@@ -1184,7 +1213,7 @@ export class GameScene3 extends BaseLevelScene {
     this.enemies.add(this.boss);
     this.boss.activate();
 
-    this.cameras.main.zoomTo(1.1, 800, 'Cubic.easeInOut');
+    this.cameras.main.zoomTo(1.0, 800, 'Cubic.easeInOut');
 
     // Modify die method of Boss to trigger Level 3 victory
     const originalDie = (this.boss as any).die.bind(this.boss);

@@ -207,15 +207,22 @@ export class GameScene2 extends BaseLevelScene {
       .setDepth(-30);
     this.bgRefinerySun.setTint(0xcc6655, 0xcc6655, 0x442222, 0x442222);
 
-    // 1.1 Refinery Sun support images (non-tiled, repeated across level)
+    // 1.1 Refinery Sun windows (industrial window frames)
     this.refinerySunImages = [];
     if (this.textures.exists('image-refinery-sun')) {
-      [400, 2400, 4400, 6400].forEach(x => {
+      [500, 3200, 5800].forEach(x => {
+        const frameW = 130; const frameH = 100;
+        const frame = this.add.rectangle(0, 0, frameW, frameH, 0x0a0a14, 0.8)
+          .setDepth(-29).setStrokeStyle(3, 0x3a4a5a);
+        frame.setData('anchorX', x);
+
         const img = this.add.image(0, 0, 'image-refinery-sun')
           .setOrigin(0.5, 0.5)
-          .setDepth(-29)
-          .setAlpha(0.5);
+          .setDepth(-28)
+          .setScale(0.55)
+          .setAlpha(0.75);
         img.setData('anchorX', x);
+        img.setData('frame', frame);
         this.refinerySunImages.push(img);
       });
     }
@@ -227,16 +234,21 @@ export class GameScene2 extends BaseLevelScene {
       .setDepth(-20);
     this.bgFurnace.setTint(0xff8866, 0xff88aa, 0x66222c, 0x883344);
 
-    // 2.1 Smelting Furnace Reactor support images (non-tiled, repeated)
+    // 2.1 Smelting Furnace Reactor window (single large window)
     if (this.textures.exists('image-furnace')) {
-      [800, 2800, 4800, 6800].forEach(x => {
-        const img = this.add.image(0, 0, 'image-furnace')
-          .setOrigin(0.5, 0.5)
-          .setDepth(-19)
-          .setAlpha(0.45);
-        img.setData('anchorX', x);
-        this.furnaceImages.push(img);
-      });
+      const frameW = 160; const frameH = 120;
+      const frame = this.add.rectangle(0, 0, frameW, frameH, 0x0a0a14, 0.8)
+        .setDepth(-19).setStrokeStyle(3, 0x3a4a5a);
+      frame.setData('anchorX', 3500);
+
+      const img = this.add.image(0, 0, 'image-furnace')
+        .setOrigin(0.5, 0.5)
+        .setDepth(-18)
+        .setScale(0.5)
+        .setAlpha(0.65);
+      img.setData('anchorX', 3500);
+      img.setData('frame', frame);
+      this.furnaceImages.push(img);
     }
 
     // 3. Furnace Pipes background (procedural girders & pipes, medium scroll)
@@ -246,14 +258,21 @@ export class GameScene2 extends BaseLevelScene {
       .setDepth(-10);
     this.bgFurnacePipes.setTint(0xbb5544, 0xdd6644, 0x221111, 0x331111);
 
-    // 3.1 Refinery Pipes detail support images (non-tiled, repeated)
+    // 3.1 Refinery Pipes detail windows (2 industrial windows)
     if (this.textures.exists('image-furnace-pipes')) {
-      [600, 2600, 4600, 6600].forEach(x => {
+      [2000, 5000].forEach(x => {
+        const frameW = 140; const frameH = 100;
+        const frame = this.add.rectangle(0, 0, frameW, frameH, 0x0a0a14, 0.8)
+          .setDepth(-9).setStrokeStyle(3, 0x3a4a5a);
+        frame.setData('anchorX', x);
+
         const img = this.add.image(0, 0, 'image-furnace-pipes')
           .setOrigin(0.5, 0.5)
-          .setDepth(-9)
-          .setAlpha(0.35);
+          .setDepth(-8)
+          .setScale(0.45)
+          .setAlpha(0.55);
         img.setData('anchorX', x);
+        img.setData('frame', frame);
         this.pipesImages.push(img);
       });
     }
@@ -292,18 +311,23 @@ export class GameScene2 extends BaseLevelScene {
       this.bgFurnacePipes.y = (240 - cam.centerY) / cam.zoom + cam.centerY;
     }
 
-    // Scroll Refinery Sun support images
+    // Scroll Refinery Sun windows
     this.refinerySunImages.forEach(img => {
       if (!img || !img.active) return;
       const ax = img.getData('anchorX') as number;
       const targetScreenX = w * 0.70 - (camX * 0.015) + ax;
-      const targetScreenY = h * 0.65;
+      const targetScreenY = h * 0.72;
       img.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
       img.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
-      img.setScale(0.8 / cam.zoom);
+      img.setScale(0.55 / cam.zoom);
+      const frame = img.getData('frame') as Phaser.GameObjects.Rectangle;
+      if (frame) {
+        frame.x = img.x;
+        frame.y = img.y;
+      }
     });
 
-    // Scroll Smelting Furnace support images
+    // Scroll Smelting Furnace window
     this.furnaceImages.forEach(img => {
       if (!img || !img.active) return;
       const ax = img.getData('anchorX') as number;
@@ -311,18 +335,22 @@ export class GameScene2 extends BaseLevelScene {
       const targetScreenY = h * 0.80;
       img.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
       img.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
-      img.setScale(0.8 / cam.zoom);
+      img.setScale(0.5 / cam.zoom);
+      const frame = img.getData('frame') as Phaser.GameObjects.Rectangle;
+      if (frame) { frame.x = img.x; frame.y = img.y; }
     });
 
-    // Scroll Refinery Pipes support images
+    // Scroll Refinery Pipes windows
     this.pipesImages.forEach(img => {
       if (!img || !img.active) return;
       const ax = img.getData('anchorX') as number;
       const targetScreenX = w * 0.75 - (camX * 0.18) + ax;
-      const targetScreenY = h * 0.95;
+      const targetScreenY = h * 0.88;
       img.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
       img.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
-      img.setScale(0.6 / cam.zoom);
+      img.setScale(0.45 / cam.zoom);
+      const frame = img.getData('frame') as Phaser.GameObjects.Rectangle;
+      if (frame) { frame.x = img.x; frame.y = img.y; }
     });
   }
 
