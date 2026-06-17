@@ -70,11 +70,14 @@ export class SteamVent extends Phaser.Physics.Arcade.Sprite {
 
   destroy(fromScene?: boolean): void {
     const scene = this.scene;
-    if (this.steamEmitter) {
-      this.steamEmitter.stop();
-      scene.time.delayedCall(1400, () => {
-        if (this.steamEmitter) this.steamEmitter.destroy();
-      });
+    const emitter = this.steamEmitter;
+    if (emitter) {
+      emitter.stop();
+      if (scene) {
+        scene.time.delayedCall(1400, () => {
+          if (emitter) emitter.destroy();
+        });
+      }
     }
     super.destroy(fromScene);
   }
