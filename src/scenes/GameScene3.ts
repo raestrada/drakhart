@@ -1727,8 +1727,8 @@ class SeekerDrone extends FlyingEnemy {
     super(scene, x, y, player);
     this.setTexture('enemy-seeker-drone');
     this.setScale(1.0);
-    this.health = 25;
-    this.maxHealth = 25;
+    this.health = 15;
+    this.maxHealth = 15;
     this.baseSpeedX = -100;
     this.baseY = y;
     this.detectRange = 800; // Increase range since it doesn't chase
@@ -1849,8 +1849,8 @@ class MineDropper extends FlyingEnemy {
     super(scene, x, y, player);
     this.setTexture('enemy-mine-dropper');
     this.setScale(1.0);
-    this.health = 30;
-    this.maxHealth = 30;
+    this.health = 15;
+    this.maxHealth = 15;
     this.moveSpeed = 40;
     this.detectRange = 600;
     this.attackRange = 500;

@@ -36,7 +36,7 @@ export const MECHA_SWORD_RANGE = 125;
 export const MECHA_SWORD_DURATION = 350;
 export const MECHA_SWORD_COOLDOWN = 650;
 
-export const FIRE_DAMAGE = 12;
+export const FIRE_DAMAGE = 20;
 export const FIRE_SPEED = 700;
 export const FIRE_LIFETIME = 1200;
 export const FIRE_COOLDOWN = 80;
