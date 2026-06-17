@@ -21,6 +21,9 @@ export const es: typeof en = {
     back: 'VOLVER',
     pray: 'REZAR',
     gameSaved: 'PROGRESO GUARDADO',
+    paused: 'PAUSA',
+    resume: 'REANUDAR',
+    quitToMenu: 'SALIR AL MENÚ',
   },
   story: {
     intro1: 'El viejo mundo es ceniza.',

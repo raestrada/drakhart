@@ -19,6 +19,9 @@ export const en = {
     back: 'BACK',
     pray: 'PRAY',
     gameSaved: 'PROGRESS SAVED',
+    paused: 'PAUSED',
+    resume: 'RESUME',
+    quitToMenu: 'QUIT TO MENU',
   },
   story: {
     intro1: 'The old world is ash.',

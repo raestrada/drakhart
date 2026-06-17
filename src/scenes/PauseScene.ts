@@ -20,7 +20,7 @@ export class PauseScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(0);
 
-    this.add.text(width / 2, height * 0.28, 'PAUSED', {
+    this.add.text(width / 2, height * 0.28, t('ui.paused') || 'PAUSED', {
       fontSize: `${Math.round(36 * scale)}px`,
       fontFamily: 'Georgia, serif',
       color: '#886644',
@@ -28,7 +28,7 @@ export class PauseScene extends Phaser.Scene {
       strokeThickness: 4,
     }).setOrigin(0.5).setDepth(1);
 
-    this.resumeBtn = this.add.text(width / 2, height * 0.48, t('ui.continue') || 'RESUME', {
+    this.resumeBtn = this.add.text(width / 2, height * 0.48, t('ui.resume') || 'RESUME', {
       fontSize: `${Math.round(18 * scale)}px`,
       fontFamily: 'monospace',
       color: '#ccaa66',
