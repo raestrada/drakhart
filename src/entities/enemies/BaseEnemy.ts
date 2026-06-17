@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from '../Player';
 import { distanceBetween } from '../../utils/helpers';
-import { spawnDamageNumber } from '../../effects/DamageNumbers';
+import { spawnDamageNumber, DamageType } from '../../effects/DamageNumbers';
 
 export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   public health: number;
@@ -22,6 +22,13 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
   protected slowTimer = 0;
   protected slowMultiplier = 1.0;
+
+  // Health bar UI
+  protected hpBarBg: Phaser.GameObjects.Rectangle | null = null;
+  protected hpBarFill: Phaser.GameObjects.Rectangle | null = null;
+  protected hpBarChip: Phaser.GameObjects.Rectangle | null = null;
+  protected hpBarShowTimer = 0;
+  protected prevHealthForChip = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -47,6 +54,7 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.player = player;
     this.health = config?.health ?? 40;
     this.maxHealth = this.health;
+    this.prevHealthForChip = this.health;
     this.moveSpeed = config?.speed ?? 70;
     this.detectRange = config?.detectRange ?? 220;
     this.attackRange = config?.attackRange ?? 50;
@@ -56,6 +64,91 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.patrolMaxX = config?.patrolMaxX;
 
     this.setCollideWorldBounds(true);
+
+    this.createHealthBar();
+    this.spawnIn();
+  }
+
+  private spawnIn(): void {
+    this.setAlpha(0);
+    this.setScale(this.scaleX * 0.3, this.scaleY * 0.3);
+
+    (this.scene as any).gameAudio?.playSpawnIn?.();
+
+    // Warp portal ring
+    const ring = this.scene.add.graphics();
+    ring.lineStyle(2, 0x9944ff, 0.8);
+    ring.strokeCircle(this.x, this.y, 5);
+    ring.setDepth(this.depth + 1);
+    ring.setBlendMode(Phaser.BlendModes.ADD);
+
+    this.scene.tweens.add({
+      targets: ring,
+      scaleX: 8,
+      scaleY: 8,
+      alpha: 0,
+      duration: 350,
+      ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 1,
+      scaleX: this.scaleX,
+      scaleY: this.scaleY,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+  }
+
+  private createHealthBar(): void {
+    const barW = 30;
+    const barH = 3;
+    this.hpBarBg = this.scene.add.rectangle(this.x, this.y - 24, barW, barH, 0x000000)
+      .setDepth(this.depth + 10).setAlpha(0);
+    this.hpBarFill = this.scene.add.rectangle(this.x - barW / 2, this.y - 24, barW, barH, 0xff2222)
+      .setOrigin(0, 0.5).setDepth(this.depth + 11).setAlpha(0);
+    this.hpBarChip = this.scene.add.rectangle(this.x - barW / 2, this.y - 24, barW, barH, 0xffffff)
+      .setOrigin(0, 0.5).setDepth(this.depth + 12).setAlpha(0);
+  }
+
+  private showHealthBar(): void {
+    this.hpBarShowTimer = 2500;
+    if (this.hpBarBg) this.hpBarBg.setAlpha(0.8);
+    if (this.hpBarFill) {
+      const ratio = Math.max(0, this.health / this.maxHealth);
+      this.hpBarFill.width = 30 * ratio;
+      this.hpBarFill.setAlpha(0.9);
+    }
+    if (this.hpBarChip) {
+      const ratio = Math.max(0, this.prevHealthForChip / this.maxHealth);
+      this.hpBarChip.width = 30 * ratio;
+      this.hpBarChip.setAlpha(0.5);
+    }
+  }
+
+  private updateHealthBar(delta: number): void {
+    if (!this.hpBarBg || !this.hpBarFill || !this.hpBarChip) return;
+
+    if (this.hpBarShowTimer > 0) {
+      this.hpBarShowTimer -= delta;
+      const x = this.x;
+      const y = this.y - 24 + (this.height ? -(this.height / 2) - 4 : -24);
+      this.hpBarBg.setPosition(x, y);
+      this.hpBarFill.setPosition(x - 15, y);
+      this.hpBarChip.setPosition(x - 15, y);
+
+      // Damage chip lerp
+      const chipTarget = Math.max(0, this.health / this.maxHealth) * 30;
+      if (this.hpBarChip.width > chipTarget + 0.5) {
+        this.hpBarChip.width += (chipTarget - this.hpBarChip.width) * 0.08;
+      }
+    } else {
+      this.hpBarBg.setAlpha(Math.max(0, this.hpBarBg.alpha - 0.03));
+      this.hpBarFill.setAlpha(Math.max(0, this.hpBarFill.alpha - 0.03));
+      this.hpBarChip.setAlpha(Math.max(0, this.hpBarChip.alpha - 0.03));
+    }
   }
 
   preUpdate(time: number, delta: number): void {
@@ -63,7 +156,6 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
     if (!this.active || !this.isActive || this.health <= 0) return;
 
-    // Handle slow decay
     if (this.slowTimer > 0) {
       this.slowTimer -= delta;
       if (this.slowTimer <= 0) {
@@ -89,7 +181,6 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
       body.setVelocityX(dir * this.moveSpeed * this.slowMultiplier);
       this.setFlipX(dir < 0);
     } else {
-      // Patrol logic
       if (this.patrolMinX !== undefined && this.patrolMaxX !== undefined) {
         if (this.patrolDir === 1) {
           body.setVelocityX(this.moveSpeed * 0.75 * this.slowMultiplier);
@@ -110,6 +201,8 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
         body.setVelocityX(0);
       }
     }
+
+    this.updateHealthBar(delta);
   }
 
   protected doAttack(): void {
@@ -123,8 +216,10 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   takeDamage(amount: number): void {
     if (this.health <= 0) return;
 
+    this.prevHealthForChip = this.health;
     this.health -= amount;
-    spawnDamageNumber(this.scene, this.x, this.y - 20, amount);
+    this.showHealthBar();
+    spawnDamageNumber(this.scene, this.x, this.y - 20, amount, 'physical');
     this.setTint(0xff0000);
     this.scene.time.delayedCall(80, () => {
       if (this.active) this.clearTint();
@@ -142,6 +237,9 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x333333);
+    if (this.hpBarBg) this.hpBarBg.setAlpha(0);
+    if (this.hpBarFill) this.hpBarFill.setAlpha(0);
+    if (this.hpBarChip) this.hpBarChip.setAlpha(0);
 
     this.scene.tweens.add({
       targets: this,
@@ -154,6 +252,13 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   public applySlow(duration: number, multiplier: number): void {
     this.slowTimer = duration;
     this.slowMultiplier = multiplier;
-    this.setTint(0x33aaff); // Ice blue tint for slow effect
+    this.setTint(0x33aaff);
+  }
+
+  destroy(fromScene?: boolean): void {
+    if (this.hpBarBg) this.hpBarBg.destroy();
+    if (this.hpBarFill) this.hpBarFill.destroy();
+    if (this.hpBarChip) this.hpBarChip.destroy();
+    super.destroy(fromScene);
   }
 }

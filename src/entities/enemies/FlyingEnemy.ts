@@ -63,6 +63,11 @@ export class FlyingEnemy extends BaseEnemy {
   private fireBullet(): void {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
+    if (this.scene.lights) {
+      const flash = this.scene.lights.addLight(this.x, this.y, 50, 0xcc00ff, 0.6);
+      this.scene.time.delayedCall(80, () => this.scene.lights.removeLight(flash));
+    }
+
     const bullet = this.scene.physics.add.sprite(this.x, this.y, 'bullet-fire');
     bullet.setTint(0xcc00ff);
     bullet.setScale(0.8);

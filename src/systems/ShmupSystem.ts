@@ -4,7 +4,7 @@ import { GameScene } from '../scenes/GameScene';
 
 interface WaveEnemy {
   type: 'sky-hunter' | 'gorge-turret' | 'bone-serpent';
-  x: number;   // relative to zone start
+  x: number;
   y: number;
   speedX?: number;
   speedY?: number;
@@ -12,7 +12,7 @@ interface WaveEnemy {
 }
 
 interface WaveDefinition {
-  triggerX: number;  // absolute world x where wave triggers
+  triggerX: number;
   enemies: WaveEnemy[];
   restPoint?: boolean;
 }
@@ -30,7 +30,8 @@ export class ShmupSystem {
   private waves: WaveDefinition[];
   private spawnedWaves = new Set<number>();
   private shmupEnemies: Phaser.Physics.Arcade.Group;
-
+  private currentWaveIndex = 0;
+  private totalWaves = 0;
 
   private scrollX = 0;
 
@@ -41,15 +42,11 @@ export class ShmupSystem {
     this.shmupEnemies = scene.physics.add.group({ allowGravity: false });
 
     this.waves = this.buildWaves();
+    this.totalWaves = this.waves.length;
   }
 
-  get isActive(): boolean {
-    return this.active;
-  }
-
-  get enemies(): Phaser.Physics.Arcade.Group {
-    return this.shmupEnemies;
-  }
+  get isActive(): boolean { return this.active; }
+  get enemies(): Phaser.Physics.Arcade.Group { return this.shmupEnemies; }
 
   activate(zoneStartX: number, zoneEndX: number): void {
     this.active = true;
@@ -57,7 +54,9 @@ export class ShmupSystem {
     this.zoneEndX = zoneEndX;
     this.scrollX = zoneStartX;
     this.spawnedWaves.clear();
+    this.currentWaveIndex = 0;
 
+    this.showBanner('STORM CANYON — SURVIVE', '#cc44ff');
     this.camera.startFollow(this.player, false);
     this.camera.scrollX = zoneStartX;
   }
@@ -65,13 +64,57 @@ export class ShmupSystem {
   deactivate(): void {
     this.active = false;
     this.shmupEnemies.clear(true, true);
-
     this.scene.resumeNormalCamera();
+  }
+
+  private showBanner(text: string, color: string): void {
+    const cx = this.scene.scale.width / 2;
+    const cy = this.scene.scale.height / 2 - 40;
+    const banner = this.scene.add.text(cx, cy, text, {
+      fontSize: '22px',
+      fontFamily: 'Georgia, serif',
+      color,
+      stroke: '#000000',
+      strokeThickness: 5,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setAlpha(0);
+
+    this.scene.tweens.add({
+      targets: banner,
+      alpha: { from: 0, to: 1 },
+      scaleX: { from: 0.7, to: 1.0 },
+      scaleY: { from: 0.7, to: 1.0 },
+      duration: 400,
+      yoyo: true,
+      hold: 1200,
+      ease: 'Power2',
+      onComplete: () => banner.destroy(),
+    });
+  }
+
+  private showWaveNotice(waveNum: number): void {
+    const cx = this.scene.scale.width / 2;
+    const cy = this.scene.scale.height * 0.3;
+    const banner = this.scene.add.text(cx, cy, `WAVE ${waveNum}/${this.totalWaves}`, {
+      fontSize: '18px',
+      fontFamily: 'monospace',
+      color: '#ffaa44',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setAlpha(0);
+
+    this.scene.tweens.add({
+      targets: banner,
+      alpha: { from: 0, to: 0.9 },
+      y: cy - 10,
+      duration: 250,
+      yoyo: true,
+      hold: 800,
+      onComplete: () => banner.destroy(),
+    });
   }
 
   update(delta: number): void {
     if (!this.active) return;
-
     const dt = delta / 1000;
 
     this.scrollX += this.scrollSpeed * dt;
@@ -81,37 +124,29 @@ export class ShmupSystem {
       return;
     }
 
-    // Force camera position — auto-scroll right
     this.camera.scrollX = this.scrollX;
     this.camera.scrollY = Math.max(0, this.player.y - this.camera.height / 2);
 
-    // Keep player within viewport
     const viewLeft = this.scrollX;
     const viewRight = this.scrollX + this.camera.width;
-    const viewTop = this.camera.scrollY;
-    const viewBottom = this.camera.scrollY + this.camera.height;
 
-    if (this.player.x < viewLeft + 20) {
-      this.player.x = viewLeft + 20;
-      (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = 0;
-    }
-    if (this.player.x > viewRight - 20) {
-      this.player.x = viewRight - 20;
-      (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = 0;
-    }
+    if (this.player.x < viewLeft + 20) { this.player.x = viewLeft + 20; (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = 0; }
+    if (this.player.x > viewRight - 20) { this.player.x = viewRight - 20; (this.player.body as Phaser.Physics.Arcade.Body).velocity.x = 0; }
 
-
-
-    // Spawn waves
-    this.waves.forEach((wave) => {
+    this.waves.forEach((wave, idx) => {
       if (this.spawnedWaves.has(wave.triggerX)) return;
       if (this.scrollX + this.spawnOffset >= wave.triggerX) {
         this.spawnedWaves.add(wave.triggerX);
+        this.currentWaveIndex = idx + 1;
+        if (!wave.restPoint) {
+          this.showWaveNotice(this.currentWaveIndex);
+        } else {
+          this.showBanner('SAFE ZONE', '#44ff66');
+        }
         this.spawnWave(wave);
       }
     });
 
-    // Cleanup off-screen enemies
     this.shmupEnemies.getChildren().forEach((e) => {
       const enemy = e as Phaser.Physics.Arcade.Sprite;
       if (!enemy.active) return;
@@ -127,7 +162,6 @@ export class ShmupSystem {
     wave.enemies.forEach((def) => {
       const worldX = this.scrollX + this.spawnOffset + def.x;
       const worldY = def.y;
-
       let enemy: Phaser.Physics.Arcade.Sprite | null = null;
 
       if (def.type === 'sky-hunter') {
@@ -146,7 +180,6 @@ export class ShmupSystem {
         enemy.setTint(0xcc4444);
         enemy.setScale(1.5);
         (enemy.body as Phaser.Physics.Arcade.Body).allowGravity = true;
-        // Stationary — clamp position
         enemy.setData('anchorX', worldX);
         enemy.setData('anchorY', worldY);
         enemy.setData('hp', 25);
@@ -162,7 +195,34 @@ export class ShmupSystem {
 
       if (enemy) {
         this.shmupEnemies.add(enemy);
+        this.spawnPortal(enemy);
       }
+    });
+  }
+
+  private spawnPortal(enemy: Phaser.Physics.Arcade.Sprite): void {
+    enemy.setAlpha(0);
+    enemy.setScale(enemy.scaleX * 0.2, enemy.scaleY * 0.2);
+
+    const flash = this.scene.add.rectangle(enemy.x, enemy.y, 4, 4, 0xffffff, 1);
+    flash.setDepth(50);
+    flash.setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({
+      targets: flash,
+      scaleX: 25,
+      scaleY: 25,
+      alpha: 0,
+      duration: 250,
+      onComplete: () => flash.destroy(),
+    });
+
+    this.scene.tweens.add({
+      targets: enemy,
+      alpha: 1,
+      scaleX: enemy.scaleX / 0.2,
+      scaleY: enemy.scaleY / 0.2,
+      duration: 300,
+      ease: 'Back.easeOut',
     });
   }
 
@@ -171,14 +231,12 @@ export class ShmupSystem {
       const enemy = e as Phaser.Physics.Arcade.Sprite;
       if (!enemy.active) return;
 
-      // Enemy movement patterns
       if (enemy.getData('sineOffset') !== undefined) {
         const offset = enemy.getData('sineOffset') as number;
         const baseY = enemy.getData('baseY') as number;
         enemy.y = baseY + Math.sin(time * 0.003 + offset) * 30;
       }
 
-      // Turret: stay anchored, shoot at player
       const fireTimer = enemy.getData('fireTimer') as number;
       if (fireTimer !== undefined) {
         const newTimer = fireTimer + _delta;
@@ -188,7 +246,6 @@ export class ShmupSystem {
         } else {
           enemy.setData('fireTimer', newTimer);
         }
-        // Keep turret at anchor position
         const ax = enemy.getData('anchorX') as number;
         const ay = enemy.getData('anchorY') as number;
         if (ax) enemy.x = ax;
@@ -269,7 +326,5 @@ export class ShmupSystem {
     ];
   }
 
-  getCurrentZoneName(): string {
-    return 'Storm Canyon';
-  }
+  getCurrentZoneName(): string { return 'Storm Canyon'; }
 }

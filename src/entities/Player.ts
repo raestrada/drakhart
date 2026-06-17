@@ -45,6 +45,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   public animState: 'idle' | 'walk' | 'jump' | 'dragon' | 'kneeling' = 'idle';
 
+  private lowHP_steamTimer = 0;
+  private mechaSteamTimer = 0;
+  private breathTimer = 0;
+
   // Game feel / juice state variables
   private wasOnGround = true;
   private timeSinceGrounded = 0;
@@ -494,6 +498,81 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.triggerLandingJuice();
     }
     this.wasOnGround = onGround;
+
+    this.updateLowHPFeedback(delta);
+    this.updateMechaBodySteam(delta);
+  }
+
+  private updateLowHPFeedback(delta: number): void {
+    if (this.formMachine.state === FormState.DRAGON) return;
+
+    const hpRatio = this.health / this.maxHealth;
+    if (hpRatio < 0.3) {
+      this.setTint(0xff5533);
+      this.breathTimer += delta;
+      if (this.breathTimer > 800) {
+        this.breathTimer = 0;
+        (this.scene as any).gameAudio?.playLowHealth?.();
+      }
+      // Ember drip
+      this.lowHP_steamTimer += delta;
+      if (this.lowHP_steamTimer > 500) {
+        this.lowHP_steamTimer = 0;
+        const drip = this.scene.add.rectangle(
+          this.x + Phaser.Math.Between(-8, 8),
+          this.y + 15,
+          2, 2, 0xff2200, 0.7
+        );
+        drip.setBlendMode(Phaser.BlendModes.ADD);
+        this.scene.physics.add.existing(drip);
+        const dBody = drip.body as Phaser.Physics.Arcade.Body;
+        if (dBody) {
+          dBody.setGravityY(120);
+          dBody.setVelocity(Phaser.Math.Between(-20, 20), 0);
+        }
+        this.scene.tweens.add({
+          targets: drip,
+          alpha: 0,
+          duration: 600,
+          onComplete: () => drip.destroy(),
+        });
+      }
+    } else if (hpRatio > 0.3 && this.breathTimer === 0) {
+      if (this.formMachine.state !== FormState.MECHA || this.formMachine.heat.level === 'normal') {
+        if (this.formMachine.state === FormState.HUMAN) {
+          this.clearTint();
+        }
+      }
+    }
+  }
+
+  private updateMechaBodySteam(delta: number): void {
+    if (this.formMachine.state !== FormState.MECHA) return;
+
+    const heat = this.formMachine.heat;
+    if (heat.level === 'warning' || heat.level === 'danger') {
+      this.mechaSteamTimer += delta;
+      const interval = heat.level === 'danger' ? 100 : 220;
+      if (this.mechaSteamTimer > interval) {
+        this.mechaSteamTimer = 0;
+        for (let i = 0; i < 2; i++) {
+          const sx = this.x + Phaser.Math.Between(-12, 12);
+          const sy = this.y - Phaser.Math.Between(20, 40);
+          const steam = this.scene.add.rectangle(sx, sy, 3, 3, 0xcccccc, 0.6);
+          steam.setBlendMode(Phaser.BlendModes.NORMAL);
+          steam.setDepth(this.depth + 2);
+          this.scene.tweens.add({
+            targets: steam,
+            y: sy - Phaser.Math.Between(15, 35),
+            x: sx + Phaser.Math.Between(-10, 10),
+            scale: 2.0,
+            alpha: 0,
+            duration: Phaser.Math.Between(400, 700),
+            onComplete: () => steam.destroy(),
+          });
+        }
+      }
+    }
   }
 
   private updateVisorGlowPosition(): void {
@@ -753,7 +832,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMecha = this.formMachine.state === FormState.MECHA;
-    spawnDamageNumber(this.scene, this.x, this.y, amount, isMecha);
+    const isDragon = this.formMachine.state === FormState.DRAGON;
+    const damageType = isMecha ? 'mecha' : (isDragon ? 'fire' : 'physical');
+    spawnDamageNumber(this.scene, this.x, this.y, amount, damageType as any, isMecha);
     const kbX = isMecha ? knockbackDir * 80 : knockbackDir * 220;
     const kbY = isMecha ? -60 : -150;
     body.setVelocityX(kbX);

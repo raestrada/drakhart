@@ -12,7 +12,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
-import { applyBiomePostFX } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
@@ -187,6 +187,7 @@ export class GameScene3 extends BaseLevelScene {
     this.createParallax();
     this.weatherSystem = new WeatherSystem(this, 'gorge', LEVEL_WIDTH);
     applyBiomePostFX(this, 'gorge');
+    this.createPistons();
     this.createLevel();
     this.createInteractiveObjects();
     this.createDecorations();
@@ -1043,19 +1044,30 @@ export class GameScene3 extends BaseLevelScene {
   }
 
   private updateVignettePulse(): void {
-    if (!this.vignette) return;
+    if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
+    const pipeline = this.cameras.main.getPostPipeline('CustomPostFX') as any;
+    if (!pipeline) return;
     const hpRatio = this.player.health / this.player.maxHealth;
-    let alpha = 0;
+    setVignetteFromPlayer(pipeline, hpRatio, 'normal');
+  }
 
-    if (hpRatio < 0.3) {
-      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
-      this.vignette.setFillStyle(0x880000, alpha);
-    } else if (hpRatio < 0.5) {
-      alpha = 0.15;
-      this.vignette.setFillStyle(0x000000, alpha);
-    }
+  private createPistons(): void {
+    const pistonPositions = [
+      { x: 800, y: 250 }, { x: 2000, y: 220 }, { x: 3500, y: 280 },
+    ];
+    pistonPositions.forEach(p => {
+      const rod = this.add.rectangle(p.x, p.y, 8, 40, 0x445566).setDepth(-17).setScrollFactor(0.05, 0);
+      const head = this.add.rectangle(p.x, p.y - 24, 16, 10, 0x667788).setDepth(-16).setScrollFactor(0.05, 0);
 
-    this.vignette.setAlpha(alpha);
+      this.tweens.add({
+        targets: [head],
+        y: head.y + 20,
+        duration: 800 + Math.random() * 400,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
   }
 
   private updateWaves(): void {

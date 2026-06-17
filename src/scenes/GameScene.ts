@@ -24,7 +24,7 @@ import {
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { drawLightningBolt } from '../effects/LightningBolt';
-import { applyBiomePostFX } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import {
@@ -168,6 +168,7 @@ export class GameScene extends BaseLevelScene {
     this.createParallax();
     this.weatherSystem = new WeatherSystem(this, 'forest', LEVEL_WIDTH);
     applyBiomePostFX(this, 'forest');
+    this.createTorches();
     this.createLevel();
     this.createCrumblingPlatforms();
     this.createForeground();
@@ -197,7 +198,6 @@ export class GameScene extends BaseLevelScene {
     this.setupCamera();
     this.setupCollisions();
     this.showIntroText();
-    this.createVignette();
     this.setupLightingAndPipelines();
 
     this.scene.launch('UIScene', {
@@ -920,6 +920,28 @@ export class GameScene extends BaseLevelScene {
     [2100, 2300, 2600, 2900, 4700, 5200, 5900, 6400].forEach((fx) => {
       this.add.image(fx, 420, 'fg-vine')
         .setOrigin(0.5, 0).setDepth(60).setAlpha(0.4).setScrollFactor(0.95);
+    });
+  }
+
+  private createTorches(): void {
+    const torchPositions = [
+      { x: 600, y: 632 }, { x: 1200, y: 640 }, { x: 2000, y: 636 },
+      { x: 3200, y: 640 }, { x: 4800, y: 620 }, { x: 5500, y: 644 },
+    ];
+
+    torchPositions.forEach((pos) => {
+      const torch = this.add.rectangle(pos.x, pos.y, 6, 18, 0x553311).setDepth(5);
+      const flame = this.add.pointlight(pos.x, pos.y - 10, 0xff6622, 80, 0.4).setDepth(-1);
+
+      this.tweens.add({
+        targets: flame,
+        intensity: { from: 0.3, to: 0.6 },
+        radius: { from: 60, to: 90 },
+        duration: 200 + Math.random() * 200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
     });
   }
 
@@ -1892,28 +1914,12 @@ export class GameScene extends BaseLevelScene {
   }
 
   private updateVignettePulse(): void {
-    if (!this.vignette) return;
+    if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
+    const pipeline = this.cameras.main.getPostPipeline('CustomPostFX') as any;
+    if (!pipeline) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    let alpha = 0;
-
-    if (hpRatio < 0.3) {
-      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
-      this.vignette.setFillStyle(0x880000, alpha);
-    } else if (hpRatio < 0.5) {
-      alpha = 0.15;
-      this.vignette.setFillStyle(0x000000, alpha);
-    }
-
-    if (heatLevel === 'danger') {
-      alpha = Math.max(alpha, 0.3 + 0.15 * Math.sin(Date.now() * 0.015));
-      this.vignette.setFillStyle(0xff2200, alpha);
-    } else if (heatLevel === 'warning') {
-      alpha = Math.max(alpha, 0.12 + 0.06 * Math.sin(Date.now() * 0.008));
-      this.vignette.setFillStyle(0x880000, alpha);
-    }
-
-    this.vignette.setAlpha(alpha);
+    setVignetteFromPlayer(pipeline, hpRatio, heatLevel);
   }
 
   private updateSwordVsEnemies(): void {

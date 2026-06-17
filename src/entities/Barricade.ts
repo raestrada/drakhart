@@ -63,10 +63,40 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
     (this.scene as any).gameAudio?.playDestruction();
     this.alive = false;
 
-    // Destructive camera shake
     this.scene.cameras.main.shake(200, 0.006);
+    this.scene.cameras.main.flash(80, 255, 255, 255);
 
-    // Spawn rubble particles
+    // Shockwave ring
+    const ring = this.scene.add.graphics();
+    ring.lineStyle(3, 0xffaa44, 0.8);
+    ring.strokeCircle(this.x, this.y, 8);
+    ring.setDepth(100);
+    ring.setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({
+      targets: ring,
+      scaleX: 20,
+      scaleY: 20,
+      alpha: 0,
+      duration: 500,
+      ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+
+    // Dust cloud
+    const dustEmitter = this.scene.add.particles(this.x, this.y, 'particle-smoke', {
+      speed: { min: 40, max: 140 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 1.0, end: 2.5 },
+      alpha: { start: 0.5, end: 0 },
+      tint: [0x888888, 0xaaaaaa, 0x666666],
+      lifespan: { min: 500, max: 1000 },
+      quantity: 18,
+      emitting: false,
+    });
+    dustEmitter.explode(18);
+    this.scene.time.delayedCall(1200, () => dustEmitter.destroy());
+
+    // Rubble particles
     const platforms = (this.scene as any).platforms;
     for (let i = 0; i < 16; i++) {
       const p = this.scene.add.rectangle(

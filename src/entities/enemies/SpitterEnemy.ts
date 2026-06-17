@@ -51,6 +51,12 @@ export class SpitterEnemy extends BaseEnemy {
   private fireBullet(): void {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
+    // Muzzle flash light
+    if (this.scene.lights) {
+      const flash = this.scene.lights.addLight(this.x, this.y - 4, 60, 0x00ff88, 0.6);
+      this.scene.time.delayedCall(80, () => this.scene.lights.removeLight(flash));
+    }
+
     const bullet = this.scene.physics.add.sprite(this.x, this.y - 4, 'bullet-fire');
     bullet.setTint(0x00ff88);
     bullet.setScale(0.9);

@@ -181,6 +181,11 @@ export class EliteMecha extends BaseEnemy {
         const spawnX = this.x + shootDir * 50;
         const spawnY = this.y - 12;
 
+        if (this.scene.lights) {
+          const flash = this.scene.lights.addLight(spawnX, spawnY, 70, 0xff5500, 0.7);
+          this.scene.time.delayedCall(100, () => this.scene.lights.removeLight(flash));
+        }
+
         const bullet = this.scene.physics.add.sprite(spawnX, spawnY, 'bullet-fire');
         bullet.setTint(0xff5500); // Hot magma plasma spit
         bullet.setScale(1.4);

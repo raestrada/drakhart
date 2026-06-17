@@ -19,7 +19,7 @@ import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnLavaSplash, spawnProjectileImpact } from '../effects/Particles';
 import { drawLightningBolt } from '../effects/LightningBolt';
 import { BloomSystem } from '../effects/BloomSystem';
-import { applyBiomePostFX } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
@@ -146,6 +146,8 @@ export class GameScene2 extends BaseLevelScene {
     this.createParallax();
     this.weatherSystem = new WeatherSystem(this, 'refinery', LEVEL_WIDTH);
     applyBiomePostFX(this, 'refinery');
+    this.createLavaBubbles();
+    this.createGears();
     this.moltenDroplets = this.physics.add.group({ allowGravity: false });
     this.createBackgroundEffects();
     this.createDecorations();
@@ -595,6 +597,7 @@ export class GameScene2 extends BaseLevelScene {
     }
     this.updateParallax();
     this.weatherSystem?.update(this.cameras.main.scrollX, this.time.now);
+    this.updateLavaAnimation(this.time.now);
     this.updateShadows();
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
@@ -878,28 +881,78 @@ export class GameScene2 extends BaseLevelScene {
   }
 
   private updateVignettePulse(): void {
-    if (!this.vignette) return;
+    if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
+    const pipeline = this.cameras.main.getPostPipeline('CustomPostFX') as any;
+    if (!pipeline) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    let alpha = 0;
+    setVignetteFromPlayer(pipeline, hpRatio, heatLevel);
+  }
 
-    if (hpRatio < 0.3) {
-      alpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
-      this.vignette.setFillStyle(0x880000, alpha);
-    } else if (hpRatio < 0.5) {
-      alpha = 0.15;
-      this.vignette.setFillStyle(0x000000, alpha);
+  private createLavaBubbles(): void {
+    this.gameAudio?.playLavaAmbient?.();
+    const lavaPits = [{s:1360,e:1500},{s:2920,e:3060},{s:4500,e:4660},{s:6100,e:6280}];
+    lavaPits.forEach(pit => {
+      for (let x = pit.s + 10; x < pit.e; x += 80) {
+        this.add.particles(x, 784, 'px-4', {
+          speed: { min: 5, max: 15 },
+          angle: { min: 260, max: 280 },
+          scale: { start: 0.5, end: 0 },
+          alpha: { start: 0.6, end: 0 },
+          tint: [0xff6600, 0xff4400, 0xffaa00],
+          lifespan: { min: 600, max: 1200 },
+          frequency: 200 + Math.random() * 150,
+          blendMode: Phaser.BlendModes.ADD,
+        });
+      }
+    });
+  }
+
+  private createGears(): void {
+    const gearPositions = [
+      { x: 500, y: 200, speed: 0.0008 },
+      { x: 900, y: 230, speed: -0.0012 },
+      { x: 1400, y: 180, speed: 0.0006 },
+    ];
+
+    gearPositions.forEach(g => {
+      const gear = this.add.rectangle(g.x, g.y, 40, 40, 0x334455, 0.3).setDepth(-18).setScrollFactor(0.03, 0);
+      this.tweens.add({
+        targets: gear,
+        angle: 360 * Math.sign(g.speed),
+        duration: Math.abs(1 / g.speed) * 1000,
+        repeat: -1,
+      });
+    });
+
+    // Chimney smoke
+    for (let i = 0; i < 3; i++) {
+      const cx = 400 + i * 500;
+      this.add.particles(cx, 160, 'particle-smoke', {
+        speed: { min: 10, max: 30 },
+        angle: { min: 260, max: 280 },
+        scale: { start: 0.6, end: 2.0 },
+        alpha: { start: 0.15, end: 0 },
+        tint: 0x888888,
+        lifespan: { min: 2000, max: 4000 },
+        frequency: 200,
+      }).setDepth(-16).setScrollFactor(0.05, 0);
     }
+  }
 
-    if (heatLevel === 'danger') {
-      alpha = Math.max(alpha, 0.3 + 0.15 * Math.sin(Date.now() * 0.015));
-      this.vignette.setFillStyle(0xff2200, alpha);
-    } else if (heatLevel === 'warning') {
-      alpha = Math.max(alpha, 0.12 + 0.06 * Math.sin(Date.now() * 0.008));
-      this.vignette.setFillStyle(0x880000, alpha);
-    }
-
-    this.vignette.setAlpha(alpha);
+  private updateLavaAnimation(time: number): void {
+    const lavaPits = [{s:1360,e:1500},{s:2920,e:3060},{s:4500,e:4660},{s:6100,e:6280}];
+    lavaPits.forEach(pit => {
+      for (let x = pit.s; x < pit.e; x += 32) {
+        const tile = this.hazards.getChildren().find(
+          c => c instanceof Phaser.GameObjects.TileSprite && c.x > pit.s && c.x < pit.e
+        ) as Phaser.GameObjects.TileSprite;
+        if (tile && tile.texture && tile.texture.key === 'tile-refinery-lava') {
+          tile.tilePositionX = time * 0.02;
+          tile.tilePositionY = Math.sin(time * 0.001 + x * 0.01) * 1.5;
+        }
+      }
+    });
   }
 
   private spawnSmeltingEmber(): void {

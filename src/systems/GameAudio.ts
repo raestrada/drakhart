@@ -1907,4 +1907,156 @@ export class GameAudio {
 
     this.choirGains = [];
   }
+
+  public playSpawnIn(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.3);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain);
+    gain.connect(this.sfxGainNode);
+    osc.start(t);
+    osc.stop(t + 0.4);
+  }
+
+  public playLowHealth(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    for (let i = 0; i < 2; i++) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(60, t + i * 0.15);
+      gain.gain.setValueAtTime(0.3, t + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.18);
+      osc.connect(gain);
+      gain.connect(this.sfxGainNode);
+      osc.start(t + i * 0.15);
+      osc.stop(t + i * 0.15 + 0.2);
+    }
+  }
+
+  public playCrumble(): void {
+    this.init();
+    if (!this.ctx || !this.noiseBuffer) return;
+    const t = this.ctx.currentTime;
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this.noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(600, t);
+    filter.frequency.exponentialRampToValueAtTime(60, t + 0.4);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGainNode);
+    noise.start(t);
+    noise.stop(t + 0.45);
+  }
+
+  public playLavaAmbient(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const lfo = this.ctx.createOscillator();
+    const lfoGain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(45, t);
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(0.3, t);
+    lfoGain.gain.setValueAtTime(3, t);
+
+    gain.gain.setValueAtTime(0.06, t);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    osc.connect(gain);
+    gain.connect(this.sfxGainNode);
+
+    osc.start(t);
+    lfo.start(t);
+    this._lavaNodes = { osc, lfo, gain, lfoGain };
+  }
+
+  public stopLavaAmbient(): void {
+    if (this._lavaNodes) {
+      try { this._lavaNodes.osc.stop(); } catch (e) {}
+      try { this._lavaNodes.lfo.stop(); } catch (e) {}
+      this._lavaNodes = null;
+    }
+  }
+
+  public playMenuCursor(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, t);
+    gain.gain.setValueAtTime(0.06, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    osc.connect(gain);
+    gain.connect(this.sfxGainNode);
+    osc.start(t);
+    osc.stop(t + 0.04);
+  }
+
+  public playPause(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, t);
+    osc.frequency.exponentialRampToValueAtTime(100, t + 0.25);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc.connect(gain);
+    gain.connect(this.sfxGainNode);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  }
+
+  public playUnpause(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(100, t);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.2);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    osc.connect(gain);
+    gain.connect(this.sfxGainNode);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+
+  private _lavaNodes: any = null;
 }
