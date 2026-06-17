@@ -7,33 +7,76 @@ class DreadnoughtCannon extends BaseEnemy {
   public isTop: boolean;
   private boss: DreadnoughtBoss;
   private fireTimer = 0;
+  private hpBar: Phaser.GameObjects.Rectangle | null = null;
+  private hpFill: Phaser.GameObjects.Rectangle | null = null;
+  private glowLight: any = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, isTop: boolean, boss: DreadnoughtBoss, player: Player) {
     super(scene, x, y, 'enemy-gunship', player, {
-      health: 200,
+      health: 150,
       speed: 0,
       detectRange: 9999,
       attackRange: 9999,
-      damage: 15,
-      attackCooldown: 1200
+      damage: 12,
+      attackCooldown: 1500
     });
     this.isTop = isTop;
     this.boss = boss;
-    this.setScale(2.2);
-    this.setTint(isTop ? 0xff2222 : 0x2266ff);
-    this.setDepth(boss.depth + 5); // Render ON TOP of boss body
+    this.setScale(2.5);
+    this.setTint(isTop ? 0xff3333 : 0x3399ff);
+    this.setDepth(boss.depth + 10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setImmovable(true);
-    (this.body as Phaser.Physics.Arcade.Body).setSize(40, 40);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(50, 50);
+
+    // Health bar above cannon
+    this.hpBar = scene.add.rectangle(x, y - 40, 60, 5, 0x000000, 0.7).setDepth(boss.depth + 11);
+    this.hpFill = scene.add.rectangle(x - 30, y - 40, 60, 5, isTop ? 0xff4444 : 0x44aaff)
+      .setOrigin(0, 0.5).setDepth(boss.depth + 12);
+
+    // Pulsing glow light
+    if (scene.lights) {
+      this.glowLight = scene.lights.addLight(x, y, 100, isTop ? 0xff3333 : 0x3399ff, 0.8);
+      scene.tweens.add({
+        targets: this.glowLight,
+        intensity: { from: 0.5, to: 1.2 },
+        radius: { from: 70, to: 110 },
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
+    // Pulsing alpha on the cannon sprite itself
+    scene.tweens.add({
+      targets: this,
+      alpha: { from: 0.8, to: 1 },
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   preUpdate(time: number, delta: number): void {
     if (!this.active || this.health <= 0) return;
-    
-    // Follow the boss
-    this.x = this.boss.x - 30;
-    this.y = this.boss.y + (this.isTop ? -100 : 100);
-    
+
+    // Stay fixed relative to boss
+    this.x = this.boss.x;
+    this.y = this.boss.y + (this.isTop ? -110 : 110);
+
+    // Update health bar
+    if (this.hpBar && this.hpFill) {
+      this.hpBar.setPosition(this.x, this.y - 40);
+      this.hpFill.setPosition(this.x - 30, this.y - 40);
+      this.hpFill.width = 60 * Math.max(0, this.health / this.maxHealth);
+    }
+    if (this.glowLight) {
+      this.glowLight.x = this.x;
+      this.glowLight.y = this.y;
+    }
+
     // Fire bullets
     if (time - this.fireTimer > this.attackCooldown) {
       this.fireTimer = time;
@@ -42,13 +85,12 @@ class DreadnoughtCannon extends BaseEnemy {
   }
 
   private fireBullet(): void {
-    const bulletSpeed = 250;
-    // Fire a spread
-    const angles = [-0.15, 0, 0.15];
+    const bulletSpeed = 220;
+    const angles = [-0.12, 0, 0.12];
     angles.forEach(angleOffset => {
-      const bullet = this.scene.physics.add.sprite(this.x - 40, this.y, 'bullet-fire');
-      bullet.setTint(this.isTop ? 0xff0000 : 0x0000ff);
-      bullet.setScale(1.2);
+      const bullet = this.scene.physics.add.sprite(this.x - 50, this.y, 'bullet-fire');
+      bullet.setTint(this.isTop ? 0xff3333 : 0x3399ff);
+      bullet.setScale(1.0);
       bullet.setBlendMode(Phaser.BlendModes.ADD);
       const body = bullet.body as Phaser.Physics.Arcade.Body;
       body.allowGravity = false;
@@ -73,10 +115,19 @@ class DreadnoughtCannon extends BaseEnemy {
   }
 
   die(): void {
-    super.die();
+    if (this.glowLight && this.scene.lights) this.scene.lights.removeLight(this.glowLight);
+    if (this.hpBar) this.hpBar.destroy();
+    if (this.hpFill) this.hpFill.destroy();
     spawnDeathExplosion(this.scene, this.x, this.y);
     this.boss.onCannonDestroyed();
-    this.destroy();
+    super.die();
+  }
+
+  destroy(fromScene?: boolean): void {
+    if (this.glowLight && this.scene.lights) this.scene.lights.removeLight(this.glowLight);
+    if (this.hpBar) this.hpBar.destroy();
+    if (this.hpFill) this.hpFill.destroy();
+    super.destroy(fromScene);
   }
 }
 
@@ -84,39 +135,38 @@ export class DreadnoughtBoss extends BaseEnemy {
   private topCannon: DreadnoughtCannon | null = null;
   private bottomCannon: DreadnoughtCannon | null = null;
   private cannonsActive = 2;
-  private phase: 'intro' | 'shielded' | 'vulnerable' | 'dead' = 'intro';
+  public phase: 'intro' | 'shielded' | 'vulnerable' | 'dead' = 'intro';
   private fireTimer = 0;
-  private startX: number;
-  private startY: number;
+  private fixedX: number;
+  private fixedY: number;
+  private coreLight: any = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, 'boss', player, {
-      health: 800,
-      speed: 30,
+      health: 600,
+      speed: 0,
       detectRange: 9999,
       attackRange: 9999,
-      damage: 25,
-      attackCooldown: 1000
+      damage: 20,
+      attackCooldown: 1200
     });
 
-    this.startX = x;
-    this.startY = y;
-    
-    // Core is giant
+    this.fixedX = x;
+    this.fixedY = y;
+
     this.setScale(2.5);
-    this.setAlpha(0.75);
-    this.setTint(0xbb7744);
+    this.setAlpha(0.6);
+    this.setTint(0xcc8844);
     this.setDepth(10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-    (this.body as Phaser.Physics.Arcade.Body).setSize(120, 120);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(100, 100);
   }
 
   public activate(): void {
     this.phase = 'shielded';
-    this.topCannon = new DreadnoughtCannon(this.scene, this.x, this.y - 100, true, this, this.player);
-    this.bottomCannon = new DreadnoughtCannon(this.scene, this.x, this.y + 100, false, this, this.player);
-    
-    // The scene needs to know about these enemies for collisions
+    this.topCannon = new DreadnoughtCannon(this.scene, this.x, this.y - 110, true, this, this.player);
+    this.bottomCannon = new DreadnoughtCannon(this.scene, this.x, this.y + 110, false, this, this.player);
+
     const gameScene = this.scene as any;
     if (gameScene.addEnemyObject) {
       gameScene.addEnemyObject(this.topCannon);
@@ -131,32 +181,39 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.cannonsActive--;
     if (this.cannonsActive <= 0 && this.phase === 'shielded') {
       this.phase = 'vulnerable';
-      this.setTint(0xff8800);
+      this.setTint(0xff7700);
+      this.setAlpha(1);
       this.scene.cameras.main.flash(500, 255, 150, 0);
       this.scene.cameras.main.shake(800, 0.02);
 
-      // Pulsing glow to make it unmistakable
+      // Permanent pulsing glow on core
       this.scene.tweens.add({
         targets: this,
-        alpha: { from: 1, to: 0.6 },
-        duration: 400,
+        alpha: { from: 1, to: 0.5 },
+        duration: 350,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
 
-      // Glow ring around exposed core
       if (this.scene.lights) {
-        const glow = this.scene.lights.addLight(this.x, this.y, 200, 0xff6600, 1.5);
-        this.scene.time.delayedCall(2000, () => this.scene.lights?.removeLight(glow));
+        this.coreLight = this.scene.lights.addLight(this.x, this.y, 250, 0xff6600, 2.0);
+        this.scene.tweens.add({
+          targets: this.coreLight,
+          intensity: { from: 1.5, to: 3.0 },
+          radius: { from: 180, to: 280 },
+          duration: 400,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
       }
 
-      // Hint text
       const cam = this.scene.cameras.main;
       const hint = this.scene.add.text(
         cam.scrollX + cam.width / 2, cam.scrollY + cam.height * 0.2,
         'CORE EXPOSED — DESTROY IT!',
-        { fontSize: '18px', fontFamily: 'monospace', color: '#ff6600', stroke: '#000000', strokeThickness: 4 }
+        { fontSize: '20px', fontFamily: 'monospace', color: '#ff6600', stroke: '#000000', strokeThickness: 4 }
       ).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
       this.scene.tweens.add({
@@ -165,7 +222,7 @@ export class DreadnoughtBoss extends BaseEnemy {
         y: hint.y - 10,
         duration: 200,
         yoyo: true,
-        hold: 2000,
+        hold: 2500,
         onComplete: () => hint.destroy(),
       });
     }
@@ -173,47 +230,36 @@ export class DreadnoughtBoss extends BaseEnemy {
 
   takeDamage(amount: number, knockDir: number = 0): void {
     if (this.phase === 'shielded') {
-      // Immune while cannons are alive
-      const spark = this.scene.add.rectangle(this.x - 80, this.y + Phaser.Math.Between(-40, 40), 4, 4, 0x8888ff);
-      this.scene.tweens.add({ targets: spark, x: spark.x - 50, y: spark.y + Phaser.Math.Between(-20, 20), alpha: 0, duration: 300, onComplete: () => spark.destroy() });
+      // Bullets pass through — no spark, no damage, no pierce consumed
       return;
     }
-    
+
+    if (this.phase !== 'vulnerable') return;
+
     super.takeDamage(amount);
 
     this.setTint(0xffffff);
-    this.scene.time.delayedCall(100, () => {
-      if (this.active) this.setTint(0xff8800);
+    this.scene.time.delayedCall(80, () => {
+      if (this.active && this.phase === 'vulnerable') this.setTint(0xff7700);
     });
   }
 
   preUpdate(time: number, delta: number): void {
     if (!this.active || this.phase === 'dead') return;
     const body = this.body as Phaser.Physics.Arcade.Body;
-    
-    // Hover pattern
-    body.setVelocityY(Math.sin(time * 0.002) * 60);
 
-    // Keep distance from player horizontally, but generally stay on right side of screen
-    const cam = this.scene.cameras.main;
-    const targetX = cam.scrollX + cam.width * 0.65; // full screen width (zoom already at ~1.0)
-    
-    if (this.x > targetX + 10) {
-      body.setVelocityX(-this.moveSpeed);
-    } else if (this.x < targetX - 10) {
-      body.setVelocityX(this.moveSpeed);
-    } else {
-      body.setVelocityX(0);
+    // COMPLETELY STATIONARY — no movement at all
+    body.setVelocityX(0);
+    body.setVelocityY(0);
+    this.x = this.fixedX;
+    this.y = this.fixedY;
+
+    if (this.coreLight) {
+      this.coreLight.x = this.x;
+      this.coreLight.y = this.y;
     }
 
-    // Clamp X to stay visible on screen
-    const minX = cam.scrollX + cam.width * 0.2;
-    const maxX = cam.scrollX + (cam.width / cam.zoom) * 0.85;
-    if (this.x < minX) { this.x = minX; body.setVelocityX(0); }
-    if (this.x > maxX) { this.x = maxX; body.setVelocityX(0); }
-
     if (this.phase === 'vulnerable') {
-      // Core fires massive lasers
       if (time - this.fireTimer > this.attackCooldown) {
         this.fireTimer = time;
         this.fireCoreLaser();
@@ -222,17 +268,16 @@ export class DreadnoughtBoss extends BaseEnemy {
   }
 
   private fireCoreLaser(): void {
-    const laser = this.scene.add.rectangle(this.x - 100, this.y, 100, 40, 0xff0000);
+    const laser = this.scene.add.rectangle(this.x - 100, this.y, 100, 30, 0xff4400);
     laser.setBlendMode(Phaser.BlendModes.ADD);
     this.scene.physics.add.existing(laser);
     const body = laser.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
-    body.setVelocityX(-600);
+    body.setVelocityX(-500);
 
-    // Grow laser
     this.scene.tweens.add({
       targets: laser,
-      width: 400,
+      width: 300,
       duration: 200
     });
 
@@ -249,13 +294,13 @@ export class DreadnoughtBoss extends BaseEnemy {
   protected die(): void {
     this.phase = 'dead';
     this.isActive = false;
+    if (this.coreLight && this.scene.lights) this.scene.lights.removeLight(this.coreLight);
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x222222);
 
     this.scene.cameras.main.shake(2000, 0.03);
     this.scene.cameras.main.flash(1000, 255, 50, 0);
-    
-    // Multiple explosions
+
     for (let i = 0; i < 15; i++) {
       this.scene.time.delayedCall(i * 150, () => {
         spawnDeathExplosion(this.scene, this.x + Phaser.Math.Between(-100, 100), this.y + Phaser.Math.Between(-100, 100));
@@ -264,14 +309,19 @@ export class DreadnoughtBoss extends BaseEnemy {
 
     this.scene.tweens.add({
       targets: this,
-      y: this.y + 400,
       alpha: 0,
-      angle: 45,
-      duration: 3000,
+      scaleX: 3,
+      scaleY: 3,
+      duration: 2500,
       ease: 'Quad.easeIn',
       onComplete: () => {
         this.destroy();
       }
     });
+  }
+
+  destroy(fromScene?: boolean): void {
+    if (this.coreLight && this.scene.lights) this.scene.lights.removeLight(this.coreLight);
+    super.destroy(fromScene);
   }
 }

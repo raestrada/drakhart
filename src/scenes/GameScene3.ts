@@ -480,12 +480,16 @@ export class GameScene3 extends BaseLevelScene {
         const b = _bullet as Phaser.Physics.Arcade.Sprite;
         if (!b.active) return;
 
+        const target = _enemy as Phaser.Physics.Arcade.Sprite;
+
+        // Skip shielded boss body — bullets pass through without consuming pierce
+        if ((target as any).phase === 'shielded') return;
+
         let pierce = (b.getData('pierce') as number) ?? 2;
         pierce--;
         b.setData('pierce', pierce);
         if (pierce <= 0) b.disableBody(true, true);
 
-        const target = _enemy as Phaser.Physics.Arcade.Sprite;
         if (typeof (target as any).takeDamage === 'function') {
           (target as any).takeDamage(this.player.combatSystem.getFireDamage());
         } else if (target.getData('hp') !== undefined) {
