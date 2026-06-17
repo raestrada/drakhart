@@ -704,7 +704,7 @@ export class GameScene3 extends BaseLevelScene {
         if (!this.bossActive) {
           // Accelerate speed based on scrollX: starting at 210, ending at 300 near 12000
           const progress = Math.min(this.scrollX / 15000, 1);
-          const currentSpeed = 210 + progress * 90; // 210 to 300 px/s
+          const currentSpeed = 180 + progress * 60; // 180 to 240 px/s (gentler auto-scroll)
           this.scrollX += currentSpeed * dt;
           if (this.scrollX >= 15000) {
             this.scrollX = 15000;
@@ -1178,10 +1178,13 @@ export class GameScene3 extends BaseLevelScene {
       onComplete: () => alertText.destroy()
     });
 
-    // Spawn Boss at the right of the screen
-    this.boss = new DreadnoughtBoss(this, this.scrollX + cam.width - 250, 350, this.player);
+    // Spawn Boss centered in visible area, zoom out for full view
+    const bossX = this.scrollX + cam.width * 0.65;
+    this.boss = new DreadnoughtBoss(this, bossX, 350, this.player);
     this.enemies.add(this.boss);
     this.boss.activate();
+
+    this.cameras.main.zoomTo(1.1, 800, 'Cubic.easeInOut');
 
     // Modify die method of Boss to trigger Level 3 victory
     const originalDie = (this.boss as any).die.bind(this.boss);

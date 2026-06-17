@@ -383,10 +383,10 @@ export class GameScene extends BaseLevelScene {
     this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
     // New Section 5 — The Descent (post-altar, 8000-10000)
-    this.terrainGen.generateGroundSegment(this.platforms, 8000, groundY, 400, 'forest', 7);
+    this.terrainGen.generateGroundSegment(this.platforms, 8000, groundY, 450, 'forest', 7);
     // Descending platforms (stairway down into darkness)
-    this.terrainGen.generateGroundSegment(this.platforms, 8450, groundY + 48, 300, 'forest', 8);
-    this.terrainGen.generateGroundSegment(this.platforms, 8800, groundY + 96, 350, 'forest', 9);
+    this.terrainGen.generateGroundSegment(this.platforms, 8450, groundY + 48, 350, 'forest', 8);
+    this.terrainGen.generateGroundSegment(this.platforms, 8800, groundY + 96, 400, 'forest', 9);
     this.terrainGen.generateGroundSegment(this.platforms, 9200, groundY + 64, 800, 'forest', 10);
 
     // Organic floating platforms

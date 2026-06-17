@@ -154,9 +154,9 @@ export class GameAudio {
     // Variable tempo intervals:
     // Level 1: 120 BPM -> 250ms
     // Level 2: 90 BPM -> 333ms (heavy industrial stomp)
-    // Level 3: 200 BPM -> 150ms (ultra fast shmup)
+    // Level 3: 260 BPM -> 115ms (frenetic shmup eurobeat)
     // Level 4: 187 BPM -> 160ms (hyper intense boss)
-    const interval = this.currentLevel === 4 ? 160 : (this.currentLevel === 3 ? 150 : (this.currentLevel === 2 ? 333 : 250));
+    const interval = this.currentLevel === 4 ? 160 : (this.currentLevel === 3 ? 115 : (this.currentLevel === 2 ? 333 : 250));
 
     // Start beat loop
     this.bgmTimer = setInterval(() => {
