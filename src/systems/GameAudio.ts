@@ -1777,6 +1777,140 @@ export class GameAudio {
 
   private choirGains: { gainNode: GainNode; oscillators: OscillatorNode[]; filters?: BiquadFilterNode[]; lfo?: OscillatorNode }[] = [];
 
+  public playSacredAltarBGM(): void {
+    this.init();
+    if (!this.ctx || this._sacredNodes?.length) return;
+    this.stopBGM();
+    this.stopChoirSave();
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+
+    const nodes: { osc: OscillatorNode; gain: GainNode; stop: () => void }[] = [];
+
+    // A Phrygian scale (A-Bb-C-D-E-F-G) — dark sacred
+    const a1 = 55.00, bb = 58.27, c = 65.41, d = 73.42, e = 82.41, f = 87.31, g = 98.00;
+    const a2 = 110.00, bb2 = 116.54, c2 = 130.81, d2 = 146.83, e2 = 164.81, f2 = 174.61, g2 = 196.00;
+    const a3 = 220.00, d3 = 293.66, e3 = 329.63;
+
+    // Deep organ pedal (A1 rumble foundation)
+    [a1, a1 / 2].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.08, t + 2);
+      osc.connect(g);
+      g.connect(this.bgmGainNode);
+      osc.start(t);
+      nodes.push({ osc, gain: g, stop: () => { try { osc.stop(); } catch (e) {} } });
+    });
+
+    // Angelic choir layer — slow 8-bar chord progression: Am | F | Dm | E7 (with PhrygianBb)
+    const progression = [
+      { root: a1, chord: [a2, c2, e2] },
+      { root: f, chord: [f2, a2, c2] },
+      { root: d, chord: [d2, f2, a2] },
+      { root: e, chord: [e2, g2, bb2] }, // E7b9 — demonic Phrygian dominant
+    ];
+
+    let progIndex = 0;
+    let beatInChord = 0;
+
+    const chordTimer = setInterval(() => {
+      if (!this._sacredNodes) { clearInterval(chordTimer); return; }
+      const chord = progression[progIndex];
+
+      chord.chord.forEach((noteFreq) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = noteFreq;
+        osc.detune.value = Math.random() * 6 - 3;
+
+        const bpf = ctx.createBiquadFilter();
+        bpf.type = 'bandpass';
+        bpf.frequency.value = 450 + beatInChord * 8;
+        bpf.Q.value = 4;
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.012, ctx.currentTime + 0.3);
+        g.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.5);
+
+        osc.connect(bpf);
+        bpf.connect(g);
+        g.connect(this.bgmGainNode);
+        g.connect(this.echoNode);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 2.8);
+      });
+
+      beatInChord++;
+      if (beatInChord >= 4) {
+        beatInChord = 0;
+        progIndex = (progIndex + 1) % progression.length;
+      }
+    }, 1800);
+
+    const chordTimerRef: any = chordTimer;
+
+    // Demonic tritone whisper — low E + Bb (diminished fifth) buried deep
+    [e, bb].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      osc.detune.value = -15;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.025, t + 5);
+      g.gain.setValueAtTime(0.025, t + 24);
+      g.gain.linearRampToValueAtTime(0.04, t + 28);
+      osc.connect(g);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 120;
+      g.connect(lp);
+      lp.connect(this.bgmGainNode);
+      osc.start(t);
+      nodes.push({ osc, gain: g, stop: () => { try { osc.stop(); } catch (e) {} } });
+    });
+
+    // Spectral bell toll — every 6s, a high glistening bell overtone
+    const bellTimer = setInterval(() => {
+      if (!this._sacredNodes) { clearInterval(bellTimer); return; }
+      [a3 * 3, a3 * 5, a3 * 7].forEach((harmonic, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = harmonic;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime((0.04 - i * 0.01), ctx.currentTime + 0.2);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
+        osc.connect(g);
+        g.connect(this.bgmGainNode);
+        g.connect(this.echoNode);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 3);
+      });
+    }, 6000);
+
+    const bellTimerRef: any = bellTimer;
+
+    this._sacredNodes = { nodes, chordTimer: chordTimerRef, bellTimer: bellTimerRef };
+  }
+
+  public stopSacredAltarBGM(): void {
+    if (!this._sacredNodes) return;
+    const t = this.ctx?.currentTime ?? 0;
+    clearInterval(this._sacredNodes.chordTimer);
+    clearInterval(this._sacredNodes.bellTimer);
+    this._sacredNodes.nodes.forEach((n: any) => {
+      try { n.gain.gain.setValueAtTime(n.gain.gain.value, t); n.gain.gain.exponentialRampToValueAtTime(0.001, t + 1.0); } catch (e) {}
+      setTimeout(() => n.stop(), 1100);
+    });
+    this._sacredNodes = null;
+  }
+
   public playChoirSave(): void {
     this.init();
     if (!this.ctx) return;
@@ -2059,4 +2193,5 @@ export class GameAudio {
   }
 
   private _lavaNodes: any = null;
+  private _sacredNodes: any = null;
 }

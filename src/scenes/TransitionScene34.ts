@@ -36,10 +36,10 @@ export class TransitionScene34 extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0a080c');
 
     this.gameAudio = new GameAudio();
-    this.gameAudio.playBGM(2); // Calm ambient after the boss
+    this.gameAudio.playSacredAltarBGM();
     this.currentBiome = 'gorge';
-    this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
-    this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
+    this.events.once('shutdown', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
+    this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     
     // Backgrounds
     this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30).setTint(0x331133);

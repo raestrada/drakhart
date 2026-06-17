@@ -191,7 +191,8 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       currentScene: this.sceneKey
     });
 
-    // Play dramatic religious prayer BGM sweep — stop normal BGM first
+    // Play dramatic religious prayer BGM sweep — stop altar BGM first
+    (this.scene as any).gameAudio?.stopSacredAltarBGM?.();
     (this.scene as any).gameAudio?.stopBGM?.();
     (this.scene as any).gameAudio?.playChoirSave?.();
 
@@ -314,10 +315,9 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     // Contract the sacred light halo
     this.contractAltarLight();
 
-    // Stop choir audio and play level BGM back
+    // Stop choir audio and resume sacred altar BGM
     (this.scene as any).gameAudio?.stopChoirSave?.();
-    const lvl = this.sceneKey === 'TransitionScene12' ? 1 : 2;
-    (this.scene as any).gameAudio?.playBGM?.(lvl);
+    (this.scene as any).gameAudio?.playSacredAltarBGM?.();
 
     // Fade out light beam
     if (this.lightBeam) {

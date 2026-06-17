@@ -44,10 +44,10 @@ export class TransitionScene12 extends Phaser.Scene {
 
     this.gameAudio = new GameAudio();
     this.terrainGen = new TerrainGenerator(this);
-    this.gameAudio.playBGM(1);
+    this.gameAudio.playSacredAltarBGM();
     this.currentBiome = 'forest';
-    this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
-    this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
+    this.events.once('shutdown', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
+    this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene12' }); });
 
     // Full-viewport backgrounds (scrollFactor to allow slight parallax)
