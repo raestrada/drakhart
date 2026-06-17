@@ -136,26 +136,32 @@ export class ManualScene extends Phaser.Scene {
       },
     });
 
-    // 1: The Forms
+    // 1: The Forms (3 columns, evenly spaced)
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'THE FORMS OF DRAKHART', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'THE FORMS OF DRAKHART', '#6a1a1a', 18);
+        const top = cy - 100;
+        const rowH = 180;
 
-        const y0 = cy - 90;
-        s.sprite(cx - 140, y0, 'player-human', 1.8);
-        s.title(cx - 80, y0 - 18, 'WARRIOR', '#5a2a1a', 14);
-        s.body(cx - 80, y0 + 8, 'Agile sword fighter. Find the\nDragon Core to transform.', 10, 180);
+        // Warrior column
+        s.sprite(cx - 150, top, 'player-human', 1.8);
+        s.label(cx - 110, top + 40, 'WARRIOR', '#5a2a1a', 13);
+        s.body(cx - 110, top + 58, 'Agile. Sword combat.\nFind Dragon Core\nto transform.', 10, 130);
 
-        const y1 = y0 + 100;
-        s.sprite(cx - 140, y1, 'player-mecha', 1.5);
-        s.title(cx - 80, y1 - 18, 'DRACONEL MECHA', '#8a3a2a', 14);
-        s.body(cx - 80, y1 + 8, 'Heavy combat. Claymore (75 dmg).\nHover jets. Watch HEAT gauge!', 10, 180);
+        // Mecha column  
+        s.sprite(cx - 10, top + 10, 'player-mecha', 1.5);
+        s.label(cx + 30, top + 40, 'DRACONEL MECHA', '#8a3a2a', 13);
+        s.body(cx + 30, top + 58, 'Heavy form. Claymore.\nHover jets. Watch\nHEAT gauge!', 10, 130);
 
-        const y2 = y1 + 100;
-        s.sprite(cx + 180, cy - 10, 'player-dragon', 1.2);
-        s.title(cx + 100, cy - 40, 'DRAGON', '#3a5a8a', 14);
-        s.body(cx + 100, cy - 14, 'Free flight. Fire Breath.\nEnergy drains while airborne.', 10, 150);
+        // Dragon column
+        s.sprite(cx + 140, top + 20, 'player-dragon', 1.3);
+        s.label(cx + 160, top + 40, 'DRAGON', '#3a5a8a', 13);
+        s.body(cx + 160, top + 58, 'Free flight. Fire\nBreath. Energy\ndrains in air.', 10, 130);
+
+        // Form cycle diagram at bottom
+        s.divider(cx, top + rowH + 10, 300);
+        s.body(cx - 120, top + rowH + 28, 'C key cycles:  Warrior  →  Draconel  →  Dragon  →  Warrior', 11, 240);
       },
     });
 
@@ -163,25 +169,32 @@ export class ManualScene extends Phaser.Scene {
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'CONTROLS', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'CONTROLS', '#6a1a1a', 18);
+        const top = cy - 110;
+        const rowH = 28;
 
-        const keys = [
-          'ARROWS / WASD         Move',
-          'UP / W                       Jump (Hold = Hover)',
-          'X                               Attack (Sword / Fire)',
-          'C                               Cycle Form',
-          'T                               War Echoes (Tarot)',
-          'ESC                          Pause Menu',
-          'E (near Altar)           Pray / Save',
+        const keys: [string, string][] = [
+          ['MOVE', 'ARROWS / WASD'],
+          ['JUMP', 'UP / W  (Hold = Hover in Mecha)'],
+          ['ATTACK', 'X  (Hold in Dragon = auto-fire)'],
+          ['CYCLE FORM', 'C'],
+          ['WAR ECHOES', 'T'],
+          ['PAUSE', 'ESC'],
+          ['PRAY / SAVE', 'E (near Altar)'],
         ];
-        let y = cy - 100;
-        keys.forEach(k => { s.label(cx - 120, y, k, '#3a2a1a', 11); y += 28; });
+        let y = top;
+        keys.forEach(([action, key]) => {
+          s.label(cx - 160, y, key, '#8a4a2a', 10);
+          s.label(cx + 10, y, action, '#3a2a1a', 10);
+          y += rowH;
+        });
 
-        s.divider(cx, cy + 60, 320);
-
-        s.title(cx, cy + 80, 'PRO TIPS', '#6a1a1a', 15);
-        const tips = 'Hold X in Dragon form = auto-fire (12.5/sec).  Use Steam Vents to boost Mecha jumps.  Cooling Valves reset Mecha heat.  Pray at Altars to save + restore HP/Energy.  War Echoes (Tarot Cards) = permanent upgrades.';
-        s.body(cx - 150, cy + 110, tips, 10, 300);
+        s.divider(cx, y + 10, 360);
+        s.title(cx, y + 28, 'PRO TIPS', '#6a1a1a', 15);
+        s.body(cx - 150, y + 52,
+          'Use Steam Vents to boost Mecha jumps.  Cooling Valves reset Mecha heat.\n' +
+          'Pray at Altars to save + restore HP/Energy.\n' +
+          'War Echoes (Tarot Cards) = permanent upgrades.  Gamepad supported!', 10, 300);
       },
     });
 
@@ -189,40 +202,48 @@ export class ManualScene extends Phaser.Scene {
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'THE STORY SO FAR', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'THE STORY SO FAR', '#6a1a1a', 18);
+        const top = cy - 110;
 
-        s.title(cx - 150, cy - 100, 'THE OLD WORLD', '#5a2a1a', 14);
-        s.body(cx - 150, cy - 72, 'The Empire\'s industrial war machines have consumed the land, burning ancient forests and crushing sacred temples beneath smelting refineries. Their modern military technology — brutalist steel plating, diesel generators, physical railguns — dominates all.', 10, 360);
+        s.title(cx - 150, top, 'THE OLD WORLD', '#5a2a1a', 14);
+        s.body(cx - 150, top + 24,
+          'The Empire\'s war machines consumed the land — burning forests,\n' +
+          'crushing temples beneath smelting refineries. Modern military\n' +
+          'technology dominates: brutalist steel, diesel, railguns.', 10, 360);
 
-        s.title(cx - 150, cy + 0, 'THE DRAGON CORE', '#5a2a1a', 14);
-        s.body(cx - 150, cy + 28, 'Beneath the ruined altar lies a pulsating crimson crystal of biomechanical power. Bond with it and awaken the Draconel: an ancient mecha forged of dragon bone, steel, and core fire. Only this forgotten technology can challenge the Empire.', 10, 360);
+        s.title(cx - 150, top + 100, 'THE DRAGON CORE', '#5a2a1a', 14);
+        s.body(cx - 150, top + 124,
+          'Beneath the ruined altar: a crimson crystal of biomechanical power.\n' +
+          'Bond with it. Awaken the Draconel — ancient mecha of dragon bone,\n' +
+          'steel, and core fire. The only force that can challenge the Empire.', 10, 360);
 
-        s.sprite(cx + 200, cy + 50, 'dragon-core', 2.5);
+        s.sprite(cx + 200, top + 70, 'dragon-core', 2.5);
       },
     });
 
-    // 4: Bestiary
+    // 4: Bestiary (3x2 grid)
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'BESTIARY', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'BESTIARY', '#6a1a1a', 18);
+        const top = cy - 105;
+        const rowH = 175;
+        const colW = 185;
 
         const enemies: [string, number, string, string][] = [
           ['enemy-sentry', 1.6, 'SENTRY', 'Patrols.\nAttacks on sight.'],
-          ['enemy-leaper', 1.4, 'LEAPER', 'Agile.\nLeaps at prey.'],
+          ['enemy-leaper', 1.4, 'LEAPER', 'Agile hunter.\nLeaps at prey.'],
           ['enemy-spitter', 1.4, 'SPITTER', 'Ranged acid.\nStay mobile.'],
           ['enemy-shield', 1.4, 'SHIELD', 'Frontal shield.\nStrike from behind.'],
-          ['enemy-mecha', 1.2, 'MECHA', 'Heavy guard.\nHUMAN immune.'],
-          ['enemy-sentry', 1.2, 'FLY SENTRY', 'Aerial.\nPurple bolts.'],
+          ['enemy-mecha', 1.2, 'MECHA', 'Heavy guard.\nImmune to HUMAN.'],
+          ['enemy-sentry', 1.2, 'FLY SENTRY', 'Aerial threat.\nPurple energy bolts.'],
         ];
         enemies.forEach(([key, scl, name, desc], i) => {
-          const col = i % 3;
-          const row = Math.floor(i / 3);
-          const x = cx - 180 + col * 185;
-          const y = cy - 100 + row * 160;
-          s.sprite(x, y, key, scl);
-          s.label(x, y + 32, name, '#5a2a1a', 9);
-          s.body(x - 40, y + 46, desc, 8, 90);
+          const x = cx - 180 + (i % 3) * colW;
+          const y = top + Math.floor(i / 3) * rowH;
+          s.sprite(x, y - 10, key, scl);
+          s.label(x - 30, y + 36, name, '#5a2a1a', 9);
+          s.body(x - 30, y + 50, desc, 8, 80);
         });
       },
     });
@@ -231,40 +252,54 @@ export class ManualScene extends Phaser.Scene {
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'BOSSES', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'BOSSES', '#6a1a1a', 18);
+        const top = cy - 95;
 
-        s.sprite(cx - 140, cy - 50, 'elite-mecha', 1.4);
-        s.title(cx - 70, cy - 80, 'DRACONEL BASTION', '#8a3a2a', 14);
-        s.body(cx - 70, cy - 52, 'Level 2 mini-boss. 1200 HP.\nImmune to HUMAN. Use MECHA.\nCore crystal cycles green→red.\nEvery 3 attacks: CORE EXPOSED.\nDouble damage during window!', 10, 200);
+        s.sprite(cx - 140, top + 20, 'elite-mecha', 1.4);
+        s.title(cx - 70, top + 0, 'DRACONEL BASTION  (Level 2)', '#8a3a2a', 14);
+        s.body(cx - 70, top + 24,
+          '1200 HP. Immune to HUMAN.\n' +
+          'Use MECHA claymore (75 dmg).\n' +
+          'Core cycles: green→yellow→\n' +
+          'orange→RED (exposed!).\n' +
+          'Every 3 attacks = vulnerable.\n' +
+          'During exposure: DOUBLE damage!', 10, 200);
 
-        s.sprite(cx + 160, cy - 40, 'boss', 2.0);
-        s.title(cx + 160, cy + 55, 'DREADNOUGHT', '#6a1a1a', 14);
-        s.body(cx + 100, cy + 80, 'Level 3 final boss. 800 HP.\nProtected by 2 cannons.\nDestroy BOTH → core vulnerable.\nThen attack relentlessly!', 10, 180);
+        const y2 = top + 160;
+        s.sprite(cx + 160, y2 + 10, 'boss', 2.0);
+        s.title(cx + 160, y2 + 0, 'DREADNOUGHT  (Level 3)', '#6a1a1a', 14);
+        s.body(cx + 100, y2 + 24,
+          '800 HP. 2 protective cannons.\n' +
+          'Destroy BOTH cannons first!\n' +
+          'Then core turns orange and\n' +
+          'becomes vulnerable.\n' +
+          'Attack relentlessly to win.', 10, 180);
       },
     });
 
-    // 6: Items
+    // 6: Items (3x2 grid)
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'ITEMS & COLLECTIBLES', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'ITEMS & COLLECTIBLES', '#6a1a1a', 18);
+        const top = cy - 105;
+        const rowH = 175;
+        const colW = 190;
 
         const items: [string, number, string, string][] = [
-          ['dragon-core', 2.0, 'Dragon Core', 'Unlocks\nDraconel Mecha'],
-          ['sky-core', 2.0, 'Flight Core', 'Unlocks\nDragon flight'],
-          ['energy-pickup', 1.8, 'Energy Crystal', 'Restores\nflight/mecha'],
-          ['destiny-echo', 1.3, 'War Echo', 'Permanent\ncharacter upgrades'],
-          ['altar-save', 0.6, 'Save Altar', 'Pray to save\n+ restore HP'],
-          ['cool-valve', 1.8, 'Cool Valve', 'Resets\nMecha heat'],
+          ['dragon-core', 2.0, 'Dragon Core', 'Unlocks Mecha\nDraconel form'],
+          ['sky-core', 2.0, 'Flight Core', 'Unlocks Dragon\nflight form'],
+          ['energy-pickup', 1.8, 'Energy Crystal', 'Restores flight\n& mecha energy'],
+          ['destiny-echo', 1.3, 'War Echo', 'Permanent\nstat upgrades'],
+          ['altar-save', 0.6, 'Save Altar', 'Pray to save\n& restore HP'],
+          ['cool-valve', 1.8, 'Cool Valve', 'Resets Mecha\nheat instantly'],
         ];
         items.forEach(([key, scl, name, desc], i) => {
-          const col = i % 3;
-          const row = Math.floor(i / 3);
-          const x = cx - 190 + col * 190;
-          const y = cy - 100 + row * 160;
-          s.sprite(x, y, key, scl);
-          s.label(x, y + 34, name, '#5a2a1a', 9);
-          s.body(x - 40, y + 48, desc, 8, 90);
+          const x = cx - 190 + (i % 3) * colW;
+          const y = top + Math.floor(i / 3) * rowH;
+          s.sprite(x, y - 10, key, scl);
+          s.label(x - 30, y + 36, name, '#5a2a1a', 9);
+          s.body(x - 30, y + 50, desc, 8, 85);
         });
       },
     });
@@ -273,19 +308,23 @@ export class ManualScene extends Phaser.Scene {
     this.pages.push({
       draw: (s, cx, cy, w, h) => {
         s.border(cx, cy, w, h);
-        s.title(cx, cy - 150, 'THE WORLD', '#6a1a1a', 18);
+        s.title(cx, cy - 155, 'THE WORLD', '#6a1a1a', 18);
+        const top = cy - 110;
+        const rowH = 120;
 
-        const y0 = cy - 105;
-        s.title(cx - 150, y0, 'ZONE 1 — ASHEN WOODS', '#5a2a1a', 14);
-        s.body(cx - 150, y0 + 22, 'Dark gothic forest. Platform across thorn gaps and crumbling pillars. Find the Dragon Core in the Altar at the end. Leapers lurk on rooftops.', 10, 330);
+        s.title(cx - 150, top + 0, 'ZONE 1 — ASHEN WOODS', '#5a2a1a', 14);
+        s.body(cx - 150, top + 22,
+          'Dark forest. Platform across thorn gaps. Dragon Core at the end.', 10, 340);
 
-        const y1 = y0 + 85;
-        s.title(cx - 150, y1, 'ZONE 2 — SMELTING REFINERY', '#5a2a1a', 14);
-        s.body(cx - 150, y1 + 22, 'Industrial hell. Lava pits, steam vents, heavy Mecha guards. Break barricades with Draconel claymore. Defeat the Bastion for the Flight Core.', 10, 330);
+        s.title(cx - 150, top + rowH + 5, 'ZONE 2 — SMELTING REFINERY', '#5a2a1a', 14);
+        s.body(cx - 150, top + rowH + 27,
+          'Lava pits. Steam vents. Break barricades with Draconel claymore.\n' +
+          'Defeat the Bastion for the Flight Core.', 10, 340);
 
-        const y2 = y1 + 85;
-        s.title(cx - 150, y2, 'ZONE 3 — ASHEN GORGE', '#5a2a1a', 14);
-        s.body(cx - 150, y2 + 22, 'Auto-scrolling flight zone. Soar in Dragon form, blast waves of enemies. The Defense Zone escalates until the Dreadnought. HOLD X for auto-fire!', 10, 330);
+        s.title(cx - 150, top + rowH * 2 + 10, 'ZONE 3 — ASHEN GORGE', '#5a2a1a', 14);
+        s.body(cx - 150, top + rowH * 2 + 32,
+          'Auto-scroll flight. Blast waves of enemies in Dragon form.\n' +
+          'HOLD X for auto-fire! Dreadnought boss at the end.', 10, 340);
       },
     });
 
