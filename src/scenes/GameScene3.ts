@@ -721,7 +721,6 @@ export class GameScene3 extends BaseLevelScene {
         // Horizontal control
         if (this.cursors.left.isDown || this.keyA.isDown) {
           this.playerScreenX -= speed * dt;
-          this.tailShot(); // dragon fires backward from tail
         } else if (this.cursors.right.isDown || this.keyD.isDown) {
           this.playerScreenX += speed * dt;
         }
@@ -1987,8 +1986,8 @@ class HeavyGunship extends FlyingEnemy {
     super(scene, x, y, player);
     this.setTexture('enemy-gunship');
     this.setScale(1.0);
-    this.health = 50;
-    this.maxHealth = 50;
+    this.health = 25;
+    this.maxHealth = 25;
     this.moveSpeed = 50;
     this.detectRange = 600;
     this.attackRange = 500;

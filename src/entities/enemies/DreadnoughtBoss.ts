@@ -102,7 +102,7 @@ export class DreadnoughtBoss extends BaseEnemy {
     
     // Core is giant
     this.setScale(2.5);
-    this.setTint(0x333333); // Dark and armored initially
+    this.setTint(0x885544); // Dark armored but visible (was 0x333333 too dark)
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setSize(90, 90);
   }
@@ -127,9 +127,37 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.cannonsActive--;
     if (this.cannonsActive <= 0 && this.phase === 'shielded') {
       this.phase = 'vulnerable';
-      this.setTint(0xffaa00); // Core exposed! glowing orange
+      this.setTint(0xff8800);
       this.scene.cameras.main.flash(500, 255, 150, 0);
       this.scene.cameras.main.shake(800, 0.02);
+
+      // Pulsing glow to make it unmistakable
+      this.scene.tweens.add({
+        targets: this,
+        alpha: { from: 1, to: 0.6 },
+        duration: 400,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+
+      // Hint text
+      const cam = this.scene.cameras.main;
+      const hint = this.scene.add.text(
+        cam.scrollX + cam.width / 2, cam.scrollY + cam.height * 0.2,
+        'CORE EXPOSED — DESTROY IT!',
+        { fontSize: '18px', fontFamily: 'monospace', color: '#ff6600', stroke: '#000000', strokeThickness: 4 }
+      ).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
+
+      this.scene.tweens.add({
+        targets: hint,
+        alpha: { from: 0, to: 1 },
+        y: hint.y - 10,
+        duration: 200,
+        yoyo: true,
+        hold: 2000,
+        onComplete: () => hint.destroy(),
+      });
     }
   }
 
@@ -142,11 +170,10 @@ export class DreadnoughtBoss extends BaseEnemy {
     }
     
     super.takeDamage(amount);
-    
-    // Flicker core
+
     this.setTint(0xffffff);
     this.scene.time.delayedCall(100, () => {
-      if (this.active) this.setTint(0xffaa00);
+      if (this.active) this.setTint(0xff8800);
     });
   }
 
@@ -168,6 +195,12 @@ export class DreadnoughtBoss extends BaseEnemy {
     } else {
       body.setVelocityX(0);
     }
+
+    // Clamp X to stay visible on screen
+    const minX = cam.scrollX + cam.width * 0.2;
+    const maxX = cam.scrollX + (cam.width / cam.zoom) * 0.85;
+    if (this.x < minX) { this.x = minX; body.setVelocityX(0); }
+    if (this.x > maxX) { this.x = maxX; body.setVelocityX(0); }
 
     if (this.phase === 'vulnerable') {
       // Core fires massive lasers
