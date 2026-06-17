@@ -576,10 +576,6 @@ export class GameScene extends BaseLevelScene {
       health: 65, damage: 16, speed: 70, patrolMinX: 9250, patrolMaxX: 9450
     });
 
-    // Final barricade before exit
-    const b3 = new Barricade(this, 9850, 704);
-    this.barricades.add(b3);
-
     this.enemies.addMultiple([e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, giantSentry, eG1, eG2, eG3, eMiniBoss, e18, e19, e20, e21]);
   }
 
@@ -1109,8 +1105,9 @@ export class GameScene extends BaseLevelScene {
     const b1 = new Barricade(this, 650, 736);
     // Final wall blocking path past altar
     const b2 = new Barricade(this, 7700, 736);
+    const b3 = new Barricade(this, 9850, 704);
 
-    this.barricades.addMultiple([b1, b2]);
+    this.barricades.addMultiple([b1, b2, b3]);
   }
 
   private setupCollisions(): void {
