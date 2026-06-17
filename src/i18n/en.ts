@@ -23,6 +23,7 @@ export const en = {
     resume: 'RESUME',
     quitToMenu: 'QUIT TO MENU',
     soundtrack: 'SOUNDTRACK',
+    manual: 'MANUAL',
     nowPlaying: 'NOW PLAYING',
     stop: 'STOP',
   },

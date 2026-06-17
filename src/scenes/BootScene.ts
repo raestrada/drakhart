@@ -130,7 +130,13 @@ export class BootScene extends Phaser.Scene {
       color: '#aa8855'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    menuContainer.add([btnNewGame, btnContinue, btnSettings, btnSoundtrack]);
+    const btnManual = this.add.text(width / 2, height * 0.84, t('ui.manual'), {
+      fontSize: `${Math.round(15 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#aa8855'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    menuContainer.add([btnNewGame, btnContinue, btnSettings, btnSoundtrack, btnManual]);
 
     // Volume variables loading
     let bgmVol = 1.0;
@@ -281,6 +287,7 @@ export class BootScene extends Phaser.Scene {
     if (hasSave) makeButtonGlow(btnContinue, 'ui.continue');
     makeButtonGlow(btnSettings, 'ui.settings');
     makeButtonGlow(btnSoundtrack, 'ui.soundtrack');
+    makeButtonGlow(btnManual, 'ui.manual');
     makeButtonGlow(btnBack, 'ui.back');
 
     // Language and volume hover behaviors
@@ -305,6 +312,7 @@ export class BootScene extends Phaser.Scene {
       btnContinue.setText(t('ui.continue'));
       btnSettings.setText(menuContainer.visible ? t('ui.settings') : `> ${t('ui.settings')} <`);
       btnSoundtrack.setText(menuContainer.visible ? t('ui.soundtrack') : `> ${t('ui.soundtrack')} <`);
+      btnManual.setText(menuContainer.visible ? t('ui.manual') : `> ${t('ui.manual')} <`);
       btnBack.setText(t('ui.back'));
       langLabel.setText(`${t('ui.language')}: ${getLanguage().toUpperCase()}`);
       bgmLabel.setText(`${t('ui.bgmVolume')}: ${Math.round(bgmVol * 100)}%`);
@@ -323,6 +331,10 @@ export class BootScene extends Phaser.Scene {
       menuContainer.setVisible(false);
       soundtrackContainer.setVisible(true);
       updateMenuLabels();
+    });
+
+    btnManual.on('pointerdown', () => {
+      this.scene.launch('ManualScene');
     });
 
     btnBack.on('pointerdown', () => {

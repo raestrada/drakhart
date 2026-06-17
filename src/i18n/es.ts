@@ -25,6 +25,7 @@ export const es: typeof en = {
     resume: 'REANUDAR',
     quitToMenu: 'SALIR AL MENÚ',
     soundtrack: 'BANDA SONORA',
+    manual: 'MANUAL',
     nowPlaying: 'REPRODUCIENDO',
     stop: 'PARAR',
   },
