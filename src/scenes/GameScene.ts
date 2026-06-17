@@ -1019,31 +1019,75 @@ export class GameScene extends BaseLevelScene {
   }
 
   private createFogWall(): void {
-    // Layered mist fog wall instead of black rectangle
-    for (let layer = 0; layer < 3; layer++) {
-      const mist = this.add.tileSprite(7900, 250 - layer * 60, 600, 500 + layer * 80, 'bg-mist')
+    const fogX = 7850;
+    const fogW = 700;
+
+    // Gradient fade-in from left (transparent → opaque)
+    for (let ix = 0; ix < 5; ix++) {
+      const g = this.add.graphics().setScrollFactor(0.95).setDepth(80);
+      const alpha = 0.08 * (ix + 1);
+      g.fillStyle(0x080610, alpha);
+      g.fillRect(fogX + ix * 80, 0, 80, 800);
+
+      // Fade-out on the right side
+      const gOut = this.add.graphics().setScrollFactor(0.95).setDepth(80);
+      const outAlpha = 0.08 * (5 - ix);
+      gOut.fillStyle(0x080610, outAlpha);
+      gOut.fillRect(fogX + fogW - 160 + ix * 80, 0, 80, 800);
+    }
+
+    // Multiple animated mist layers — each with different speed, direction, size
+    const mistLayers = [
+      { y: 0, h: 900, alpha: 0.18, speed: -25, depth: 81, tint: 0x112244 },
+      { y: -50, h: 900, alpha: 0.15, speed: -40, depth: 82, tint: 0x1a1a33 },
+      { y: 60, h: 800, alpha: 0.12, speed: 15, depth: 83, tint: 0x151530 },
+      { y: -100, h: 1000, alpha: 0.20, speed: -55, depth: 84, tint: 0x0d0d22 },
+      { y: 150, h: 700, alpha: 0.10, speed: 30, depth: 85, tint: 0x181830 },
+      { y: -30, h: 850, alpha: 0.14, speed: -35, depth: 86, tint: 0x121228 },
+    ];
+
+    mistLayers.forEach((layer) => {
+      const mist = this.add.tileSprite(fogX, layer.y, fogW, layer.h, 'bg-mist')
         .setOrigin(0, 0)
         .setScrollFactor(0.95)
-        .setDepth(80 + layer)
-        .setAlpha(0.25 + layer * 0.15)
-        .setTint(0x112233);
+        .setDepth(layer.depth)
+        .setAlpha(layer.alpha)
+        .setTint(layer.tint);
 
+      // Horizontal drift
       this.tweens.add({
         targets: mist,
-        tilePositionX: { from: 0, to: -40 + layer * 20 },
-        duration: 4000 + layer * 1500,
+        tilePositionX: { from: 0, to: layer.speed },
+        duration: 3000 + Math.abs(layer.speed) * 60,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
+
+      // Vertical sway
+      this.tweens.add({
+        targets: mist,
+        tilePositionY: { from: 0, to: Math.abs(layer.speed) * 0.4 },
+        duration: 5000 + Math.abs(layer.speed) * 40,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
+
+    // Mist particles floating within the fog
+    for (let i = 0; i < 3; i++) {
+      this.add.particles(fogX + 100 + i * 150, 400, 'particle-smoke', {
+        speed: { min: 5, max: 20 },
+        angle: { min: 80, max: 100 },
+        scale: { start: 0.4, end: 2.5 },
+        alpha: { start: 0.1, end: 0 },
+        tint: [0x334466, 0x223355, 0x445577],
+        lifespan: { min: 2000, max: 5000 },
+        frequency: 200 + i * 70,
+        blendMode: Phaser.BlendModes.NORMAL,
+      }).setDepth(87).setScrollFactor(0.95);
     }
-
-    this.fogWall = this.add.graphics()
-      .setDepth(83)
-      .setScrollFactor(0.95);
-
-    this.fogWall.fillStyle(0x080610, 0.7);
-    this.fogWall.fillRect(7900, 0, 600, 800);
   }
 
   private createAshParticles(): void {
