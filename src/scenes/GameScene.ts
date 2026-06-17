@@ -632,6 +632,8 @@ export class GameScene extends BaseLevelScene {
     defs.forEach(def => {
       const plat = this.platforms.create(def.x, def.y, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
       plat.setDisplaySize(48, 12);
+      const body = plat.body as Phaser.Physics.Arcade.StaticBody;
+      if (body) body.setSize(48, 12);
       plat.refreshBody();
       this.movingPlatforms.push({ sprite: plat, minX: def.minX, maxX: def.maxX, speed: def.speed });
     });
@@ -657,8 +659,9 @@ export class GameScene extends BaseLevelScene {
         mp.speed *= -1;
         mp.sprite.x = Phaser.Math.Clamp(mp.sprite.x, mp.minX, mp.maxX);
       }
-      if (mp.sprite.body) {
-        (mp.sprite.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+      const body = mp.sprite.body as Phaser.Physics.Arcade.StaticBody;
+      if (body) {
+        body.position.x = mp.sprite.x - body.halfWidth;
       }
     });
   }
