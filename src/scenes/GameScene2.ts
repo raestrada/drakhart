@@ -720,7 +720,7 @@ export class GameScene2 extends BaseLevelScene {
       if (this.player.x <= 80) {
         this.transitionToLevel1();
       }
-      if (this.player.x >= 7950) {
+      if (this.player.x >= 7850) {
         this.transitionToLevel3();
       }
     }
