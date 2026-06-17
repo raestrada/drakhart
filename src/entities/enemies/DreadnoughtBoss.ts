@@ -102,7 +102,7 @@ export class DreadnoughtBoss extends BaseEnemy {
     
     // Core is giant
     this.setScale(2.5);
-    this.setTint(0x885544); // Dark armored but visible (was 0x333333 too dark)
+    this.setTint(0xbb7744); // Visible dark armored (was 0x333333 too dark)
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setSize(90, 90);
   }
@@ -186,7 +186,7 @@ export class DreadnoughtBoss extends BaseEnemy {
 
     // Keep distance from player horizontally, but generally stay on right side of screen
     const cam = this.scene.cameras.main;
-    const targetX = cam.scrollX + (cam.width / cam.zoom) * 0.65;
+    const targetX = cam.scrollX + cam.width * 0.65; // full screen width (zoom already at ~1.0)
     
     if (this.x > targetX + 10) {
       body.setVelocityX(-this.moveSpeed);

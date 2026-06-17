@@ -646,6 +646,7 @@ export class GameScene3 extends BaseLevelScene {
         this.playerScreenX = this.player.x - this.scrollX;
         this.playerScreenY = this.player.y;
         this.shmupStarted = true;
+        this.player.lockFacing = true;
       }
     });
   }
@@ -653,6 +654,7 @@ export class GameScene3 extends BaseLevelScene {
   private transitionToLevel2(): void {
     if (this.demoEnded) return;
     this.demoEnded = true;
+    this.player.lockFacing = false;
 
     this.player.setVelocity(0, 0);
     if (this.player.body) {
