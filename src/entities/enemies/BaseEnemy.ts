@@ -66,28 +66,26 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.setCollideWorldBounds(true);
 
     this.createHealthBar();
-    this.spawnIn();
   }
 
-  private spawnIn(): void {
+  public spawnIn(): void {
     this.setAlpha(0);
-    this.setScale(this.scaleX * 0.3, this.scaleY * 0.3);
+    this.setScale(this.scaleX * 0.4, this.scaleY * 0.4);
 
     (this.scene as any).gameAudio?.playSpawnIn?.();
 
-    // Warp portal ring
     const ring = this.scene.add.graphics();
-    ring.lineStyle(2, 0x9944ff, 0.8);
-    ring.strokeCircle(this.x, this.y, 5);
+    ring.lineStyle(1.5, 0x9944ff, 0.6);
+    ring.strokeCircle(this.x, this.y, 4);
     ring.setDepth(this.depth + 1);
     ring.setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.tweens.add({
       targets: ring,
-      scaleX: 8,
-      scaleY: 8,
+      scaleX: 6,
+      scaleY: 6,
       alpha: 0,
-      duration: 350,
+      duration: 300,
       ease: 'Cubic.easeOut',
       onComplete: () => ring.destroy(),
     });
@@ -97,8 +95,8 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
       alpha: 1,
       scaleX: this.scaleX,
       scaleY: this.scaleY,
-      duration: 400,
-      ease: 'Back.easeOut',
+      duration: 350,
+      ease: 'Sine.easeOut',
     });
   }
 

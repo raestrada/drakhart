@@ -930,13 +930,13 @@ export class GameScene extends BaseLevelScene {
     ];
 
     torchPositions.forEach((pos) => {
-      const torch = this.add.rectangle(pos.x, pos.y, 6, 18, 0x553311).setDepth(5);
-      const flame = this.add.pointlight(pos.x, pos.y - 10, 0xff6622, 80, 0.4).setDepth(-1);
+      const torch = this.add.rectangle(pos.x, pos.y, 5, 14, 0x332211).setDepth(5);
+      const flame = this.add.pointlight(pos.x, pos.y - 10, 0xff6622, 35, 0.25).setDepth(-1);
 
       this.tweens.add({
         targets: flame,
-        intensity: { from: 0.3, to: 0.6 },
-        radius: { from: 60, to: 90 },
+        intensity: { from: 0.18, to: 0.32 },
+        radius: { from: 28, to: 42 },
         duration: 200 + Math.random() * 200,
         yoyo: true,
         repeat: -1,
