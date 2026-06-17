@@ -132,7 +132,7 @@ export class GameScene3 extends BaseLevelScene {
     super.create();
     this.bulletLights.clear();
 
-    this.physics.world.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+    this.physics.world.setBounds(0, 0, 18000, LEVEL_HEIGHT);
 
     // Keyboard controls
     const kb = this.input.keyboard!;
@@ -185,7 +185,7 @@ export class GameScene3 extends BaseLevelScene {
     this.windLines.setDepth(10);
 
     this.createParallax();
-    this.weatherSystem = new WeatherSystem(this, 'gorge', LEVEL_WIDTH);
+    this.weatherSystem = new WeatherSystem(this, 'gorge', 18000);
     applyBiomePostFX(this, 'gorge');
     this.createPistons();
     this.createLevel();
@@ -228,7 +228,7 @@ export class GameScene3 extends BaseLevelScene {
     this.cameras.main.setBackgroundColor('#08040a');
 
     // 1. Gorge Sky Background (reuse procedural cosmic nebula sky texture)
-    this.bgGorgeSky = this.add.tileSprite(0, 0, LEVEL_WIDTH, 1200, 'bg-sky')
+    this.bgGorgeSky = this.add.tileSprite(0, 0, 18000, 1200, 'bg-sky')
       .setOrigin(0, 0)
       .setScrollFactor(0.01, 0)
       .setDepth(-30);
@@ -374,7 +374,7 @@ export class GameScene3 extends BaseLevelScene {
   }
 
   private setupCamera(): void {
-    this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+    this.cameras.main.setBounds(0, 0, 18000, LEVEL_HEIGHT);
     if (!this.shmupStarted) {
       this.cameras.main.setZoom(1.6);
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
