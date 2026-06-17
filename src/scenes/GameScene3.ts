@@ -1186,6 +1186,9 @@ export class GameScene3 extends BaseLevelScene {
     if (this.bossActive) return;
     this.bossActive = true;
 
+    this.gameAudio?.playBossWarning();
+    this.time.delayedCall(2400, () => this.gameAudio?.playBossBGM());
+
     // Play Boss warning text
     const cam = this.cameras.main;
     const cx = cam.scrollX + cam.width / 2;

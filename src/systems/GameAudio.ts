@@ -83,7 +83,7 @@ export class GameAudio {
 
     // 1. Create BGM volume control node
     this.bgmGainNode = ctx.createGain();
-    this.bgmGainNode.gain.value = 0.35 * this.bgmVolScale; // Default BGM volume
+    this.bgmGainNode.gain.value = 0.45 * this.bgmVolScale; // Default BGM volume
     this.bgmGainNode.connect(ctx.destination);
 
     // 1b. Dynamic music filter (opens during combat, closes during exploration)
@@ -2271,6 +2271,35 @@ export class GameAudio {
     gain.connect(this.sfxGainNode);
     osc.start(t);
     osc.stop(t + 0.3);
+  }
+
+  public playBossWarning(): void {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    // Rising alarm siren
+    for (let i = 0; i < 3; i++) {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, t + i * 0.8);
+      osc.frequency.exponentialRampToValueAtTime(600, t + i * 0.8 + 0.4);
+      osc.frequency.exponentialRampToValueAtTime(200, t + i * 0.8 + 0.6);
+      gain.gain.setValueAtTime(0, t + i * 0.8);
+      gain.gain.linearRampToValueAtTime(0.08, t + i * 0.8 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.8 + 0.7);
+      osc.connect(gain);
+      gain.connect(this.sfxGainNode);
+      osc.start(t + i * 0.8);
+      osc.stop(t + i * 0.8 + 0.75);
+    }
+  }
+
+  public playBossBGM(): void {
+    this.stopBGM();
+    this.currentLevel = 4;
+    this.playBGM(4);
   }
 
   private _lavaNodes: any = null;

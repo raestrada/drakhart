@@ -35,7 +35,7 @@ export class WeatherSystem {
         speed: { min: 180, max: 320 },
         angle: { min: 95, max: 115 },
         scale: { start: 0.4, end: 0 },
-        alpha: { start: 0.25, end: 0 },
+        alpha: { start: 0.12, end: 0 },
         tint: [0x88aacc, 0xaabbdd, 0x99bbcc],
         lifespan: { min: 600, max: 1400 },
         frequency: 15,

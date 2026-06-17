@@ -115,16 +115,18 @@ class DreadnoughtCannon extends BaseEnemy {
   }
 
   die(): void {
-    if (this.glowLight && this.scene.lights) this.scene.lights.removeLight(this.glowLight);
+    const scene = this.scene;
+    if (this.glowLight && scene?.lights) scene.lights.removeLight(this.glowLight);
     if (this.hpBar) this.hpBar.destroy();
     if (this.hpFill) this.hpFill.destroy();
-    spawnDeathExplosion(this.scene, this.x, this.y);
+    spawnDeathExplosion(scene, this.x, this.y);
     this.boss.onCannonDestroyed();
     super.die();
   }
 
   destroy(fromScene?: boolean): void {
-    if (this.glowLight && this.scene.lights) this.scene.lights.removeLight(this.glowLight);
+    const scene = this.scene;
+    if (this.glowLight && scene?.lights) scene.lights.removeLight(this.glowLight);
     if (this.hpBar) this.hpBar.destroy();
     if (this.hpFill) this.hpFill.destroy();
     super.destroy(fromScene);
@@ -155,8 +157,8 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.fixedY = y;
 
     this.setScale(2.5);
-    this.setAlpha(0.6);
-    this.setTint(0xcc8844);
+    this.setAlpha(1);
+    this.setTint(0x8899aa, 0x445566, 0x223344, 0x667788);
     this.setDepth(10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setSize(100, 100);
@@ -181,9 +183,9 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.cannonsActive--;
     if (this.cannonsActive <= 0 && this.phase === 'shielded') {
       this.phase = 'vulnerable';
-      this.setTint(0xff7700);
       this.setAlpha(1);
-      this.scene.cameras.main.flash(500, 255, 150, 0);
+      this.setTint(0xff6622);
+      this.scene.cameras.main.flash(500, 255, 100, 0);
       this.scene.cameras.main.shake(800, 0.02);
 
       // Permanent pulsing glow on core
@@ -321,7 +323,8 @@ export class DreadnoughtBoss extends BaseEnemy {
   }
 
   destroy(fromScene?: boolean): void {
-    if (this.coreLight && this.scene.lights) this.scene.lights.removeLight(this.coreLight);
+    const scene = this.scene;
+    if (this.coreLight && scene?.lights) scene.lights.removeLight(this.coreLight);
     super.destroy(fromScene);
   }
 }
