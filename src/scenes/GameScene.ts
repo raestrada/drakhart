@@ -371,12 +371,15 @@ export class GameScene extends BaseLevelScene {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
 
-    // Organic ground segments
+    // Organic ground segments (gaps left for thorn hazards)
     const groundY = 768;
     this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 2000, 'forest', 1);
-    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 800, 'forest', 2);
-    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 900, 'forest', 3);
-    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 800, 'forest', 4);
+    // Gap: 2300-2800 with thorns below, floating platforms to cross
+    this.terrainGen.generateGroundSegment(this.platforms, 2000, groundY, 300, 'forest', 2);
+    this.terrainGen.generateGroundSegment(this.platforms, 2800, groundY, 300, 'forest', 3);
+    // Gap: 3100-3700 with thorns below
+    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 300, 'forest', 4);
+    // Gap: 4000-4500 with thorns below
     this.terrainGen.generateGroundSegment(this.platforms, 4500, groundY, 2300, 'forest', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 6800, groundY, 1200, 'forest', 6);
 
