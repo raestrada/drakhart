@@ -41,12 +41,13 @@ export class GameAudio {
     { drone: 73.42, notes: [146.83, 185.00, 220.00, 293.66, 369.99, 440.00] }
   ];
 
-  // Level 3: Fast energetic SHMUP chords (Em -> C -> D -> Bm)
+  // Level 3: Eurobeat SHMUP chords (Em -> G -> Am -> C -> D — uplifting energy)
   private chordsL3 = [
-    { drone: 82.41, notes: [164.81, 196.00, 246.94, 329.63, 392.00, 493.88] },
-    { drone: 65.41, notes: [130.81, 164.81, 196.00, 261.63, 329.63, 392.00] },
-    { drone: 73.42, notes: [146.83, 185.00, 220.00, 293.66, 369.99, 440.00] },
-    { drone: 61.74, notes: [123.47, 146.83, 185.00, 246.94, 293.66, 369.99] }
+    { drone: 82.41, notes: [164.81, 196.00, 246.94, 329.63, 392.00, 493.88] },  // Em
+    { drone: 98.00, notes: [196.00, 246.94, 293.66, 392.00, 493.88, 587.33] },  // G
+    { drone: 110.00, notes: [220.00, 261.63, 329.63, 440.00, 523.25, 659.25] },  // Am
+    { drone: 130.81, notes: [261.63, 329.63, 392.00, 523.25, 659.25, 783.99] },  // C
+    { drone: 146.83, notes: [293.66, 369.99, 440.00, 587.33, 739.99, 880.00] },  // D
   ];
 
   // Level 4: Mini-boss energetic heavy theme chords (F#m -> D -> Bm -> C#7)
@@ -218,9 +219,12 @@ export class GameAudio {
         this.synthesizeHeavySynth(chord.notes[noteIndex % chord.notes.length]);
       }
     } else if (this.currentLevel === 3) {
-      // Level 3: Fast energetic SHMUP (high tempo, offbeat hat, arpeggiated lead)
-      if (step % 4 === 0 || step % 8 === 2) {
+      // Level 3: Eurobeat SHMUP (four-on-the-floor, driving bass, synth stabs, arp lead)
+      if (step % 4 === 0) {
         this.synthesizeBGMKick();
+        this.synthesizeEuroBass(); // driving 8th-note synth bass
+      } else if (step % 2 === 0) {
+        this.synthesizeEuroBass();
       }
       if (step === 4 || step === 12) {
         this.synthesizeSHMUPSnare();
@@ -228,9 +232,12 @@ export class GameAudio {
       if (step % 2 === 1) {
         this.synthesizeBGMHiHat();
       }
+      if (step === 0 || step === 8) {
+        this.synthesizeEuroStab(chord.notes[0]); // synth brass stab on downbeats
+      }
       const fastPattern = [
-        0, 1, 0, 2, 0, 3, 0, 4,
-        0, 5, 0, 4, 3, 2, 1, 2
+        0, 1, 2, 3, 0, 2, 4, 3,
+        0, 1, 3, 4, 0, 2, 3, 2
       ];
       const noteIndex = fastPattern[step];
       if (noteIndex !== -1) {
@@ -578,6 +585,74 @@ export class GameAudio {
 
     osc.start(t);
     osc.stop(t + 0.25);
+  }
+
+  private synthesizeEuroBass(): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    // Octave-jumping sawtooth bass — driving Eurobeat pulse
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(41.20, t); // E1
+    osc.frequency.setValueAtTime(82.41, t + 0.04); // E2 octave jump
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(200, t);
+    filter.frequency.exponentialRampToValueAtTime(80, t + 0.1);
+    filter.Q.value = 2;
+
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.12, t + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    osc.start(t);
+    osc.stop(t + 0.16);
+  }
+
+  private synthesizeEuroStab(freq: number): void {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    // Brassy synth stab — short, punchy, adds energy on downbeats
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc1.frequency.value = freq;
+    osc1.detune.value = 3;
+
+    osc2.type = 'square';
+    osc2.frequency.value = freq * 0.5;
+    osc2.detune.value = -3;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(freq * 2, t);
+    filter.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.12);
+    filter.Q.value = 1.5;
+
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.1, t + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.bgmGainNode);
+
+    osc1.start(t);
+    osc2.start(t);
+    osc1.stop(t + 0.15);
+    osc2.stop(t + 0.15);
   }
 
   public setBGMVolume(volume: number): void {
