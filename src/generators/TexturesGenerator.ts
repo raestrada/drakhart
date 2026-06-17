@@ -3098,15 +3098,6 @@ export class TexturesGenerator {
 
       if (dist < 45 || isBlack || isWhite) {
         data[i + 3] = 0; // Make transparent
-      } else if (targetKey === 'bg-castle') {
-        // Brighten the castle pixels to allow bright multiplicative tints in Phaser.
-        // We map the dark silhouette colors to a bright light-gray/silver-white scale,
-        // preserving details like the clock hands and outline shading.
-        const brightness = (r + g + b) / 3;
-        const newVal = Math.round(160 + (brightness / 255) * 95);
-        data[i] = newVal;
-        data[i + 1] = newVal;
-        data[i + 2] = newVal;
       }
     }
 

@@ -221,12 +221,13 @@ export class GameScene extends BaseLevelScene {
       .setScrollFactor(0)
       .setDepth(-28);
 
-    // 3. Castle Silhouette — raw PNG as-is, no processing
-    this.bgCastle = this.add.image(0, 0, 'bg-castle-raw')
+    // 3. Castle Silhouette — keyed out PNG, half size, no tint
+    this.bgCastle = this.add.image(0, 0, 'bg-castle')
       .setOrigin(0.5, 0.5)
       .setScrollFactor(0)
       .setDepth(-25)
-      .setAlpha(0.92);
+      .setScale(0.5)
+      .setAlpha(0.85);
 
     // 3.3 Moon Glow Layer 1 (behind castle, subtle corona)
     this.bgMoonGlow1 = this.add.image(0, 0, 'moon-glow')
@@ -1760,7 +1761,7 @@ export class GameScene extends BaseLevelScene {
       const targetScreenY = h * 0.49;
       this.bgCastle.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
       this.bgCastle.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
-      this.bgCastle.setScale(1.1 / cam.zoom);
+      this.bgCastle.setScale(0.5 / cam.zoom);
       this.bgCastle.setAlpha(0.92 * bgAlphaMultiplier);
     }
   }
