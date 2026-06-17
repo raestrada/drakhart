@@ -19,10 +19,12 @@ class DreadnoughtCannon extends BaseEnemy {
     });
     this.isTop = isTop;
     this.boss = boss;
-    this.setScale(1.5);
-    this.setTint(isTop ? 0xff5555 : 0x5555ff);
+    this.setScale(2.2);
+    this.setTint(isTop ? 0xff2222 : 0x2266ff);
+    this.setDepth(boss.depth + 5); // Render ON TOP of boss body
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setImmovable(true);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(40, 40);
   }
 
   preUpdate(time: number, delta: number): void {
@@ -102,9 +104,11 @@ export class DreadnoughtBoss extends BaseEnemy {
     
     // Core is giant
     this.setScale(2.5);
-    this.setTint(0xbb7744); // Visible dark armored (was 0x333333 too dark)
+    this.setAlpha(0.75);
+    this.setTint(0xbb7744);
+    this.setDepth(10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-    (this.body as Phaser.Physics.Arcade.Body).setSize(90, 90);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(120, 120);
   }
 
   public activate(): void {
@@ -140,6 +144,12 @@ export class DreadnoughtBoss extends BaseEnemy {
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
+
+      // Glow ring around exposed core
+      if (this.scene.lights) {
+        const glow = this.scene.lights.addLight(this.x, this.y, 200, 0xff6600, 1.5);
+        this.scene.time.delayedCall(2000, () => this.scene.lights?.removeLight(glow));
+      }
 
       // Hint text
       const cam = this.scene.cameras.main;
