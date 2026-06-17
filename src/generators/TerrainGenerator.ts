@@ -320,6 +320,7 @@ export class TerrainGenerator {
       const body = group.create(tx, baseY, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
       body.setDisplaySize(w, 24);
       body.setAlpha(0.01);
+      (body.body as Phaser.Physics.Arcade.StaticBody).setSize(w, 24);
       body.refreshBody();
     }
   }
@@ -372,6 +373,7 @@ export class TerrainGenerator {
     const body = group.create(x + width / 2, y, 'tile-thorns') as Phaser.Physics.Arcade.Sprite;
     body.setDisplaySize(width, 24);
     body.setAlpha(0.01);
+    (body.body as Phaser.Physics.Arcade.StaticBody).setSize(width, 24);
     body.refreshBody();
   }
 
