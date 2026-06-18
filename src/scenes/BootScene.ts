@@ -266,6 +266,7 @@ export class BootScene extends Phaser.Scene {
       if (nowPlayingText) nowPlayingText.setVisible(false);
       soundtrackContainer.setVisible(false);
       menuContainer.setVisible(true);
+      this.menuAudio?.play().catch(() => {});
       updateMenuLabels();
     });
 
@@ -330,6 +331,7 @@ export class BootScene extends Phaser.Scene {
     });
 
     btnSoundtrack.on('pointerdown', () => {
+      this.menuAudio?.pause();
       menuContainer.setVisible(false);
       soundtrackContainer.setVisible(true);
       updateMenuLabels();
