@@ -6,7 +6,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { CAMERA_LERP } from '../utils/constants';
 
-export class TransitionScene34 extends Phaser.Scene {
+export class TransitionScene45 extends Phaser.Scene {
   public gameAudio!: GameAudio;
   public currentBiome: string | undefined;
   private player!: Player;
@@ -21,7 +21,7 @@ export class TransitionScene34 extends Phaser.Scene {
   private pendingCardsToCollect: string[] = [];
   private hasTransitioned = false;
 
-  constructor() { super({ key: 'TransitionScene34' }); }
+  constructor() { super({ key: 'TransitionScene45' }); }
 
   init(data?: any): void {
     this.hasTransitioned = false;
@@ -34,7 +34,7 @@ export class TransitionScene34 extends Phaser.Scene {
   create(): void {
     const W = 1920, H = 1080;
     this.physics.world.setBounds(0, 0, W, H);
-    this.cameras.main.setBackgroundColor('#0a080c');
+    this.cameras.main.setBackgroundColor('#08060c');
 
     this.gameAudio = new GameAudio();
     this.terrainGen = new TerrainGenerator(this);
@@ -42,18 +42,18 @@ export class TransitionScene34 extends Phaser.Scene {
     this.currentBiome = 'foundry';
     this.events.once('shutdown', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); });
     this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); });
-    this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene34' }); });
+    this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene45' }); });
 
-    // Backgrounds
-    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30).setTint(0x441122);
-    this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.5, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.3).setTint(0x553344);
-    const mist = this.add.tileSprite(0, H * 0.5, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.15).setDepth(-18).setAlpha(0.2).setTint(0xff4422);
-    this.tweens.add({ targets: mist, tilePositionX: 500, duration: 20000, loop: -1 });
+    // Backgrounds — foundry atmosphere
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-refinery-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x662222, 0x662222, 0x331111, 0x331111);
+    this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.5, 'bg-refinery-furnaces').setOrigin(0, 0).setScrollFactor(0.08).setDepth(-20).setAlpha(0.35).setTint(0x664444, 0x663344, 0x331122, 0x442233);
+    const smog = this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-18).setAlpha(0.25).setTint(0xff4422);
+    this.tweens.add({ targets: smog, tilePositionX: 400, duration: 18000, loop: -1 });
 
     // Organic ground
     const groundY = 736;
     this.platforms = this.physics.add.staticGroup();
-    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, W, 'forest', 30);
+    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, W, 'forest', 40);
 
     // Tarot
     this.tarotSystem = new TarotSystem();
@@ -67,7 +67,7 @@ export class TransitionScene34 extends Phaser.Scene {
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.5);
 
     // Altar
-    this.saveAltar = new SaveAltar(this, W / 2, groundY, 'TransitionScene34');
+    this.saveAltar = new SaveAltar(this, W / 2, groundY, 'TransitionScene45');
 
     this.physics.add.collider(this.player, this.platforms);
 
@@ -92,17 +92,17 @@ export class TransitionScene34 extends Phaser.Scene {
       this.playerShadow.setScale(this.player.scaleX);
     }
     if (!this.hasTransitioned) {
-      if (this.player.x <= 40) this.transitionToLevel3();
+      if (this.player.x <= 40) this.transitionToLevel34();
       if (this.player.x >= 1880) this.transitionToLevel4();
     }
   }
 
-  private transitionToLevel3(): void {
+  private transitionToLevel34(): void {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('ASHEN GORGE', '#9933cc', () => {
-      this.scene.start('GameScene3', { startPos: { x: 7800, y: 400 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
+    this.showZoneTransition('BETWEEN WORLDS', '#ff6622', () => {
+      this.scene.start('TransitionScene34', { startPos: { x: 1850, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     });
   }
 
@@ -110,8 +110,8 @@ export class TransitionScene34 extends Phaser.Scene {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('THE FOUNDRY GATES', '#ff6622', () => {
-      this.scene.start('TransitionScene45', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
+    this.showZoneTransition('ZONE 4 — FOUNDRY GATES', '#ffaa44', () => {
+      this.scene.start('GameScene4', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     });
   }
 

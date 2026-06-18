@@ -131,7 +131,15 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
       pipeline.vignetteIntensity = 0.45;
       pipeline.vignetteColor = [0.05, 0.02, 0.06];
       break;
-    default:
+    case 'foundry':
+      pipeline.contrast = 1.25;
+      pipeline.saturation = 0.9;
+      pipeline.brightness = -0.02;
+      pipeline.filmGrain = 0.2;
+      pipeline.vignetteRadius = 1.15;
+      pipeline.vignetteIntensity = 0.35;
+      pipeline.vignetteColor = [0.05, 0.02, 0.02];
+      break;
       pipeline.contrast = 1.0;
       pipeline.saturation = 1.0;
       pipeline.brightness = 0.0;

@@ -7,6 +7,8 @@ import { UIScene } from './scenes/UIScene';
 import { TransitionScene12 } from './scenes/TransitionScene12';
 import { TransitionScene23 } from './scenes/TransitionScene23';
 import { TransitionScene34 } from './scenes/TransitionScene34';
+import { TransitionScene45 } from './scenes/TransitionScene45';
+import { GameScene4 } from './scenes/GameScene4';
 import { PauseScene } from './scenes/PauseScene';
 import { TarotCollectionScene } from './scenes/TarotCollectionScene';
 import { ManualScene } from './scenes/ManualScene';
@@ -30,5 +32,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, GameScene, GameScene2, GameScene3, UIScene, TransitionScene12, TransitionScene23, TransitionScene34, PauseScene, TarotCollectionScene, ManualScene],
+  scene: [BootScene, GameScene, GameScene2, GameScene3, GameScene4, UIScene, TransitionScene12, TransitionScene23, TransitionScene34, TransitionScene45, PauseScene, TarotCollectionScene, ManualScene],
 };

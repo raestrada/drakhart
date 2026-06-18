@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 export class BaseLevelScene extends Phaser.Scene {
-  public currentBiome: 'forest' | 'refinery' | 'gorge' | undefined;
+  public currentBiome: 'forest' | 'refinery' | 'gorge' | 'foundry' | undefined;
   protected parallaxLayers: Phaser.GameObjects.TileSprite[] = [];
   protected vignette!: Phaser.GameObjects.Rectangle;
   protected gameAudio: any = null;
