@@ -1141,22 +1141,35 @@ export class GameScene extends BaseLevelScene {
   }
 
   private createTarotCards(): void {
-    const magicianCard = new TarotCard(this, 680, 720, 'magician');
-    magicianCard.setDepth(1);
-
-    const chariotCard = new TarotCard(this, 9100, 704, 'chariot');
+    // Chariot — early reward before first thorn gap (Zone 1, x~2500)
+    const chariotCard = new TarotCard(this, 2500, 738, 'chariot');
     chariotCard.setDepth(1);
 
-    this.physics.add.overlap(this.player, magicianCard, () => {
-      magicianCard.collect(this.player);
-      this.tarotSystem.collect('magician', this.player);
-      this.gameAudio?.playCardCollect();
-      this.requestSave();
-    });
+    // Tower — ruin rooftop in Section 3 (Zone 1, x~4800)
+    const towerCard = new TarotCard(this, 4850, 488, 'tower');
+    towerCard.setDepth(1);
+
+    // Magician — high rooftop in Section 3, exploration reward (Zone 1, x~5500)
+    const magicianCard = new TarotCard(this, 5400, 518, 'magician');
+    magicianCard.setDepth(1);
 
     this.physics.add.overlap(this.player, chariotCard, () => {
       chariotCard.collect(this.player);
       this.tarotSystem.collect('chariot', this.player);
+      this.gameAudio?.playCardCollect();
+      this.requestSave();
+    });
+
+    this.physics.add.overlap(this.player, towerCard, () => {
+      towerCard.collect(this.player);
+      this.tarotSystem.collect('tower', this.player);
+      this.gameAudio?.playCardCollect();
+      this.requestSave();
+    });
+
+    this.physics.add.overlap(this.player, magicianCard, () => {
+      magicianCard.collect(this.player);
+      this.tarotSystem.collect('magician', this.player);
       this.gameAudio?.playCardCollect();
       this.requestSave();
     });

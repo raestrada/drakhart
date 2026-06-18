@@ -54,7 +54,7 @@ export class EnergySystem {
     this.current = Math.min(this.max, this.current + amount);
   }
 
-  update(delta: number, state: FormState, isFlyingUp: boolean, onGround: boolean): void {
+  update(delta: number, state: FormState, isFlyingUp: boolean, onGround: boolean, starMultiplier: number = 1): void {
     if ((window as any).godModeActive || (window as any).infiniteEnergyActive) {
       this.current = this.max;
       return;
@@ -62,17 +62,16 @@ export class EnergySystem {
     const dt = delta / 1000;
 
     if (state === FormState.HUMAN || state === FormState.EXHAUSTED) {
-      this.current = Math.min(this.max, this.current + ENERGY_REGEN_HUMAN * dt);
+      this.current = Math.min(this.max, this.current + ENERGY_REGEN_HUMAN * dt * starMultiplier);
     } else if (state === FormState.MECHA) {
       this.current = Math.max(0, this.current - ENERGY_DRAIN_MECHA * dt);
     } else if (state === FormState.DRAGON) {
       if (onGround) {
         this.current = Math.min(
           this.max,
-          this.current + ENERGY_REGEN_GROUNDED * dt
+          this.current + ENERGY_REGEN_GROUNDED * dt * starMultiplier
         );
       } else {
-        // Drain energy when flying in the air
         const drain = isFlyingUp ? ENERGY_DRAIN_FLYING : (ENERGY_DRAIN_FLYING * 0.4);
         this.current = Math.max(0, this.current - drain * dt);
       }

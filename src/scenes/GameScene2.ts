@@ -174,6 +174,7 @@ export class GameScene2 extends BaseLevelScene {
     }
 
     this.createEnemies();
+    this.createTarotCards();
     this.setupCamera();
     this.setupCollisions();
     this.createVignette();
@@ -612,6 +613,26 @@ export class GameScene2 extends BaseLevelScene {
         b.disableBody(true, true);
       }
     );
+  }
+
+  private createTarotCards(): void {
+    // Strength — before EliteMecha, helps with the boss fight
+    const strengthCard = new TarotCard(this, 3800, 704, 'strength');
+    strengthCard.setDepth(1);
+
+    this.physics.add.overlap(this.player, strengthCard, () => {
+      strengthCard.collect(this.player);
+      this.tarotSystem.collect('strength', this.player);
+      this.gameAudio?.playCardCollect();
+      saveGame({
+        cardsCollected: this.tarotSystem.collectedCards,
+        mechaUnlocked: this.player.formMachine.hasTransform(),
+        dragonUnlocked: this.player.formMachine.hasDragon(),
+        playerX: this.player.x,
+        playerY: this.player.y,
+        currentScene: 'GameScene2',
+      });
+    });
   }
 
   private createVignette(): void {

@@ -143,7 +143,7 @@ export class CombatSystem {
 
     this.swordActive = true;
     this.swordCooldown = true;
-    this.activeDamage = MECHA_SWORD_DAMAGE;
+    this.activeDamage = this.player.tarotSystem?.hasStrength() ? Math.round(MECHA_SWORD_DAMAGE * 1.5) : MECHA_SWORD_DAMAGE;
     (this.scene as any).gameAudio?.playHeavyAttack();
 
     this.hitstop.freeze(HITSTOP.MECHA_CLAYMORE.duration, HITSTOP.MECHA_CLAYMORE.intensity);
@@ -301,6 +301,25 @@ export class CombatSystem {
     this.scene.time.delayedCall(FIRE_COOLDOWN, () => {
       this.fireCooldown = false;
     });
+
+    // Tower tarot: 3-way fire spread
+    if (this.player.tarotSystem?.hasTower()) {
+      for (const spreadAngle of [-12, 12]) {
+        const spreadRad = Phaser.Math.DegToRad(angleDeg + spreadAngle);
+        const extraBullet = this.fireBullets.get(spawnX, spawnY, 'bullet-fire') as Phaser.Physics.Arcade.Sprite;
+        if (extraBullet) {
+          extraBullet.enableBody(true, spawnX, spawnY, true, true);
+          extraBullet.setVelocity(FIRE_SPEED * 0.85 * Math.cos(spreadRad), FIRE_SPEED * 0.85 * Math.sin(spreadRad));
+          extraBullet.setRotation(spreadRad);
+          extraBullet.setFlipX(false);
+          extraBullet.setBlendMode(Phaser.BlendModes.ADD);
+          extraBullet.setData('pierce', 1);
+          this.scene.time.delayedCall(FIRE_LIFETIME, () => {
+            if (extraBullet.active) extraBullet.disableBody(true, true);
+          });
+        }
+      }
+    }
   }
 
   getFireDamage(): number {

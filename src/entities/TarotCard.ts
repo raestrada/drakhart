@@ -67,12 +67,26 @@ export class TarotCard extends Phaser.Physics.Arcade.Sprite {
 
     scene.tweens.add({
       targets: this,
-      alpha: 0.6,
+      alpha: { from: 0.6, to: 1 },
       duration: 800,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    // Subtle glow to help players find it
+    if (scene.lights) {
+      const glow = scene.lights.addLight(x, y, 50, 0xccaa44, 0.4);
+      scene.tweens.add({
+        targets: glow,
+        radius: { from: 40, to: 60 },
+        intensity: { from: 0.3, to: 0.5 },
+        duration: 1200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   get cardId(): string { return this.cardDef.id; }

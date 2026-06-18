@@ -301,11 +301,13 @@ export class FormStateMachine {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const onGround = body ? (body.blocked.down || body.touching.down) : false;
     
+    const starMult = this.player.tarotSystem?.hasStar() ? 1.5 : 1;
     this.energySystem.update(
       delta,
       this.currentState,
       this.flightSystem.isFlyingUp(),
-      onGround
+      onGround,
+      starMult
     );
 
     if (this.currentState === FormState.MECHA) {

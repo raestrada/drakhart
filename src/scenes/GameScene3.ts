@@ -7,6 +7,7 @@ import { SpitterEnemy } from '../entities/enemies/SpitterEnemy';
 import { Boss } from '../entities/enemies/Boss';
 import { DreadnoughtBoss } from '../entities/enemies/DreadnoughtBoss';
 import { EnergyPickup } from '../entities/EnergyPickup';
+import { TarotCard } from '../entities/TarotCard';
 import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
@@ -213,6 +214,7 @@ export class GameScene3 extends BaseLevelScene {
     this.playerScreenY = this.pendingSpawnY;
 
     this.buildWaves();
+    this.createTarotCards();
     this.setupCamera();
     this.setupCollisions();
     this.createVignette();
@@ -525,6 +527,30 @@ export class GameScene3 extends BaseLevelScene {
         this.player.takeDamage(12, -1);
         this.cameras.main.shake(150, 0.008);
       }
+    });
+  }
+
+  private createTarotCards(): void {
+    // Star — early shmup, helps dragon energy
+    const starCard = new TarotCard(this, 4500, 350, 'star');
+    starCard.setDepth(1);
+    (starCard.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+
+    // Tower — before dense waves, gives 3-way fire
+    const towerCard = new TarotCard(this, 9500, 400, 'tower');
+    towerCard.setDepth(1);
+    (towerCard.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+
+    this.physics.add.overlap(this.player, starCard, () => {
+      starCard.collect(this.player);
+      this.tarotSystem.collect('star', this.player);
+      this.gameAudio?.playCardCollect();
+    });
+
+    this.physics.add.overlap(this.player, towerCard, () => {
+      towerCard.collect(this.player);
+      this.tarotSystem.collect('tower', this.player);
+      this.gameAudio?.playCardCollect();
     });
   }
 
