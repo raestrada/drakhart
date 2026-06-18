@@ -424,13 +424,11 @@ export class GameScene4 extends BaseLevelScene {
   // ── Collisions ──
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.enemies, this.platforms);
     this.physics.add.collider(this.player, this.barricades);
-    this.physics.add.collider(this.enemies, this.barricades);
 
     this.physics.add.overlap(this.player, this.enemies, (_player, _enemy) => {
       const enemy = _enemy as BaseEnemy;
-      if (!enemy.active || enemy.health <= 0) return;
+      if (!enemy.active || enemy.health <= 0 || !enemy.body) return;
       const knockDir = this.player.x < enemy.x ? -1 : 1;
       this.player.takeDamage(enemy.attackDamage, knockDir);
     });
@@ -439,6 +437,7 @@ export class GameScene4 extends BaseLevelScene {
       const b = _bullet as Phaser.Physics.Arcade.Sprite;
       if (!b.active) return;
       const target = _enemy as any;
+      if (!target.body) return;
       if (target.phase === 'shielded') return;
       let pierce = (b.getData('pierce') as number) ?? 2;
       pierce--;
@@ -451,6 +450,7 @@ export class GameScene4 extends BaseLevelScene {
 
     this.physics.add.overlap(this.player.combatSystem.bullets, this.platforms, (_bullet) => {
       const b = _bullet as Phaser.Physics.Arcade.Sprite;
+      if (!b.active || !b.body) return;
       spawnProjectileImpact(this, b.x, b.y, [0xff6600, 0xff8800], 4);
       b.disableBody(true, true);
     });
