@@ -1,10 +1,27 @@
 import Phaser from 'phaser';
 import { t } from '../i18n';
 
+const ZONE_TRACKS: Record<string, string> = {
+  GameScene: 'Beneath_the_Weight',
+  GameScene2: 'Iron_Arteries',
+  GameScene3: 'Orbit_Unbound',
+  TransitionScene12: 'Silentium_Draconis',
+  TransitionScene23: 'Silentium_Draconis',
+};
+
+const SCENE_BGM_RESTART: Record<string, { level: number; ambientZone: number } | 'altar'> = {
+  GameScene: { level: 1, ambientZone: 1 },
+  GameScene2: { level: 2, ambientZone: 2 },
+  GameScene3: { level: 3, ambientZone: 3 },
+  TransitionScene12: 'altar',
+  TransitionScene23: 'altar',
+};
+
 export class PauseScene extends Phaser.Scene {
   private resumeBtn!: Phaser.GameObjects.Text;
   private quitBtn!: Phaser.GameObjects.Text;
   private gameSceneKey = 'GameScene';
+  private pauseAudio: HTMLAudioElement | null = null;
 
   constructor() {
     super({ key: 'PauseScene' });
@@ -58,9 +75,51 @@ export class PauseScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ENTER', () => {
       this.resumeGame();
     });
+
+    const gameScene = this.scene.get(this.gameSceneKey) as any;
+    gameScene?.gameAudio?.stopBGM?.();
+    gameScene?.gameAudio?.stopAmbient?.();
+
+    const track = ZONE_TRACKS[this.gameSceneKey];
+    if (track) {
+      this.pauseAudio = new Audio(`./soundtrack/${track}.mp3`);
+      this.pauseAudio.volume = 0.45;
+      this.pauseAudio.addEventListener('ended', () => {
+        if (this.pauseAudio) {
+          this.pauseAudio.currentTime = 0;
+          this.pauseAudio.play().catch(() => {});
+        }
+      });
+      this.pauseAudio.play().catch(() => {});
+    }
+  }
+
+  private stopAudio(): void {
+    if (this.pauseAudio) {
+      this.pauseAudio.pause();
+      this.pauseAudio = null;
+    }
+  }
+
+  private restartSceneBGM(): void {
+    const gameScene = this.scene.get(this.gameSceneKey) as any;
+    const audio = gameScene?.gameAudio;
+    if (!audio) return;
+
+    const restart = SCENE_BGM_RESTART[this.gameSceneKey];
+    if (!restart) return;
+
+    if (restart === 'altar') {
+      audio.playSacredAltarBGM?.();
+    } else {
+      audio.playBGM?.(restart.level);
+      audio.playAmbientZone?.(restart.ambientZone);
+    }
   }
 
   private resumeGame(): void {
+    this.stopAudio();
+    this.restartSceneBGM();
     const gameScene = this.scene.get(this.gameSceneKey);
     if (gameScene) {
       gameScene.physics.world.resume();
@@ -70,6 +129,7 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private quitToMenu(): void {
+    this.stopAudio();
     this.scene.stop(this.gameSceneKey);
     this.scene.stop('UIScene');
     this.scene.stop();
