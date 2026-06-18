@@ -8,6 +8,7 @@ import { CustomPostFX } from '../effects/PostFXPipelines';
 
 export class BootScene extends Phaser.Scene {
   private titleAudio!: TitleAudio;
+  private menuAudio: HTMLAudioElement | null = null;
 
   constructor() { super({ key: 'BootScene' }); }
 
@@ -384,6 +385,9 @@ export class BootScene extends Phaser.Scene {
 
     // Start Cinematic Title Screen sequence
     const startCinematicTitle = (targetScene: string = 'GameScene', transitionData: any = undefined) => {
+      // Stop menu music
+      if (this.menuAudio) { this.menuAudio.pause(); this.menuAudio = null; }
+
       // 1. Hide main menu UI
       menuContainer.setVisible(false);
 
@@ -485,6 +489,23 @@ export class BootScene extends Phaser.Scene {
         startCinematicTitle(targetScene, transitionData);
       });
     }
+
+    const startMenuAudio = () => {
+      this.menuAudio = new Audio('./soundtrack/Vigil_of_the_Fallen_King.mp3');
+      this.menuAudio.volume = 0.45;
+      this.menuAudio.addEventListener('ended', () => {
+        if (this.menuAudio) {
+          this.menuAudio.currentTime = 0;
+          this.menuAudio.play().catch(() => {});
+        }
+      });
+      this.menuAudio.play().then(() => {
+        this.input.off('pointerdown', startMenuAudio);
+      }).catch(() => {
+        this.input.once('pointerdown', startMenuAudio);
+      });
+    };
+    startMenuAudio();
   }
 
   private createMenuBackground(width: number, height: number): void {
