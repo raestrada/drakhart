@@ -243,7 +243,7 @@ export class GameScene4 extends BaseLevelScene {
     }
 
     this.gameAudio = new GameAudio();
-    this.gameAudio.playBGM(2);
+    this.gameAudio.playBGM(5);
     this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
 
@@ -466,9 +466,11 @@ export class GameScene4 extends BaseLevelScene {
 
   // ── Update ──
   update(time: number, delta: number): void {
-    if (this.player?.active) {
-      this.player.update(time, delta);
-      this.gameAudio?.update(this.player.x);
+    if (!this.player?.active) return;
+
+    this.player.update(time, delta);
+    this.gameAudio?.update(this.player.x);
+    if (this.playerShadow?.active) {
       this.playerShadow.x = this.player.x;
       this.playerShadow.y = this.player.y + 24;
       this.playerShadow.setScale(this.player.scaleX);
@@ -509,9 +511,9 @@ export class GameScene4 extends BaseLevelScene {
 
   private checkCrumblingPlatforms(): void {
     this.crumblingPlatforms.forEach(cp => {
-      if (!cp.active) return;
+      if (!cp || !cp.active) return;
       const body = this.player.body as Phaser.Physics.Arcade.Body;
-      if (body?.blocked.down && Math.abs(this.player.x - cp.body.x) < 24) cp.trigger();
+      if (body?.blocked.down && cp.body && Math.abs(this.player.x - cp.body.x) < 24) cp.trigger();
     });
   }
 

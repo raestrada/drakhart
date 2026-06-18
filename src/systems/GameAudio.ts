@@ -58,6 +58,14 @@ export class GameAudio {
     { drone: 69.30, notes: [138.59, 174.61, 207.65, 277.18, 349.23, 415.30] }
   ];
 
+  // Level 5: Foundry Gates — Dark Industrial Epic (Cm -> Ab -> Fm -> G7)
+  private chordsL5 = [
+    { drone: 65.41, notes: [130.81, 155.56, 196.00, 261.63, 311.13, 392.00] },  // Cm
+    { drone: 51.91, notes: [103.83, 130.81, 155.56, 207.65, 261.63, 311.13] },  // Ab
+    { drone: 43.65, notes: [87.31, 103.83, 130.81, 174.61, 207.65, 261.63] },    // Fm
+    { drone: 49.00, notes: [98.00, 123.47, 146.83, 196.00, 246.94, 293.66] },    // G7
+  ];
+
   private chords = this.chordsL1;
   private currentChordIndex = 0;
   private currentLevel = 1;
@@ -140,7 +148,7 @@ export class GameAudio {
     if (this.isPlaying || !this.ctx) return;
     this.isPlaying = true;
     this.currentLevel = level;
-    this.chords = level === 4 ? this.chordsBoss : (level === 3 ? this.chordsL3 : (level === 2 ? this.chordsL2 : this.chordsL1));
+    this.chords = level === 5 ? this.chordsL5 : (level === 4 ? this.chordsBoss : (level === 3 ? this.chordsL3 : (level === 2 ? this.chordsL2 : this.chordsL1)));
 
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -152,12 +160,12 @@ export class GameAudio {
     // Trigger initial low string drone
     this.triggerCelloDrone();
 
-    // Variable tempo intervals:
     // Level 1: 120 BPM -> 250ms
     // Level 2: 90 BPM -> 333ms (heavy industrial stomp)
     // Level 3: 260 BPM -> 115ms (frenetic shmup eurobeat)
     // Level 4: 187 BPM -> 160ms (hyper intense boss)
-    const interval = this.currentLevel === 4 ? 160 : (this.currentLevel === 3 ? 115 : (this.currentLevel === 2 ? 333 : 250));
+    // Level 5: 100 BPM -> 300ms (dark industrial epic)
+    const interval = this.currentLevel === 5 ? 300 : (this.currentLevel === 4 ? 160 : (this.currentLevel === 3 ? 115 : (this.currentLevel === 2 ? 333 : 250)));
 
     // Start beat loop
     this.bgmTimer = setInterval(() => {
@@ -261,6 +269,28 @@ export class GameAudio {
       const noteIndex = bossPattern[step];
       if (noteIndex !== -1) {
         this.synthesizeSHMUPSynth(chord.notes[noteIndex % chord.notes.length]);
+      }
+    } else if (this.currentLevel === 5) {
+      // Level 5: Dark Industrial Epic (heavy stomp, orchestral percussion, melodic leads)
+      if (step % 4 === 0) {
+        this.synthesizeHeavyKick();
+      }
+      if (step === 4 || step === 12) {
+        this.synthesizeIndustrialClang();
+      }
+      if (step === 8) {
+        this.synthesizeSHMUPSnare();
+      }
+      if (step % 2 === 1) {
+        this.synthesizeBGMShaker();
+      }
+      const epicPattern = [
+        0, -1, 1, -1, 2, -1, 3, -1,
+        0, 1, 2, 3, 0, 2, 1, 2
+      ];
+      const noteIndex = epicPattern[step];
+      if (noteIndex !== -1) {
+        this.synthesizeBGMPiano(chord.notes[noteIndex % chord.notes.length]);
       }
     }
   }
