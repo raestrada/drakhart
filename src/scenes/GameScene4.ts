@@ -449,7 +449,7 @@ export class GameScene4 extends BaseLevelScene {
       spawnHitParticles(this, target.x, target.y);
     });
 
-    this.physics.add.collider(this.player.combatSystem.bullets, this.platforms, (_bullet) => {
+    this.physics.add.overlap(this.player.combatSystem.bullets, this.platforms, (_bullet) => {
       const b = _bullet as Phaser.Physics.Arcade.Sprite;
       spawnProjectileImpact(this, b.x, b.y, [0xff6600, 0xff8800], 4);
       b.disableBody(true, true);
