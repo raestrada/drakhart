@@ -291,6 +291,8 @@ export class GameScene4 extends BaseLevelScene {
   private createLevel(): void {
     this.platforms = this.physics.add.staticGroup();
     this.hazards = this.physics.add.staticGroup();
+    this.barricades = this.physics.add.staticGroup();
+    this.energyPickups = this.physics.add.staticGroup();
     const groundY = 768;
 
     // Section A: Sky Gate (0-5000) — open flight zone with scattered ground
@@ -573,7 +575,7 @@ export class GameScene4 extends BaseLevelScene {
   private checkTransition(): void {
     if (this.player.x <= 40) {
       this.demoEnded = true;
-      this.scene.start('TransitionScene34', { startPos: { x: 1850, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
+      this.scene.start('TransitionScene34', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     }
   }
 }

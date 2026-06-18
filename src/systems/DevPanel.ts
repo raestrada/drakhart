@@ -66,6 +66,10 @@ export class DevPanel {
       if (scene3 && scene3.sys && scene3.sys.isActive()) {
         return scene3;
       }
+      const scene4 = game.scene.keys.GameScene4;
+      if (scene4 && scene4.sys && scene4.sys.isActive()) {
+        return scene4;
+      }
     }
     return null;
   }
@@ -130,6 +134,11 @@ export class DevPanel {
     this.addButton('L3: Start Gorge', () => this.teleportToScene('GameScene3', 100, 400));
     this.addButton('L3: Mid Gorge (Obstacles)', () => this.teleportToScene('GameScene3', 3200, 400));
     this.addButton('L3: Boss Arena (X: 7200)', () => this.teleportToScene('GameScene3', 7100, 400));
+    this.addButton('L4: Sky Gate (Start)', () => this.teleportToScene('GameScene4', 200, 650));
+    this.addButton('L4: Forge Floor (X: 6000)', () => this.teleportToScene('GameScene4', 6000, 650));
+    this.addButton('L4: Boss Arena (X: 12500)', () => this.teleportToScene('GameScene4', 12000, 500));
+    this.addButton('Altar 3→4 (Trans34)', () => this.teleportToScene('TransitionScene34', 150, 650));
+    this.addButton('Altar 4→5 (Trans45)', () => this.teleportToScene('TransitionScene45', 150, 650));
 
     // Section 2: Form & Progression
     this.addSectionHeader('🔄 Form Unlock & Control');

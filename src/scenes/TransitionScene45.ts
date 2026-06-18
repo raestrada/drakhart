@@ -102,7 +102,7 @@ export class TransitionScene45 extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     this.showZoneTransition('BETWEEN WORLDS', '#ff6622', () => {
-      this.scene.start('TransitionScene34', { startPos: { x: 1850, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
+      this.scene.start('TransitionScene34', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     });
   }
 
