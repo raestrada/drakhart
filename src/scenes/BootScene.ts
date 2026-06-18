@@ -102,13 +102,13 @@ export class BootScene extends Phaser.Scene {
     const hasSave = typeof localStorage !== 'undefined' && localStorage.getItem('drakhart_save') !== null;
 
     // Main menu buttons
-    const btnNewGame = this.add.text(width / 2, height * 0.52, t('ui.newGame'), {
+    const btnNewGame = this.add.text(width / 2, height * 0.45, t('ui.newGame'), {
       fontSize: `${Math.round(15 * scale)}px`,
       fontFamily: 'monospace',
       color: '#aa8855'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    const btnContinue = this.add.text(width / 2, height * 0.60, t('ui.continue'), {
+    const btnContinue = this.add.text(width / 2, height * 0.52, t('ui.continue'), {
       fontSize: `${Math.round(15 * scale)}px`,
       fontFamily: 'monospace',
       color: hasSave ? '#aa8855' : '#444444'
@@ -118,19 +118,19 @@ export class BootScene extends Phaser.Scene {
       btnContinue.setInteractive({ useHandCursor: true });
     }
 
-    const btnSettings = this.add.text(width / 2, height * 0.68, t('ui.settings'), {
+    const btnSettings = this.add.text(width / 2, height * 0.59, t('ui.settings'), {
       fontSize: `${Math.round(15 * scale)}px`,
       fontFamily: 'monospace',
       color: '#aa8855'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    const btnSoundtrack = this.add.text(width / 2, height * 0.76, t('ui.soundtrack'), {
+    const btnSoundtrack = this.add.text(width / 2, height * 0.66, t('ui.soundtrack'), {
       fontSize: `${Math.round(15 * scale)}px`,
       fontFamily: 'monospace',
       color: '#aa8855'
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-    const btnManual = this.add.text(width / 2, height * 0.84, t('ui.manual'), {
+    const btnManual = this.add.text(width / 2, height * 0.73, t('ui.manual'), {
       fontSize: `${Math.round(15 * scale)}px`,
       fontFamily: 'monospace',
       color: '#aa8855'
