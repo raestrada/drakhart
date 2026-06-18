@@ -9,6 +9,7 @@ export const es: typeof en = {
     mechaActive: 'DRACONEL ACTIVO',
     dragonActive: 'DRAGÓN ACTIVO',
     pressStart: 'PRESIONA ENTER PARA COMENZAR',
+    pressAnyKey: 'PRESIONA CUALQUIER TECLA',
     prototypeComplete: 'PROTOTIPO COMPLETADO',
     loading: 'Forjando...',
     clickForSound: 'CLIC EN CUALQUIER PARTE PARA AUDIO',

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { t } from '../i18n';
+import { AudioMute } from '../systems/AudioMute';
 
 const ZONE_TRACKS: Record<string, string> = {
   GameScene: 'Beneath_the_Weight',
@@ -84,6 +85,7 @@ export class PauseScene extends Phaser.Scene {
     if (track) {
       this.pauseAudio = new Audio(`./soundtrack/${track}.mp3`);
       this.pauseAudio.volume = 0.45;
+      AudioMute.register(this.pauseAudio);
       this.pauseAudio.addEventListener('ended', () => {
         if (this.pauseAudio) {
           this.pauseAudio.currentTime = 0;

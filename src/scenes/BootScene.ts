@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { t, setLanguage, getLanguage } from '../i18n';
 import { TitleAudio } from '../systems/TitleAudio';
+import { AudioMute } from '../systems/AudioMute';
 import { clearSave, loadGame } from '../systems/SaveSystem';
 import { createPlayerAnims, createEnemyAnims } from '../animations/PlayerAnims';
 import { TexturesGenerator } from '../generators/TexturesGenerator';
@@ -96,7 +97,7 @@ export class BootScene extends Phaser.Scene {
     });
 
     // 2. Menu containers
-    const menuContainer = this.add.container(0, 0);
+    const menuContainer = this.add.container(0, 0).setVisible(false);
     const settingsContainer = this.add.container(0, 0).setVisible(false);
 
     // Check if save exists
@@ -383,10 +384,55 @@ export class BootScene extends Phaser.Scene {
 
     let transitioning = false;
 
+    const cleanupMenuAudio = () => {
+      if (this.menuAudio) { this.menuAudio.pause(); this.menuAudio = null; }
+    };
+
+    this.events.once('shutdown', cleanupMenuAudio);
+    this.events.once('destroy', cleanupMenuAudio);
+
+    const unlockPrompt = this.add.text(width / 2, height * 0.42, t('ui.pressAnyKey'), {
+      fontSize: `${Math.round(14 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#886644',
+    }).setOrigin(0.5).setAlpha(0);
+
+    this.tweens.add({
+      targets: unlockPrompt,
+      alpha: 0.7,
+      duration: 1000,
+      delay: 1500,
+      onComplete: () => {
+        this.tweens.add({
+          targets: unlockPrompt,
+          alpha: 0.2,
+          duration: 1200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+    });
+
+    let menuUnlocked = false;
+    const unlockMenu = () => {
+      if (menuUnlocked) return;
+      menuUnlocked = true;
+      unlockPrompt.destroy();
+      this.menuAudio = new Audio('./soundtrack/Vigil_of_the_Fallen_King.mp3');
+      this.menuAudio.loop = true;
+      this.menuAudio.volume = 0.45;
+      AudioMute.register(this.menuAudio);
+      this.menuAudio.play().catch(() => {});
+      menuContainer.setVisible(true);
+    };
+
+    this.input.once('pointerdown', unlockMenu);
+    this.input.keyboard?.once('keydown', unlockMenu);
+
     // Start Cinematic Title Screen sequence
     const startCinematicTitle = (targetScene: string = 'GameScene', transitionData: any = undefined) => {
-      // Stop menu music
-      if (this.menuAudio) { this.menuAudio.pause(); this.menuAudio = null; }
+      cleanupMenuAudio();
 
       // 1. Hide main menu UI
       menuContainer.setVisible(false);
@@ -489,23 +535,6 @@ export class BootScene extends Phaser.Scene {
         startCinematicTitle(targetScene, transitionData);
       });
     }
-
-    const startMenuAudio = () => {
-      this.menuAudio = new Audio('./soundtrack/Vigil_of_the_Fallen_King.mp3');
-      this.menuAudio.volume = 0.45;
-      this.menuAudio.addEventListener('ended', () => {
-        if (this.menuAudio) {
-          this.menuAudio.currentTime = 0;
-          this.menuAudio.play().catch(() => {});
-        }
-      });
-      this.menuAudio.play().then(() => {
-        this.input.off('pointerdown', startMenuAudio);
-      }).catch(() => {
-        this.input.once('pointerdown', startMenuAudio);
-      });
-    };
-    startMenuAudio();
   }
 
   private createMenuBackground(width: number, height: number): void {
