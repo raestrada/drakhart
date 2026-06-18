@@ -1189,50 +1189,53 @@ export class GameScene3 extends BaseLevelScene {
     this.gameAudio?.playBossWarning();
     this.time.delayedCall(2400, () => this.gameAudio?.playBossBGM());
 
-    const cam = this.cameras.main;
-    const cx = cam.scrollX + cam.width / 2;
-    const cy = cam.scrollY + cam.height / 2;
+    const sw = this.scale.width;
+    const sh = this.scale.height;
+    const cx = sw / 2;
+    const cy = sh / 2;
 
-    // Red flash
     this.cameras.main.flash(400, 200, 0, 0);
 
-    // WARNING banner
-    const warn = this.add.text(cx, cy - 60, '⚠ WARNING ⚠', {
-      fontSize: '32px', fontFamily: 'monospace', color: '#ff0000',
-      stroke: '#000000', strokeThickness: 6,
+    const warn = this.add.text(cx, cy - 80, 'WARNING', {
+      fontSize: '38px', fontFamily: 'monospace', color: '#ff0000',
+      stroke: '#000000', strokeThickness: 8,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
-    const bossName = this.add.text(cx, cy, 'DREADNOUGHT CLASS — DRAKHART', {
+    const sub = this.add.text(cx, cy - 25, 'DREADNOUGHT CLASS — DRAKHART', {
       fontSize: '18px', fontFamily: 'monospace', color: '#ff6600',
       stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
-    const hint = this.add.text(cx, cy + 40, 'DESTROY THE CANNONS — THEN THE CORE!', {
+    const hint = this.add.text(cx, cy + 20, 'DESTROY THE CANNONS — THEN THE CORE!', {
       fontSize: '14px', fontFamily: 'monospace', color: '#ffaa44',
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
     this.tweens.add({
-      targets: warn, alpha: { from: 0, to: 1 }, scaleX: { from: 0.5, to: 1 }, scaleY: { from: 0.5, to: 1 },
-      duration: 300, yoyo: true, hold: 800, repeat: 2,
+      targets: warn, alpha: { from: 0, to: 1 }, scaleX: { from: 0.3, to: 1.1 }, scaleY: { from: 0.3, to: 1.1 },
+      duration: 200, yoyo: true, hold: 600, repeat: 2,
       onComplete: () => warn.destroy(),
     });
     this.tweens.add({
-      targets: bossName, alpha: { from: 0, to: 1 },
-      duration: 400, delay: 200, yoyo: true, hold: 1500,
-      onComplete: () => bossName.destroy(),
+      targets: sub, alpha: { from: 0, to: 1 }, duration: 300, delay: 150,
+      yoyo: true, hold: 1500, onComplete: () => sub.destroy(),
     });
     this.tweens.add({
-      targets: hint, alpha: { from: 0, to: 1 },
-      duration: 400, delay: 400, yoyo: true, hold: 1400,
-      onComplete: () => hint.destroy(),
+      targets: hint, alpha: { from: 0, to: 0.9 }, duration: 300, delay: 350,
+      yoyo: true, hold: 1400, onComplete: () => hint.destroy(),
     });
 
+    // Pause scroll for dramatic reveal
+    const savedScrollX = this.scrollX;
+    this.scrollX = savedScrollX;
+    this.cameras.main.shake(400, 0.005);
+
     // Spawn Boss
-    const bossX = this.scrollX + cam.width * 0.65;
+    const cam = this.cameras.main;
+    const bossX = savedScrollX + cam.width * 0.65;
     this.boss = new DreadnoughtBoss(this, bossX, 350, this.player);
     this.enemies.add(this.boss);
-    this.time.delayedCall(2200, () => this.boss?.activate());
+    this.time.delayedCall(2400, () => this.boss?.activate());
 
     this.cameras.main.zoomTo(1.0, 800, 'Cubic.easeInOut');
 
@@ -1241,7 +1244,7 @@ export class GameScene3 extends BaseLevelScene {
     const originalDie = (boss as any).die.bind(boss);
     (boss as any).die = () => {
       originalDie();
-      this.triggerLevel3Victory();
+      this.time.delayedCall(500, () => this.triggerLevel3Victory());
     };
   }
 

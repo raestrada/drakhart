@@ -12,8 +12,8 @@ class DreadnoughtCannon extends BaseEnemy {
   private glowLight: any = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, isTop: boolean, boss: DreadnoughtBoss, player: Player) {
-    super(scene, x, y, 'enemy-gunship', player, {
-      health: 150,
+    super(scene, x, y, 'enemy-mecha', player, {
+      health: 120,
       speed: 0,
       detectRange: 9999,
       attackRange: 9999,
@@ -146,7 +146,7 @@ export class DreadnoughtBoss extends BaseEnemy {
   private bossHpFill: Phaser.GameObjects.Rectangle | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
-    super(scene, x, y, 'enemy-mecha', player, {
+    super(scene, x, y, 'enemy-gunship', player, {
       health: 600,
       speed: 0,
       detectRange: 9999,
@@ -158,12 +158,12 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.fixedX = x;
     this.fixedY = y;
 
-    this.setScale(4.0);
+    this.setScale(5.0);
     this.setAlpha(1);
-    this.setTint(0x8899aa, 0x445566, 0x223344, 0x667788);
+    this.setTint(0xaabbcc, 0x667788, 0x334455, 0x8899aa);
     this.setDepth(10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-    (this.body as Phaser.Physics.Arcade.Body).setSize(60, 60);
+    (this.body as Phaser.Physics.Arcade.Body).setSize(40, 40);
     (this.body as Phaser.Physics.Arcade.Body).enable = false; // Shielded: no collision
 
     this.bossHpBar = scene.add.rectangle(x, y - 80, 200, 8, 0x000000, 0.8).setDepth(20);

@@ -83,7 +83,7 @@ export class GameAudio {
 
     // 1. Create BGM volume control node
     this.bgmGainNode = ctx.createGain();
-    this.bgmGainNode.gain.value = 0.45 * this.bgmVolScale; // Default BGM volume
+    this.bgmGainNode.gain.value = 0.55 * this.bgmVolScale; // Default BGM volume
     this.bgmGainNode.connect(ctx.destination);
 
     // 1b. Dynamic music filter (opens during combat, closes during exploration)
