@@ -7,6 +7,7 @@ export const en = {
     mechaActive: 'DRACONEL ACTIVE',
     dragonActive: 'DRAGON ACTIVE',
     pressStart: 'PRESS ENTER TO START',
+    pressAnyKey: 'PRESS ANY KEY',
     prototypeComplete: 'PROTOTYPE COMPLETE',
     loading: 'Forging...',
     clickForSound: 'CLICK ANYWHERE FOR AUDIO',
