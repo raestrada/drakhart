@@ -215,7 +215,7 @@ export class BootScene extends Phaser.Scene {
           currentAudio.pause();
           currentAudio = null;
         }
-        const audio = new Audio(`/soundtrack/${track.file}.mp3`);
+        const audio = new Audio(`./soundtrack/${track.file}.mp3`);
         audio.volume = 0.5;
         audio.play().catch(() => {});
         currentAudio = audio;
