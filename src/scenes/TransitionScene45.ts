@@ -20,11 +20,13 @@ export class TransitionScene45 extends Phaser.Scene {
   private pendingSpawnY = 650;
   private pendingCardsToCollect: string[] = [];
   private hasTransitioned = false;
+  private frameCount = 0;
 
   constructor() { super({ key: 'TransitionScene45' }); }
 
   init(data?: any): void {
     this.hasTransitioned = false;
+    this.frameCount = 0;
     if (data) {
       if (data.startPos) { this.pendingSpawnX = data.startPos.x; this.pendingSpawnY = data.startPos.y; }
       if (data.cardsCollected) this.pendingCardsToCollect = data.cardsCollected;
@@ -84,6 +86,7 @@ export class TransitionScene45 extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    this.frameCount++;
     if (this.player?.active) {
       this.player.update(time, delta);
       this.saveAltar.updatePrompt(this.player);
@@ -91,7 +94,7 @@ export class TransitionScene45 extends Phaser.Scene {
       this.playerShadow.y = this.player.y + 24;
       this.playerShadow.setScale(this.player.scaleX);
     }
-    if (!this.hasTransitioned) {
+    if (!this.hasTransitioned && this.frameCount > 30) {
       if (this.player.x <= 40) this.transitionToLevel34();
       if (this.player.x >= 1880) this.transitionToLevel4();
     }
