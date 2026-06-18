@@ -397,20 +397,9 @@ export class GameScene4 extends BaseLevelScene {
   }
 
   // ── Decorations & Echoes ──
-  private createDecorations(): void {
-    this.crumblingPlatforms.push(new CrumblingPlatform(this, this.platforms, 1500, 580));
-    this.crumblingPlatforms.push(new CrumblingPlatform(this, this.platforms, 1532, 580));
-    this.crumblingPlatforms.push(new CrumblingPlatform(this, this.platforms, 8500, 600));
-    this.crumblingPlatforms.push(new CrumblingPlatform(this, this.platforms, 8532, 600));
-  }
+  private createDecorations(): void {}
 
-  private createEchoFragments(): void {
-    const e1 = new EchoFragment(this, 6000, 630, 0);
-    const e2 = new EchoFragment(this, 12000, 600, 1);
-    [e1, e2].forEach(e => {
-      this.physics.add.overlap(this.player, e, () => { if (e.active) e.collect(); });
-    });
-  }
+  private createEchoFragments(): void {}
 
   // ── Camera ──
   private setupCamera(): void {
@@ -424,7 +413,6 @@ export class GameScene4 extends BaseLevelScene {
   // ── Collisions ──
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.player, this.barricades);
 
     this.physics.add.overlap(this.player, this.enemies, (_player, _enemy) => {
       const enemy = _enemy as BaseEnemy;
