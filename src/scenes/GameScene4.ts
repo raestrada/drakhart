@@ -161,6 +161,7 @@ export class GameScene4 extends BaseLevelScene {
   private boss: Gatekeeper | null = null;
   private bossActive = false;
   private playerShadow!: Phaser.GameObjects.Image;
+  private echoFragments: EchoFragment[] = [];
 
   private pendingSpawnX = 150;
   private pendingSpawnY = 400;
@@ -200,6 +201,7 @@ export class GameScene4 extends BaseLevelScene {
     this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
 
+    this.echoFragments = [];
     this.bloom = new BloomSystem(this);
     this.terrainGen = new TerrainGenerator(this);
     this.currentBiome = 'foundry';
@@ -374,9 +376,7 @@ export class GameScene4 extends BaseLevelScene {
   private createEchoFragments(): void {
     const e1 = new EchoFragment(this, 6000, 630, 0);
     const e2 = new EchoFragment(this, 12000, 600, 1);
-    [e1, e2].forEach(e => {
-      this.physics.add.overlap(this.player, e, () => { if (e.active) e.collect(); });
-    });
+    this.echoFragments.push(e1, e2);
   }
 
   private setupCamera(): void {
@@ -389,6 +389,17 @@ export class GameScene4 extends BaseLevelScene {
 
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.platforms);
+    this.physics.add.collider(this.enemies, this.platforms);
+    this.physics.add.collider(this.player, this.enemies, (_player, _enemy) => {
+      const enemy = _enemy as BaseEnemy;
+      if (!enemy.active || enemy.health <= 0) return;
+      const knockDir = this.player.x < enemy.x ? -1 : 1;
+      this.player.takeDamage(enemy.attackDamage, knockDir);
+    });
+
+    this.echoFragments.forEach((e) => {
+      this.physics.add.overlap(this.player, e, () => { if (e.active) e.collect(); });
+    });
   }
 
   private setupLighting(): void {
