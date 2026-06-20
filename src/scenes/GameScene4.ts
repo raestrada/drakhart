@@ -223,16 +223,8 @@ export class GameScene4 extends BaseLevelScene {
     if (this.pendingMechaUnlock) this.player.formMachine.unlockTransform();
     if (this.pendingDragonUnlock) this.player.formMachine.unlockDragon();
 
-    // Force DRAGON form at start (coming from Zone 3 flight)
+    // Start as human — player can transform manually
     this.player.setPosition(this.pendingSpawnX, this.pendingSpawnY);
-    if (this.pendingDragonUnlock) {
-      this.player.formMachine.unlockDragon();
-      // Use requestTransform which goes through proper state machine
-      this.player.formMachine.requestTransform(); // Human→Mecha
-      this.time.delayedCall(500, () => {
-        if (this.player.active) this.player.formMachine.requestTransform(); // Mecha→Dragon
-      });
-    }
 
     this.playerShadow = this.add.image(this.player.x, this.player.y + 32, 'shadow').setDepth(-5).setAlpha(0.6);
     this.createEnemies();
