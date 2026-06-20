@@ -18,7 +18,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-moon-raw', `assets/bg-moon-raw.png?${v}`);
     this.load.image('bg-castle-raw', `assets/bg-castle-raw.png?${v}`);
     this.load.image('bg-refinery-sun-raw', `assets/bg_refinery_sun.png?${v}`);
-    this.load.image('bg-furnace-raw', `assets/bg_furnace_raw.png?${v}`);
+    this.load.image('bg-furnace-raw', `assets/bg_furnace.png?${v}`);
     this.load.image('bg-furnace-pipes-raw', `assets/bg_furnace_pipes.png?${v}`);
     this.load.image('bg-gorge-sky-raw', `assets/bg_gorge_sky.png?${v}`);
     this.load.image('bg-gorge-walls-raw', `assets/bg_gorge_walls.png?${v}`);
