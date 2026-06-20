@@ -1910,7 +1910,7 @@ export class GameScene extends BaseLevelScene {
       // Parallax scroll the castle horizontally at 0.03 relative to camera scroll, then slide off past x = 6500
       const castleScrollX = Math.min(cam.scrollX, 6500);
       const targetScreenX = w * 0.45 - (castleScrollX * 0.03) - overflow;
-      const targetScreenY = h * 0.49;
+      const targetScreenY = h * 0.28;
       this.bgCastle.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
       this.bgCastle.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
       this.bgCastle.setScale(0.75 / cam.zoom);
