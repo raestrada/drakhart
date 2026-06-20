@@ -1,21 +1,16 @@
 import Phaser from 'phaser';
 
-export class CustomPostFX extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
-  public aberration = 0.0;
-  public scanlines = 0.5;
-  public contrast = 1.0;
-  public saturation = 1.0;
-  public brightness = 0.0;
-  public filmGrain = 0.0;
-  public vignetteRadius = 1.5;
-  public vignetteIntensity = 0.0;
-  public vignetteColor: [number, number, number] = [0, 0, 0];
+// Define placeholder variables for dynamic classes resolved at runtime
+let CustomPostFXControllerClass: any = null;
 
-  constructor(game: Phaser.Game) {
-    super({
-      game: game,
-      name: 'CustomPostFX',
-      fragShader: `
+export function registerCustomPostFX(renderer: any): void {
+  if (renderer.renderNodes.hasNode('CustomPostFXNode')) return;
+
+  const BaseFilterShaderClass = (Phaser.Renderer.WebGL.RenderNodes as any).BaseFilterShader;
+
+  const CustomPostFXNode = class extends BaseFilterShaderClass {
+    constructor(manager: any) {
+      super('CustomPostFXNode', manager, null, `
         #define SHADER_NAME CUSTOM_POST_FX
         precision mediump float;
         uniform sampler2D uMainSampler;
@@ -80,111 +75,123 @@ export class CustomPostFX extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline
 
           gl_FragColor = col;
         }
-      `
-    });
-  }
+      `);
+    }
 
-  onPreRender(): void {
-    this.set1f('uAberration', this.aberration);
-    this.set1f('uScanlines', this.scanlines);
-    this.set1f('uContrast', this.contrast);
-    this.set1f('uSaturation', this.saturation);
-    this.set1f('uBrightness', this.brightness);
-    this.set1f('uFilmGrain', this.filmGrain);
-    this.set1f('uTime', this.game.loop.now);
-    this.set1f('uVignetteRadius', this.vignetteRadius);
-    this.set1f('uVignetteIntensity', this.vignetteIntensity);
-    this.set3f('uVignetteColor', this.vignetteColor[0], this.vignetteColor[1], this.vignetteColor[2]);
+    setupUniforms(controller: any, _drawingContext: any): void {
+      if ((window as any)._customPostFXLogCount === undefined) (window as any)._customPostFXLogCount = 0;
+      if ((window as any)._customPostFXLogCount++ % 200 === 0) {
+        console.log("CustomPostFX controller fields:", {
+          aberration: controller.aberration,
+          scanlines: controller.scanlines,
+          contrast: controller.contrast,
+          saturation: controller.saturation,
+          brightness: controller.brightness,
+          filmGrain: controller.filmGrain,
+          vignetteRadius: controller.vignetteRadius,
+          vignetteIntensity: controller.vignetteIntensity,
+          vignetteColor: controller.vignetteColor
+        });
+      }
+      const programManager = this.programManager;
+      programManager.setUniform('uAberration', controller.aberration);
+      programManager.setUniform('uScanlines', controller.scanlines);
+      programManager.setUniform('uContrast', controller.contrast);
+      programManager.setUniform('uSaturation', controller.saturation);
+      programManager.setUniform('uBrightness', controller.brightness);
+      programManager.setUniform('uFilmGrain', controller.filmGrain);
+      programManager.setUniform('uTime', performance.now());
+      programManager.setUniform('uVignetteRadius', controller.vignetteRadius);
+      programManager.setUniform('uVignetteIntensity', controller.vignetteIntensity);
+      programManager.setUniform('uVignetteColor', controller.vignetteColor);
+    }
+  };
+
+  renderer.renderNodes.addNodeConstructor('CustomPostFXNode', CustomPostFXNode);
+}
+
+export function getCustomPostFX(camera: Phaser.Cameras.Scene2D.Camera): any {
+  if (!camera || !camera.filters || !camera.filters.internal) return null;
+  return camera.filters.internal.list.find((f: any) => f.renderNode === 'CustomPostFXNode');
+}
+
+export function applyCustomPostFX(camera: Phaser.Cameras.Scene2D.Camera): any {
+  if (!camera || !camera.filters || !camera.filters.internal) return null;
+  let filter = getCustomPostFX(camera);
+  if (!filter) {
+    if (!CustomPostFXControllerClass) {
+      const ControllerClass = (Phaser.Filters as any).Controller;
+      CustomPostFXControllerClass = class extends ControllerClass {
+        public aberration = 0.0;
+        public scanlines = 0.5;
+        public contrast = 1.0;
+        public saturation = 1.0;
+        public brightness = 0.0;
+        public filmGrain = 0.0;
+        public vignetteRadius = 1.5;
+        public vignetteIntensity = 0.0;
+        public vignetteColor: [number, number, number] = [0, 0, 0];
+
+        constructor(cam: any) {
+          super(cam, 'CustomPostFXNode');
+        }
+      };
+    }
+    filter = new CustomPostFXControllerClass(camera);
+    camera.filters.internal.add(filter);
   }
+  return filter;
 }
 
 export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
   if (!(scene.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-  const pipeline = scene.cameras.main.getPostPipeline('CustomPostFX') as any;
-  if (!pipeline) return;
+  const controller = applyCustomPostFX(scene.cameras.main);
+  if (!controller) return;
 
   switch (biome) {
     case 'forest':
-      pipeline.contrast = 1.1;
-      pipeline.saturation = 0.85;
-      pipeline.brightness = -0.02;
-      pipeline.filmGrain = 0.15;
-      pipeline.vignetteRadius = 1.2;
-      pipeline.vignetteIntensity = 0.35;
-      pipeline.vignetteColor = [0.03, 0.01, 0.05];
+      controller.contrast = 1.0;
+      controller.saturation = 1.0;
+      controller.brightness = 0.0;
+      controller.filmGrain = 0.0;
+      controller.vignetteRadius = 1.5;
+      controller.vignetteIntensity = 0.0;
+      controller.vignetteColor = [0.0, 0.0, 0.0];
       break;
     case 'refinery':
-      pipeline.contrast = 1.2;
-      pipeline.saturation = 1.05;
-      pipeline.brightness = -0.03;
-      pipeline.filmGrain = 0.25;
-      pipeline.vignetteRadius = 1.15;
-      pipeline.vignetteIntensity = 0.4;
-      pipeline.vignetteColor = [0.08, 0.02, 0.02];
+      controller.contrast = 1.0;
+      controller.saturation = 1.05;
+      controller.brightness = 0.0;
+      controller.filmGrain = 0.25;
+      controller.vignetteRadius = 1.15;
+      controller.vignetteIntensity = 0.4;
+      controller.vignetteColor = [0.08, 0.02, 0.02];
       break;
     case 'gorge':
-      pipeline.contrast = 1.15;
-      pipeline.saturation = 0.7;
-      pipeline.brightness = -0.04;
-      pipeline.filmGrain = 0.3;
-      pipeline.vignetteRadius = 1.2;
-      pipeline.vignetteIntensity = 0.45;
-      pipeline.vignetteColor = [0.05, 0.02, 0.06];
+      controller.contrast = 1.0;
+      controller.saturation = 0.7;
+      controller.brightness = 0.0;
+      controller.filmGrain = 0.3;
+      controller.vignetteRadius = 1.2;
+      controller.vignetteIntensity = 0.45;
+      controller.vignetteColor = [0.05, 0.02, 0.06];
       break;
     case 'foundry':
-      pipeline.contrast = 1.25;
-      pipeline.saturation = 0.9;
-      pipeline.brightness = -0.02;
-      pipeline.filmGrain = 0.2;
-      pipeline.vignetteRadius = 1.15;
-      pipeline.vignetteIntensity = 0.35;
-      pipeline.vignetteColor = [0.05, 0.02, 0.02];
+      controller.contrast = 1.0;
+      controller.saturation = 0.9;
+      controller.brightness = 0.0;
+      controller.filmGrain = 0.2;
+      controller.vignetteRadius = 1.15;
+      controller.vignetteIntensity = 0.35;
+      controller.vignetteColor = [0.05, 0.02, 0.02];
       break;
-      pipeline.contrast = 1.0;
-      pipeline.saturation = 1.0;
-      pipeline.brightness = 0.0;
-      pipeline.filmGrain = 0.05;
-      pipeline.vignetteRadius = 1.4;
-      pipeline.vignetteIntensity = 0.15;
-      pipeline.vignetteColor = [0, 0, 0];
   }
 }
 
-export function setVignetteFromPlayer(pipeline: any, healthRatio: number, heatLevel: string): void {
-  if (!pipeline) return;
+export function setVignetteFromPlayer(controller: any, healthRatio: number, heatLevel: string): void {
+  if (!controller) return;
 
-  let intensity = 0.15;
-  let radius = 1.3;
-  const color: [number, number, number] = [0, 0, 0];
-
-  if (healthRatio < 0.3) {
-    intensity = 0.5 + 0.15 * Math.sin(Date.now() * 0.005);
-    radius = 0.8;
-    color[0] = 0.35;
-    color[1] = 0.02;
-    color[2] = 0.02;
-  } else if (healthRatio < 0.5) {
-    intensity = 0.3;
-    radius = 1.0;
-    color[0] = 0.08;
-    color[1] = 0.01;
-    color[2] = 0.02;
-  }
-
-  if (heatLevel === 'danger') {
-    intensity = Math.max(intensity, 0.45 + 0.15 * Math.sin(Date.now() * 0.015));
-    radius = Math.min(radius, 0.9);
-    color[0] = Math.max(color[0], 0.5);
-    color[1] = Math.max(color[1], 0.1);
-    color[2] = Math.max(color[2], 0.05);
-  } else if (heatLevel === 'warning') {
-    intensity = Math.max(intensity, 0.25 + 0.1 * Math.sin(Date.now() * 0.008));
-    radius = Math.min(radius, 1.1);
-    color[0] = Math.max(color[0], 0.3);
-    color[1] = Math.max(color[1], 0.05);
-  }
-
-  pipeline.vignetteRadius = radius;
-  pipeline.vignetteIntensity = intensity;
-  pipeline.vignetteColor = color;
+  controller.vignetteRadius = 1.5;
+  controller.vignetteIntensity = 0.0;
+  controller.vignetteColor = [0, 0, 0];
 }

@@ -13,7 +13,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
-import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer, applyCustomPostFX, getCustomPostFX } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
@@ -962,25 +962,25 @@ export class GameScene3 extends BaseLevelScene {
 
   private setupLightingAndPipelines(): void {
     if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      this.cameras.main.setPostPipeline('CustomPostFX');
+      applyCustomPostFX(this.cameras.main);
     }
 
     if (!this.lights || !this.lights.active) return;
 
-    this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.hazards.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.enemies.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.laserBeams.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.pistons.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.energyPickups.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
+    this.hazards.getChildren().forEach((child: any) => child.setLighting(true));
+    this.enemies.getChildren().forEach((child: any) => child.setLighting(true));
+    this.laserBeams.getChildren().forEach((child: any) => child.setLighting(true));
+    this.pistons.getChildren().forEach((child: any) => child.setLighting(true));
+    this.energyPickups.getChildren().forEach((child: any) => child.setLighting(true));
 
     if (this.player && this.player.active) {
-      this.player.setPipeline('Light2D');
+      this.player.setLighting(true);
     }
 
     // 1. Ambient reactor core light
     if (this.bgReactor) {
-      this.bgReactor.setPipeline('Light2D');
+      this.bgReactor.setLighting(true);
       const rLight = this.lights.addLight(this.bgReactor.x, this.bgReactor.y, 450, 0x9900ff, 2.2);
       this.tweens.add({
         targets: rLight,
@@ -1002,15 +1002,15 @@ export class GameScene3 extends BaseLevelScene {
     // 3. Steam Pipes, Laser Gates, Pistons lights
     this.steamPipes.forEach((p: any) => {
       if (p.pipeSprite) {
-        p.pipeSprite.setPipeline('Light2D');
+        p.pipeSprite.setLighting(true);
         this.lights.addLight(p.x, p.y - (p.isCeiling ? -15 : 15), 110, 0xff5500, 1.2);
       }
     });
 
     this.laserGates.forEach((g: any) => {
-      if (g.nodeTop) g.nodeTop.setPipeline('Light2D');
-      if (g.nodeBottom) g.nodeBottom.setPipeline('Light2D');
-      if (g.beam) g.beam.setPipeline('Light2D');
+      if (g.nodeTop) g.nodeTop.setLighting(true);
+      if (g.nodeBottom) g.nodeBottom.setLighting(true);
+      if (g.beam) g.beam.setLighting(true);
       // Add red glowing warning lights
       this.lights.addLight(g.nodeTop.x, g.nodeTop.y + 12, 100, 0xff0033, 1.4);
       this.lights.addLight(g.nodeBottom.x, g.nodeBottom.y - 12, 100, 0xff0033, 1.4);
@@ -1019,7 +1019,7 @@ export class GameScene3 extends BaseLevelScene {
     // 4. Tarot cards & crystals
     this.children.list.forEach((child: any) => {
       if (child.texture && child.texture.key === 'prop-crystal') {
-        child.setPipeline('Light2D');
+        child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
         this.tweens.add({
           targets: cLight,
@@ -1031,7 +1031,7 @@ export class GameScene3 extends BaseLevelScene {
         });
       }
       if (child.texture && child.texture.key === 'prop-card') {
-        child.setPipeline('Light2D');
+        child.setLighting(true);
         this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
       }
     });
@@ -1041,7 +1041,7 @@ export class GameScene3 extends BaseLevelScene {
     this.player.combatSystem.bullets.getChildren().forEach((b) => {
       const bullet = b as Phaser.Physics.Arcade.Sprite;
       if (bullet.active) {
-        bullet.setPipeline('Light2D');
+        bullet.setLighting(true);
         if (this.lights && this.lights.active) {
           let light = this.bulletLights.get(bullet);
           if (!light) {
@@ -1106,10 +1106,11 @@ export class GameScene3 extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const pipeline = this.cameras.main.getPostPipeline('CustomPostFX') as any;
+    const pipeline = getCustomPostFX(this.cameras.main);
     if (!pipeline) return;
     const hpRatio = this.player.health / this.player.maxHealth;
-    setVignetteFromPlayer(pipeline, hpRatio, 'normal');
+    const heatLevel = this.player.formMachine.heat.level;
+    setVignetteFromPlayer(pipeline, hpRatio, heatLevel);
   }
 
   private createPistons(): void {

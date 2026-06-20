@@ -76,9 +76,9 @@ export class TransitionScene45 extends Phaser.Scene {
     if (this.lights) {
       this.lights.enable();
       this.lights.setAmbientColor(0x665544);
-      this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-      if (this.player && this.player.active) this.player.setPipeline('Light2D');
-      this.saveAltar.setPipeline('Light2D');
+      this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
+      if (this.player && this.player.active) this.player.setLighting(true);
+      this.saveAltar.setLighting(true);
     }
 
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);

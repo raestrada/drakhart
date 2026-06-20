@@ -136,7 +136,7 @@ export function spawnEmbers(scene: Phaser.Scene, x: number, y: number): void {
     emitZone: {
       type: 'random',
       source: new Phaser.Geom.Rectangle(-60, -10, 120, 10),
-    } as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig['emitZone'],
+    } as any,
     x: {
       onEmit: (particle: any) => particle.x,
       onUpdate: (particle: any, key: string, t: number, value: number) => {

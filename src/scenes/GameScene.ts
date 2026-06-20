@@ -24,7 +24,7 @@ import {
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { drawLightningBolt } from '../effects/LightningBolt';
-import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer, applyCustomPostFX, getCustomPostFX } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import {
@@ -2076,7 +2076,7 @@ export class GameScene extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const pipeline = this.cameras.main.getPostPipeline('CustomPostFX') as any;
+    const pipeline = getCustomPostFX(this.cameras.main);
     if (!pipeline) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
@@ -2129,20 +2129,20 @@ export class GameScene extends BaseLevelScene {
 
   private setupLightingAndPipelines(): void {
     if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      this.cameras.main.setPostPipeline('CustomPostFX');
+      applyCustomPostFX(this.cameras.main);
     }
 
     if (!this.lights || !this.lights.active) return;
 
-    this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.hazards.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.destructibles.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.solidDestructibles.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.barricades.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-    this.enemies.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
+    this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
+    this.hazards.getChildren().forEach((child: any) => child.setLighting(true));
+    this.destructibles.getChildren().forEach((child: any) => child.setLighting(true));
+    this.solidDestructibles.getChildren().forEach((child: any) => child.setLighting(true));
+    this.barricades.getChildren().forEach((child: any) => child.setLighting(true));
+    this.enemies.getChildren().forEach((child: any) => child.setLighting(true));
 
     if (this.player && this.player.active) {
-      this.player.setPipeline('Light2D');
+      this.player.setLighting(true);
     }
 
     // 1. Ambient large moonlight spots
@@ -2153,7 +2153,7 @@ export class GameScene extends BaseLevelScene {
     // 2. Crystal lights that pulse
     this.children.list.forEach((child: any) => {
       if (child.texture && child.texture.key === 'prop-crystal') {
-        child.setPipeline('Light2D');
+        child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
         this.tweens.add({
           targets: cLight,
@@ -2166,13 +2166,13 @@ export class GameScene extends BaseLevelScene {
         });
       }
       if (child.texture && child.texture.key === 'prop-chain') {
-        child.setPipeline('Light2D');
+        child.setLighting(true);
       }
     });
 
     // 3. Dragon Core light
     if (this.dragonCore && this.dragonCore.active) {
-      this.dragonCore.setPipeline('Light2D');
+      this.dragonCore.setLighting(true);
       const coreLight = this.lights.addLight(this.dragonCore.x, this.dragonCore.y, 160, 0xffaa00, 2.0);
       this.tweens.add({
         targets: coreLight,
@@ -2188,7 +2188,7 @@ export class GameScene extends BaseLevelScene {
     // 4. Tarot cards lights
     this.children.list.forEach((child: any) => {
       if (child.texture && child.texture.key === 'prop-card') {
-        child.setPipeline('Light2D');
+        child.setLighting(true);
         this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
       }
     });
@@ -2198,7 +2198,7 @@ export class GameScene extends BaseLevelScene {
     this.player.combatSystem.bullets.getChildren().forEach((b) => {
       const bullet = b as Phaser.Physics.Arcade.Sprite;
       if (bullet.active) {
-        bullet.setPipeline('Light2D');
+        bullet.setLighting(true);
         if (this.lights && this.lights.active) {
           let light = this.bulletLights.get(bullet);
           if (!light) {

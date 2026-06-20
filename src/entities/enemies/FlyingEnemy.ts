@@ -52,7 +52,7 @@ export class FlyingEnemy extends BaseEnemy {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
     // Telegraph: glow briefly
-    this.setTintFill(0xcc00ff);
+    this.setTint(0xcc00ff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(150, () => {
       if (!this.active || this.health <= 0) return;
       this.clearTint();

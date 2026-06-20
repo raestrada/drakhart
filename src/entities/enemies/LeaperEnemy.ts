@@ -51,7 +51,7 @@ export class LeaperEnemy extends BaseEnemy {
       this.lastJumpTime = time;
 
       // Telegraph: crouch briefly
-      this.setTintFill(0xff6644);
+      this.setTint(0xff6644).setTintMode(Phaser.TintModes.FILL);
       this.scene.time.delayedCall(200, () => {
         if (!this.active || this.health <= 0) return;
         this.clearTint();

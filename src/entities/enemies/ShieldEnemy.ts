@@ -62,7 +62,7 @@ export class ShieldEnemy extends BaseEnemy {
 
   protected doAttack(): void {
     // Telegraph: flash before melee strike
-    this.setTintFill(0x55aaff);
+    this.setTint(0x55aaff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(220, () => {
       if (!this.active || this.health <= 0) return;
       this.clearTint();

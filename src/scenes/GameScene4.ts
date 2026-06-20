@@ -18,7 +18,7 @@ import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '.
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
-import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer, getCustomPostFX } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON } from '../utils/constants';
 
@@ -404,10 +404,10 @@ export class GameScene4 extends BaseLevelScene {
 
   private setupLighting(): void {
     if (!this.lights) return;
-    this.platforms.getChildren().forEach((c: any) => c.setPipeline('Light2D'));
-    this.barricades.getChildren().forEach((c: any) => c.setPipeline('Light2D'));
-    this.player.setPipeline('Light2D');
-    this.enemies.getChildren().forEach((c: any) => { if (c.body) c.setPipeline('Light2D'); });
+    this.platforms.getChildren().forEach((c: any) => c.setLighting(true));
+    this.barricades.getChildren().forEach((c: any) => c.setLighting(true));
+    this.player.setLighting(true);
+    this.enemies.getChildren().forEach((c: any) => { if (c.body) c.setLighting(true); });
   }
 
   private showIntroText(): void {
@@ -463,7 +463,7 @@ export class GameScene4 extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const pipeline = this.cameras.main.getPostPipeline('CustomPostFX') as any;
+    const pipeline = getCustomPostFX(this.cameras.main);
     if (!pipeline) return;
     setVignetteFromPlayer(pipeline, this.player.health / this.player.maxHealth, this.player.formMachine.heat.level);
   }
@@ -493,7 +493,7 @@ export class GameScene4 extends BaseLevelScene {
     // Spawn boss immediately — no delay
     this.boss = new Gatekeeper(this, 13000, 500, this.player);
     this.enemies.add(this.boss);
-    if (this.lights) this.boss.setPipeline('Light2D');
+    if (this.lights) this.boss.setLighting(true);
     this.cameras.main.zoomTo(1.3, 600, 'Cubic.easeInOut');
     this.cameras.main.shake(400, 0.005);
 

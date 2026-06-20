@@ -88,9 +88,9 @@ export class TransitionScene12 extends Phaser.Scene {
     if (this.lights) {
       this.lights.enable();
       this.lights.setAmbientColor(0x88809c);
-      this.platforms.getChildren().forEach((child: any) => child.setPipeline('Light2D'));
-      if (this.player && this.player.active) this.player.setPipeline('Light2D');
-      this.saveAltar.setPipeline('Light2D');
+      this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
+      if (this.player && this.player.active) this.player.setLighting(true);
+      this.saveAltar.setLighting(true);
       
       const altarLight = this.lights.addLight(W / 2, groundY - 180, 180, 0xff0044, 1.8);
       this.tweens.add({

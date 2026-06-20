@@ -91,7 +91,7 @@ export class MechaEnemy extends BaseEnemy {
     if (dist > this.attackRange + 20) return;
 
     // Telegraph: engine rev before strike
-    this.setTintFill(0xff4422);
+    this.setTint(0xff4422).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(250, () => {
       if (!this.active || this.health <= 0) return;
       this.clearTint();

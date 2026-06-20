@@ -5,7 +5,7 @@ import { AudioMute } from '../systems/AudioMute';
 import { clearSave, loadGame } from '../systems/SaveSystem';
 import { createPlayerAnims, createEnemyAnims } from '../animations/PlayerAnims';
 import { TexturesGenerator } from '../generators/TexturesGenerator';
-import { CustomPostFX } from '../effects/PostFXPipelines';
+import { registerCustomPostFX } from '../effects/PostFXPipelines';
 
 export class BootScene extends Phaser.Scene {
   private titleAudio!: TitleAudio;
@@ -39,7 +39,7 @@ export class BootScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#050308');
 
     if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      this.renderer.pipelines.addPostPipeline('CustomPostFX', CustomPostFX);
+      registerCustomPostFX(this.renderer);
     }
 
     // 1. Splash image background cover

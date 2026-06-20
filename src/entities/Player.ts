@@ -19,6 +19,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { GamepadSystem } from '../systems/GamepadSystem';
 import { spawnLandingDust, spawnHoverThrust, spawnDragonExhaust, spawnHitParticles } from '../effects/Particles';
 import { spawnDamageNumber } from '../effects/DamageNumbers';
+import { getCustomPostFX } from '../effects/PostFXPipelines';
 
 const DRAGON_FRAME_MS = 220;
 
@@ -855,7 +856,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.cameras.main.shake(120, isMecha ? 0.002 : 0.004);
 
     if (this.scene.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      const pipeline = this.scene.cameras.main.getPostPipeline('CustomPostFX') as any;
+      const pipeline = getCustomPostFX(this.scene.cameras.main);
       if (pipeline) {
         pipeline.aberration = isMecha ? 0.6 : 1.2;
         this.scene.tweens.add({
