@@ -554,7 +554,7 @@ export class GameScene4 extends BaseLevelScene {
     this.cameras.main.fade(2000, 0, 0, 0);
     this.time.delayedCall(2000, () => {
       this.scene.start('TransitionScene45', {
-        startPos: { x: 1850, y: 650 },
+        startPos: { x: 960, y: 650 },
         cardsCollected: this.tarotSystem.collectedCards,
         mechaUnlocked: true,
         dragonUnlocked: true,
@@ -565,7 +565,7 @@ export class GameScene4 extends BaseLevelScene {
   private checkTransition(): void {
     if (this.player.x <= 40) {
       this.demoEnded = true;
-      this.scene.start('TransitionScene34', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
+      this.scene.start('TransitionScene34', { startPos: { x: 960, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     }
   }
 }
