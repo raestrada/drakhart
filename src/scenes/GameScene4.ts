@@ -267,8 +267,7 @@ export class GameScene4 extends BaseLevelScene {
     });
 
     // Barricade at Section A end (5000) — forces Mecha
-    const b1 = new Barricade(this, 4950, 704);
-    this.barricades.add(b1);
+    // Barricade at Section B end (9900) — forces Mecha again
 
     // ── Section B: Forge Floor (5000-10000) — Mecha combat zone ──
     this.terrainGen.generateGroundSegment(this.platforms, 5100, groundY, 1800, 'refinery', 7);
@@ -281,8 +280,6 @@ export class GameScene4 extends BaseLevelScene {
     });
 
     // Barricade at Section B end (9900) — forces Mecha again
-    const b2 = new Barricade(this, 9900, 704);
-    this.barricades.add(b2);
 
     // ── Section C: The Reliquary (10000-15000) — Boss arena ──
     this.terrainGen.generateGroundSegment(this.platforms, 10100, groundY, 4900, 'gorge', 10);
@@ -392,35 +389,6 @@ export class GameScene4 extends BaseLevelScene {
 
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.player, this.barricades);
-    this.physics.add.collider(this.enemies, this.platforms);
-
-    this.physics.add.overlap(this.player, this.enemies, (_p, _e) => {
-      const enemy = _e as BaseEnemy;
-      if (!enemy.active || enemy.health <= 0 || !enemy.body) return;
-      this.player.takeDamage(enemy.attackDamage, this.player.x < enemy.x ? -1 : 1);
-    });
-
-    this.physics.add.overlap(this.player.combatSystem.bullets, this.enemies, (_b, _e) => {
-      const b = _b as Phaser.Physics.Arcade.Sprite;
-      if (!b.active) return;
-      const target = _e as any;
-      if (!target.body || !target.active) return;
-      if (target.phase === 'shielded') return;
-      let pierce = (b.getData('pierce') as number) ?? 2;
-      pierce--;
-      b.setData('pierce', pierce);
-      if (pierce <= 0) b.disableBody(true, true);
-      if (typeof target.takeDamage === 'function') target.takeDamage(this.player.combatSystem.getFireDamage());
-      spawnHitParticles(this, target.x, target.y);
-    });
-
-    this.physics.add.overlap(this.player.combatSystem.bullets, this.platforms, (_b) => {
-      const b = _b as Phaser.Physics.Arcade.Sprite;
-      if (!b.active) return;
-      spawnProjectileImpact(this, b.x, b.y, [0xff6600, 0xff8800], 4);
-      b.disableBody(true, true);
-    });
   }
 
   private setupLighting(): void {
