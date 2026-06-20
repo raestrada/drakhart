@@ -38,7 +38,7 @@ DRAKHART is a dark fantasy action-platformer that fuses **three genres into a si
 
 ## Platform
 
-- **Primary**: Web (Phaser 3 + TypeScript + Vite) — instant access, no install
+- **Primary**: Web (Phaser 4 + TypeScript + Vite) — instant access, no install
 - **Distribution**: itch.io (free demo), Steam (full release via Electron wrapper)
 - **Controls**: Keyboard (primary), Gamepad (planned)
 

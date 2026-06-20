@@ -5,7 +5,7 @@
 **Duration**: Completed
 **Goal**: Playable prototype with core mechanics
 
-- [x] Project scaffolding (Phaser 3, TypeScript, Vite)
+- [x] Project scaffolding (Phaser 4, TypeScript, Vite)
 - [x] Three-form system (Human, Mecha, Dragon)
 - [x] Form state machine with transitions
 - [x] Energy system

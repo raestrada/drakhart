@@ -3,8 +3,11 @@ import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { distanceBetween } from '../../utils/helpers';
 import { spawnProjectileTrail, spawnProjectileImpact, spawnDeathExplosion } from '../../effects/Particles';
+import { ENEMY_SEARCHLIGHT } from '../../utils/constants';
 
 export class FlyingEnemy extends BaseEnemy {
+  private searchLight: Phaser.GameObjects.Light | null = null;
+
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, 'enemy-sentry', player, {
       health: 20,
@@ -17,6 +20,13 @@ export class FlyingEnemy extends BaseEnemy {
 
     scene.physics.add.existing(this);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+
+    if (scene.lights && scene.lights.active) {
+      this.searchLight = scene.lights.addConeLight(
+        this.x, this.y, ENEMY_SEARCHLIGHT.RADIUS, 0xcc00ff, ENEMY_SEARCHLIGHT.INTENSITY * 0.8,
+        Math.PI / 2, ENEMY_SEARCHLIGHT.INNER_ANGLE, ENEMY_SEARCHLIGHT.OUTER_ANGLE, ENEMY_SEARCHLIGHT.Z
+      );
+    }
   }
 
   preUpdate(time: number, delta: number): void {
@@ -27,6 +37,18 @@ export class FlyingEnemy extends BaseEnemy {
     const dirX = this.player.x < this.x ? -1 : 1;
 
     this.setFlipX(dirX < 0);
+
+    if (this.searchLight) {
+      this.searchLight.x = this.x;
+      this.searchLight.y = this.y;
+      if (dist <= this.detectRange) {
+        const sdx = this.player.x - this.x;
+        const sdy = this.player.y - this.y;
+        this.searchLight.setConeRotation(Math.atan2(sdy, sdx));
+      } else {
+        this.searchLight.setConeRotation(Math.PI / 2 + Math.sin(time * 0.0015) * 0.4);
+      }
+    }
 
     if (dist <= this.detectRange) {
       const dx = this.player.x - this.x;
@@ -111,6 +133,10 @@ export class FlyingEnemy extends BaseEnemy {
   }
 
   protected die(): void {
+    if (this.searchLight && this.scene.lights) {
+      this.scene.lights.removeLight(this.searchLight);
+      this.searchLight = null;
+    }
     spawnDeathExplosion(this.scene, this.x, this.y);
     (this.scene as any).gameAudio?.playEnemyDeath();
     this.isActive = false;

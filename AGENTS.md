@@ -2,7 +2,7 @@
 
 ## Vision
 
-DRAKHART is a dark fantasy action-platformer built with Phaser 3 + TypeScript + Vite.
+DRAKHART is a dark fantasy action-platformer built with Phaser 4 + TypeScript + Vite.
 It fuses **Draconus (Atari, 70%)** with **Escaflowne (anime, 30%)**.
 
 - **Draconus DNA**: side-scrolling exploration, dark atmosphere, earned transformation, dual-form gameplay, sword combat, grim fantasy
@@ -20,7 +20,7 @@ Currently in **Level 1 prototype phase** — a continuous zone divided into thre
 
 | Layer       | Tech                        |
 |-------------|-----------------------------|
-| Engine      | Phaser 3.80+ (npm `phaser`) |
+| Engine      | Phaser 4.2+ (npm `phaser`, WebGL only) |
 | Language    | TypeScript 5 (strict mode)  |
 | Bundler     | Vite 5                      |
 | Graphics    | Procedural placeholder textures (generated in BootScene) |
@@ -79,6 +79,23 @@ src/
 - Use `const enum` for state enums, `export const` for constants
 - File names: PascalCase for classes/entities, camelCase for utilities
 - Imports: use `import type { ... }` when only types are needed (optional)
+
+### Phaser 4 (do NOT write Phaser 3 style)
+This codebase is on **Phaser 4.2+**. The renderer is `Phaser.WEBGL` (Canvas is deprecated in P4 and breaks all filters/lighting). Key differences from P3 that agents must follow:
+
+- **Pipelines → Filters/RenderNodes.** P3 `Pipeline`/`PreFXPipeline`/`postFX` do not exist. Use the Filter system via `<obj>.filters.internal` / `<obj>.filters.external` or `camera.filters.internal` / `camera.filters.external`.
+- **No preFX/postFX distinction.** Filters are `internal` (affects just the object) or `external` (affects the object in its rendering context). Filters can be applied to **any** GameObject or Camera — there are no object restrictions.
+- **Camera filters** live in `src/effects/CameraFilters.ts` (`applyBiomePostFX`, `setVignetteFromPlayer`). Available native filters: `addColorMatrix`, `addVignette`, `addGlow`, `addBlur`, `addShadow`, `addBokeh`/`addTiltShift`, `addDisplacement`, `addBarrel`, `addWipe`, etc. **There is no `addBloom`** — use `Phaser.Actions.AddEffectBloom(objects, config)` or `addGlow` for glow.
+- **Lighting** uses `obj.setLighting(true)` (NOT P3 `setPipeline('Light2D')`). Enable per scene with `scene.lights.enable()` + `scene.lights.setAmbientColor()`. Add lights via `scene.lights.addLight(x, y, radius, rgb, intensity)` or `scene.add.pointlight(...)`. Lights have a `.z` height property (P4 explicit depth, not P3 implicit). Lighting is available on most GameObjects (Sprite, Image, Text, TileSprite, Graphics, Particles, etc.).
+- **Cone Lights (P4.2)**: `scene.lights.addConeLight(x, y, radius, rgb, intensity, rotation, innerAngle, outerAngle, z)` for flashlight/visor/searchlight/beam effects. Configure via `light.setCone(...)`.
+- **Tint**: P3 `setTintFill()` is removed. Use `setTint(color).setTintMode(Phaser.TintModes.FILL)`. P4.2 adds `TintModes.MULTIPLY_TWO` + `setTint2()` for a secondary per-corner tint.
+- **Geometry**: `Geom.Point` is removed — use `Phaser.Math.Vector2`.
+- **Masks**: `BitmapMask` is removed — use `obj.filters.internal.addMask(maskObject)` or the `Stencil` GameObject (P4.2).
+- **Data structures**: `Phaser.Struct.Set`/`Phaser.Struct.Map` are removed — use native `Set`/`Map`.
+- **`DynamicTexture`/`RenderTexture`** require an explicit `render()` call to flush buffered draw commands.
+- **Typing**: P4.2 ships proper types for the filter system. Do NOT cast `camera.filters.internal` to `any`. Filter controllers live in `Phaser.Filters.*` (`ColorMatrix`, `Vignette`, `Glow`, etc.). `camera.filters.internal.list` is `Phaser.Filters.Controller[]` (has `.renderNode: string`).
+- **`setLighting` in forEach**: `group.getChildren()` returns `GameObject[]` which does not have `setLighting`. Cast inline: `.forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true))` — do not use `(child: any)`.
+- **`Mesh`/`Plane` removed**: use `Mesh2D` (P4.2) for textured triangles. **Spine** bundled plugins are unsupported — use the official Esoteric Software plugin.
 
 ### i18n
 - **en.ts** is the source of truth — add new strings there first

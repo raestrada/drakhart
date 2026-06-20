@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { spawnDeathExplosion } from '../../effects/Particles';
+import { applyGlow } from '../../effects/CameraFilters';
 
 class DreadnoughtCannon extends BaseEnemy {
   public isTop: boolean;
@@ -169,6 +170,8 @@ export class DreadnoughtBoss extends BaseEnemy {
     this.bossHpBar = scene.add.rectangle(x, y - 80, 200, 8, 0x000000, 0.8).setDepth(20);
     this.bossHpFill = scene.add.rectangle(x - 100, y - 80, 200, 8, 0x8899aa)
       .setOrigin(0, 0.5).setDepth(21).setVisible(false);
+
+    applyGlow(this, 0xff1166, 4, 0, 4, false, 12, 30);
   }
 
   public activate(): void {

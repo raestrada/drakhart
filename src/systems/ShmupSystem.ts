@@ -204,16 +204,42 @@ export class ShmupSystem {
     enemy.setAlpha(0);
     enemy.setScale(enemy.scaleX * 0.2, enemy.scaleY * 0.2);
 
-    const flash = this.scene.add.rectangle(enemy.x, enemy.y, 4, 4, 0xffffff, 1);
-    flash.setDepth(50);
-    flash.setBlendMode(Phaser.BlendModes.ADD);
+    const ex = enemy.x;
+    const ey = enemy.y;
+
+    const ring = this.scene.add.graphics();
+    ring.setDepth(50);
+    ring.lineStyle(3, 0xff6600, 1);
+    ring.strokeCircle(ex, ey, 8);
+
+    const glowMask = this.scene.add.graphics();
+    glowMask.fillStyle(0xffffff, 1);
+    glowMask.fillCircle(0, 0, 30);
+    glowMask.setPosition(ex, ey);
+    glowMask.setDepth(50);
+
+    const portalStencil = this.scene.add.stencil(0, 0, [glowMask], {
+      stencilLayerMode: 'addLayer',
+    });
+    portalStencil.setDepth(50);
+
+    const glowFill = this.scene.add.rectangle(ex, ey, 90, 90, 0xff4400, 0.6);
+    glowFill.setDepth(50);
+    glowFill.setBlendMode(Phaser.BlendModes.ADD);
+
     this.scene.tweens.add({
-      targets: flash,
-      scaleX: 25,
-      scaleY: 25,
+      targets: [ring, glowMask, glowFill],
+      scaleX: 3,
+      scaleY: 3,
       alpha: 0,
-      duration: 250,
-      onComplete: () => flash.destroy(),
+      duration: 400,
+      ease: 'Power2',
+      onComplete: () => {
+        ring.destroy();
+        glowMask.destroy();
+        glowFill.destroy();
+        portalStencil.destroy();
+      },
     });
 
     this.scene.tweens.add({

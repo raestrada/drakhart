@@ -336,7 +336,7 @@ export class ManualScene extends Phaser.Scene {
         s.title(cx, cy - 88, 'A Dark Fantasy Action-Platformer', '#5a3a2a', 14);
         s.divider(cx, cy - 54, 320);
         s.title(cx, cy - 28, 'BUILT WITH', '#5a2a1a', 13);
-        s.title(cx, cy - 6, 'Phaser 3 + TypeScript + Vite', '#3a2a1a', 12);
+        s.title(cx, cy - 6, 'Phaser 4 + TypeScript + Vite', '#3a2a1a', 12);
         s.title(cx, cy + 30, 'INSPIRED BY', '#5a2a1a', 13);
         s.italic(cx, cy + 50, 'Draconus (Atari, 1988)  ×  Escaflowne (Anime, 1996)', 12);
         s.divider(cx, cy + 78, 220);

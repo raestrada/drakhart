@@ -5,59 +5,54 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
   const camera = scene.cameras.main;
   if (!camera || !camera.filters || !camera.filters.internal) return;
 
-  // Clear existing filters
   camera.filters.internal.clear();
 
-  // Add native filters
-  const colorMatrix = (camera.filters.internal as any).addColorMatrix();
-  const vignette = (camera.filters.internal as any).addVignette();
+  const colorMatrix = camera.filters.internal.addColorMatrix();
+  const vignette = camera.filters.internal.addVignette();
 
-  // Reset matrix to identity
   colorMatrix.colorMatrix.reset();
 
   switch (biome) {
     case 'forest':
-      // Adjust saturation using native methods
-      colorMatrix.colorMatrix.saturate(-0.15); // desaturate slightly
-      colorMatrix.colorMatrix.contrast(0.0); // neutral contrast
-      colorMatrix.colorMatrix.brightness(1.0); // neutral brightness
-      
-      // Set vignette properties
+      colorMatrix.colorMatrix.saturate(-0.15);
+      colorMatrix.colorMatrix.contrast(0.0);
+      colorMatrix.colorMatrix.brightness(1.0);
+
       vignette.radius = 1.2;
       vignette.strength = 0.35;
-      vignette.setColor(0x08030d); // hex representation of [0.03, 0.01, 0.05]
+      vignette.setColor(0x08030d);
       break;
     case 'refinery':
-      colorMatrix.colorMatrix.saturate(0.05); // saturation 1.05
+      colorMatrix.colorMatrix.saturate(0.05);
       colorMatrix.colorMatrix.contrast(0.0);
       colorMatrix.colorMatrix.brightness(1.0);
-      
+
       vignette.radius = 1.15;
       vignette.strength = 0.4;
-      vignette.setColor(0x140505); // [0.08, 0.02, 0.02]
+      vignette.setColor(0x140505);
       break;
     case 'gorge':
-      colorMatrix.colorMatrix.saturate(-0.3); // saturation 0.7
+      colorMatrix.colorMatrix.saturate(-0.3);
       colorMatrix.colorMatrix.contrast(0.0);
       colorMatrix.colorMatrix.brightness(1.0);
-      
+
       vignette.radius = 1.2;
       vignette.strength = 0.45;
-      vignette.setColor(0x0d050f); // [0.05, 0.02, 0.06]
+      vignette.setColor(0x0d050f);
       break;
     case 'foundry':
-      colorMatrix.colorMatrix.saturate(-0.1); // saturation 0.9
+      colorMatrix.colorMatrix.saturate(-0.1);
       colorMatrix.colorMatrix.contrast(0.0);
       colorMatrix.colorMatrix.brightness(1.0);
-      
+
       vignette.radius = 1.15;
       vignette.strength = 0.35;
-      vignette.setColor(0x0d0505); // [0.05, 0.02, 0.02]
+      vignette.setColor(0x0d0505);
       break;
   }
 }
 
-export function setVignetteFromPlayer(vignette: any, healthRatio: number, heatLevel: string): void {
+export function setVignetteFromPlayer(vignette: Phaser.Filters.Vignette, healthRatio: number, heatLevel: string): void {
   if (!vignette) return;
 
   let strength = 0.15;
@@ -67,7 +62,7 @@ export function setVignetteFromPlayer(vignette: any, healthRatio: number, heatLe
   if (healthRatio < 0.3) {
     strength = 0.5 + 0.15 * Math.sin(Date.now() * 0.005);
     radius = 0.8;
-    color = 0x590505; // Red pulse
+    color = 0x590505;
   } else if (healthRatio < 0.5) {
     strength = 0.3;
     radius = 1.0;
@@ -87,4 +82,19 @@ export function setVignetteFromPlayer(vignette: any, healthRatio: number, heatLe
   vignette.radius = radius;
   vignette.strength = strength;
   vignette.setColor(color);
+}
+
+export function applyGlow(
+  obj: Phaser.GameObjects.GameObject,
+  color: number,
+  outerStrength = 4,
+  innerStrength = 0,
+  scale = 2,
+  knockout = false,
+  quality = 10,
+  distance = 10
+): Phaser.Filters.Glow | null {
+  const external = obj.filters?.external;
+  if (!external) return null;
+  return external.addGlow(color, outerStrength, innerStrength, scale, knockout, quality, distance);
 }

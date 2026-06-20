@@ -15,7 +15,7 @@ import { ManualScene } from './scenes/ManualScene';
 import { GAME_WIDTH, GAME_HEIGHT } from './utils/constants';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.WEBGL,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
   parent: 'game',

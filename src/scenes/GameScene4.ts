@@ -15,16 +15,16 @@ import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { EchoFragment } from '../entities/EchoFragment';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
-import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
-import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilters';
 import { WeatherSystem } from '../systems/WeatherSystem';
-import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON } from '../utils/constants';
+import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON, ENEMY_SEARCHLIGHT } from '../utils/constants';
 
 class Gatekeeper extends Boss {
   public gatePhase: 'armor' | 'flight' | 'duel' = 'armor';
   private gateFireTimer = 0;
+  private spotlight: Phaser.GameObjects.Light | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, player);
@@ -34,6 +34,13 @@ class Gatekeeper extends Boss {
     this.setTint(0x886644, 0x554433, 0x332211, 0x665544);
     this.setAlpha(1);
     this.setDepth(15);
+
+    if (scene.lights && scene.lights.active) {
+      this.spotlight = scene.lights.addConeLight(
+        x, y - 40, ENEMY_SEARCHLIGHT.RADIUS * 1.4, 0xff3322, ENEMY_SEARCHLIGHT.INTENSITY * 1.3,
+        0, ENEMY_SEARCHLIGHT.INNER_ANGLE, ENEMY_SEARCHLIGHT.OUTER_ANGLE * 0.8, ENEMY_SEARCHLIGHT.Z + 10
+      );
+    }
 
     // Health bar
     const barBg = scene.add.rectangle(x, y - 100, 200, 8, 0x000000, 0.8).setDepth(20);
@@ -45,6 +52,14 @@ class Gatekeeper extends Boss {
   preUpdate(time: number, delta: number): void {
     if (!this.active || this.health <= 0) return;
     const body = this.body as Phaser.Physics.Arcade.Body;
+
+    if (this.spotlight) {
+      this.spotlight.x = this.x;
+      this.spotlight.y = this.y - 40;
+      const sdx = this.player.x - this.x;
+      const sdy = this.player.y - this.y;
+      this.spotlight.setConeRotation(Math.atan2(sdy, sdx));
+    }
 
     if (this.gatePhase === 'armor') {
       body.setVelocityX(Math.sin(time * 0.001) * 40);
@@ -131,6 +146,10 @@ class Gatekeeper extends Boss {
   }
 
   protected die(): void {
+    if (this.spotlight && this.scene.lights) {
+      this.scene.lights.removeLight(this.spotlight);
+      this.spotlight = null;
+    }
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     const barBg = this.getData('barBg') as Phaser.GameObjects.Rectangle;
@@ -155,7 +174,6 @@ export class GameScene4 extends BaseLevelScene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private barricades!: Phaser.Physics.Arcade.StaticGroup;
   private tarotSystem!: TarotSystem;
-  private bloom!: BloomSystem;
   private weatherSystem!: WeatherSystem;
   private terrainGen!: TerrainGenerator;
   private boss: Gatekeeper | null = null;
@@ -199,12 +217,11 @@ export class GameScene4 extends BaseLevelScene {
 
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(5);
-    this.events.once('shutdown', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
-    this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
+    this.events.once('shutdown', () => { this.gameAudio.stopBGM(); });
+    this.events.once('destroy', () => { this.gameAudio.stopBGM(); });
 
     this.echoFragments = [];
     this.bulletLights.clear();
-    this.bloom = new BloomSystem(this);
     this.terrainGen = new TerrainGenerator(this);
     this.currentBiome = 'foundry';
 
@@ -407,10 +424,10 @@ export class GameScene4 extends BaseLevelScene {
 
   private setupLighting(): void {
     if (!this.lights) return;
-    this.platforms.getChildren().forEach((c: any) => c.setLighting(true));
-    this.barricades.getChildren().forEach((c: any) => c.setLighting(true));
+    this.platforms.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.barricades.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
     this.player.setLighting(true);
-    this.enemies.getChildren().forEach((c: any) => { if (c.body) c.setLighting(true); });
+    (this.enemies.getChildren() as Phaser.Physics.Arcade.Sprite[]).forEach(c => { if (c.body) c.setLighting(true); });
 
     // 1. Ambient large foundry spots
     const l1 = this.lights.addLight(2000, 300, 1000, 0xff5500, 0.45);
@@ -425,7 +442,7 @@ export class GameScene4 extends BaseLevelScene {
     l5.z = 200;
 
     // 2. Tarot cards and crystals lights
-    this.children.list.forEach((child: any) => {
+    (this.children.list as Phaser.GameObjects.Sprite[]).forEach(child => {
       if (child.texture && child.texture.key === 'prop-crystal') {
         child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
@@ -471,8 +488,6 @@ export class GameScene4 extends BaseLevelScene {
 
     this.weatherSystem?.update(this.cameras.main.scrollX, time);
     this.updateSwordVsEnemies();
-    this.bloom.add(this.player.x, this.player.y - 10, 10, this.player.formMachine.state === FormState.DRAGON ? 0xff0066 : 0xff5ea2, 0.3);
-    this.bloom.update();
     this.updateVignettePulse();
     this.updateBulletLights();
     this.checkBossTrigger();
@@ -501,7 +516,7 @@ export class GameScene4 extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const vignette = this.cameras.main.filters.internal.list.find((f: any) => f.renderNode === 'FilterVignette');
+    const vignette = this.cameras.main.filters.internal.list.find((f: Phaser.Filters.Controller) => f.renderNode === 'FilterVignette') as Phaser.Filters.Vignette | undefined;
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;

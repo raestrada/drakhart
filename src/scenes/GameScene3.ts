@@ -12,8 +12,7 @@ import { FormState } from '../systems/FormStateMachine';
 import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
-import { BloomSystem } from '../effects/BloomSystem';
-import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilters';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
@@ -75,10 +74,10 @@ export class GameScene3 extends BaseLevelScene {
   private playerShadow!: Phaser.GameObjects.Image;
   private emberTimer = 0;
   private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
-  private bloom!: BloomSystem;
   private weatherSystem!: WeatherSystem;
   private echoFragments: EchoFragment[] = [];
   private terrainGen!: TerrainGenerator;
+  private sparkLayer!: Phaser.GameObjects.SpriteGPULayer;
 
   // Autoscroll & coordinates
   private scrollX = 0;
@@ -157,15 +156,12 @@ export class GameScene3 extends BaseLevelScene {
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
-      this.bloom?.destroy();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
-      this.bloom?.destroy();
     });
 
-    this.bloom = new BloomSystem(this);
     this.terrainGen = new TerrainGenerator(this);
     this.currentBiome = 'gorge';
 
@@ -193,6 +189,7 @@ export class GameScene3 extends BaseLevelScene {
     this.createLevel();
     this.createInteractiveObjects();
     this.createDecorations();
+    this.createEnergySparkLayer();
     this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
 
@@ -561,11 +558,6 @@ export class GameScene3 extends BaseLevelScene {
     shadow.fillRect(0, LEVEL_HEIGHT - 80, LEVEL_WIDTH, 80);
     shadow.setScrollFactor(0);
     shadow.setDepth(400);
-
-    const { width, height } = this.scale;
-    this.vignette = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
-    this.vignette.setScrollFactor(0);
-    this.vignette.setDepth(299);
   }
 
   private showIntroText(): void {
@@ -820,7 +812,6 @@ export class GameScene3 extends BaseLevelScene {
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
-    this.updateBloom();
     this.updateVignettePulse();
     this.updateBulletLights();
     
@@ -963,12 +954,12 @@ export class GameScene3 extends BaseLevelScene {
   private setupLightingAndPipelines(): void {
     if (!this.lights || !this.lights.active) return;
 
-    this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
-    this.hazards.getChildren().forEach((child: any) => child.setLighting(true));
-    this.enemies.getChildren().forEach((child: any) => child.setLighting(true));
-    this.laserBeams.getChildren().forEach((child: any) => child.setLighting(true));
-    this.pistons.getChildren().forEach((child: any) => child.setLighting(true));
-    this.energyPickups.getChildren().forEach((child: any) => child.setLighting(true));
+    this.platforms.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.hazards.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.enemies.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.laserBeams.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.pistons.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.energyPickups.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
 
     if (this.player && this.player.active) {
       this.player.setLighting(true);
@@ -1021,7 +1012,7 @@ export class GameScene3 extends BaseLevelScene {
     });
 
     // 4. Tarot cards & crystals
-    this.children.list.forEach((child: any) => {
+    (this.children.list as Phaser.GameObjects.Sprite[]).forEach(child => {
       if (child.texture && child.texture.key === 'prop-crystal') {
         child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
@@ -1091,29 +1082,9 @@ export class GameScene3 extends BaseLevelScene {
     });
   }
 
-  private updateBloom(): void {
-    this.player.combatSystem.bullets.getChildren().forEach((b) => {
-      const bullet = b as Phaser.Physics.Arcade.Sprite;
-      if (bullet.active) {
-        this.bloom.add(bullet.x, bullet.y, 8, 0xff4400, 0.6);
-      }
-    });
-
-    const state = this.player.formMachine.state;
-    if (state === FormState.DRAGON) {
-      this.bloom.add(this.player.x, this.player.y - 10, 14, 0xff0066, 0.4);
-    }
-
-    if (this.boss && this.boss.active) {
-      this.bloom.add(this.boss.x, this.boss.y, 24, 0xff1166, 0.7);
-    }
-
-    this.bloom.update();
-  }
-
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const vignette = this.cameras.main.filters.internal.list.find((f: any) => f.renderNode === 'FilterVignette');
+    const vignette = this.cameras.main.filters.internal.list.find((f: Phaser.Filters.Controller) => f.renderNode === 'FilterVignette') as Phaser.Filters.Vignette | undefined;
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
@@ -1557,6 +1528,36 @@ export class GameScene3 extends BaseLevelScene {
         repeat: -1,
         yoyo: true,
         ease: 'Linear'
+      });
+    }
+  }
+
+  private createEnergySparkLayer(): void {
+    const { width, height } = this.scale;
+    const count = 80;
+
+    this.sparkLayer = this.add.spriteGPULayer('px-4', count);
+    this.sparkLayer.setAlpha(0.55);
+    this.sparkLayer.setBlendMode(Phaser.BlendModes.ADD);
+    this.sparkLayer.setDepth(82);
+
+    for (let i = 0; i < count; i++) {
+      this.sparkLayer.addMember({
+        x: Phaser.Math.Between(0, width * 6),
+        y: Phaser.Math.Between(0, height),
+        scaleX: 0.2 + Math.random() * 1.3,
+        scaleY: 0.2 + Math.random() * 1.3,
+        rotation: 0,
+        frame: 0,
+        tintMode: Phaser.TintModes.MULTIPLY,
+        scrollFactorX: 0.12,
+        scrollFactorY: 0,
+        tintBlend: {
+          ease: 'Sine.easeInOut',
+          amplitude: 1,
+          duration: 2000 + Math.random() * 3500,
+          delay: Math.random() * 1800,
+        },
       });
     }
   }

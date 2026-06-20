@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from './Player';
 import { t } from '../i18n';
 import { spawnDeathExplosion, spawnEnergyShockwave } from '../effects/Particles';
+import { applyGlow } from '../effects/CameraFilters';
 
 export class DragonCore extends Phaser.Physics.Arcade.Sprite {
   private glowEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
@@ -30,6 +31,7 @@ export class DragonCore extends Phaser.Physics.Arcade.Sprite {
     });
 
     this.createGlowAura(scene);
+    applyGlow(this, 0xff6600, 3, 0, 2.5, false, 10, 20);
   }
 
   private createGlowAura(scene: Phaser.Scene): void {

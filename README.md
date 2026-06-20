@@ -2,7 +2,7 @@
 
 [![Vite Build & Deploy to Pages](https://github.com/raestrada/drakhart/actions/workflows/deploy.yml/badge.svg)](https://github.com/raestrada/drakhart/actions/workflows/deploy.yml)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-red.svg)](LICENSE)
-[![Phaser Version](https://img.shields.io/badge/Engine-Phaser%203.80+-blueviolet.svg)](https://phaser.io/)
+[![Phaser Version](https://img.shields.io/badge/Engine-Phaser%204.2+-blueviolet.svg)](https://phaser.io/)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-5.0%20%28Strict%29-blue.svg)](https://www.typescriptlang.org/)
 
 ![Drakhart Marketing Splash Art](public/marketing/drakhart_splash.png)
@@ -72,7 +72,7 @@ The Draconel Mecha is a powerful engine of destruction, but it runs *hot*. Strik
 
 ## 🛠️ Tech Stack & Architecture
 
-- **Game Engine**: Phaser 3.80+ (using Arcade Physics and custom Canvas-rendered shaders).
+- **Game Engine**: Phaser 4.2+ (WebGL renderer, Arcade Physics, native camera filters & per-object lighting with z-height).
 - **Language**: TypeScript 5 (Strict Mode).
 - **Bundler**: Vite 5 for instant development reloading (HMR).
 - **Systems Core**:

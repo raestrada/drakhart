@@ -86,7 +86,7 @@ export class TransitionScene23 extends Phaser.Scene {
     if (this.lights) {
       this.lights.enable();
       this.lights.setAmbientColor(0x88809c);
-      this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
+      this.platforms.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
       if (this.player && this.player.active) this.player.setLighting(true);
       this.saveAltar.setLighting(true);
       

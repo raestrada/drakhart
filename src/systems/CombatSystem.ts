@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { FormState } from './FormStateMachine';
 import { HitstopSystem, HITSTOP } from './HitstopSystem';
 import { spawnProjectileTrail } from '../effects/Particles';
+import { applyGlow } from '../effects/CameraFilters';
 import {
   SWORD_DAMAGE,
   SWORD_RANGE,
@@ -16,6 +17,7 @@ import {
   FIRE_SPEED,
   FIRE_LIFETIME,
   FIRE_COOLDOWN,
+  FIRE_BREATH_CONE,
 } from '../utils/constants';
 
 export class CombatSystem {
@@ -277,6 +279,21 @@ export class CombatSystem {
     bullet.setFlipX(false);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
     bullet.setData('pierce', 2);
+
+    applyGlow(bullet, 0xff4400, 2, 0, 1.5, false, 6, 10);
+
+    if (this.scene.lights && this.scene.lights.active) {
+      const muzzleCone = this.scene.lights.addConeLight(
+        spawnX, spawnY, FIRE_BREATH_CONE.RADIUS, 0xff6600, FIRE_BREATH_CONE.INTENSITY,
+        bulletAngleRad, FIRE_BREATH_CONE.INNER_ANGLE, FIRE_BREATH_CONE.OUTER_ANGLE, FIRE_BREATH_CONE.Z
+      );
+      this.scene.tweens.add({
+        targets: muzzleCone,
+        intensity: 0,
+        duration: FIRE_BREATH_CONE.DURATION,
+        onComplete: () => this.scene.lights.removeLight(muzzleCone),
+      });
+    }
 
     const trail = spawnProjectileTrail(this.scene, bullet.x, bullet.y, [0xff4400, 0xff8800, 0xffcc00], 250);
     bullet.setData('trail', trail);

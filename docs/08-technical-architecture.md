@@ -4,7 +4,7 @@
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
-| **Game Engine** | Phaser 3 | ^3.80.1 | 2D rendering, physics, input, audio |
+| **Game Engine** | Phaser 4 | ^4.2.0 | 2D WebGL rendering, physics, input, audio |
 | **Language** | TypeScript | ^5.4.0 | Type safety, IDE support, strict mode |
 | **Bundler** | Vite | ^5.4.0 | Dev server with HMR, production builds |
 | **Package Manager** | npm | — | Dependency management |

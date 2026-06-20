@@ -104,3 +104,28 @@ export const DAMAGE_NUMBER = {
   COLOR: '#ff4444',
   HEAVY_COLOR: '#ff8800',
 } as const;
+
+export const VISOR_CONE = {
+  RADIUS: 300,
+  INTENSITY: 1.8,
+  INNER_ANGLE: 0.12,
+  OUTER_ANGLE: 0.38,
+  Z: 45,
+} as const;
+
+export const FIRE_BREATH_CONE = {
+  RADIUS: 220,
+  INTENSITY: 2.4,
+  INNER_ANGLE: 0.18,
+  OUTER_ANGLE: 0.55,
+  DURATION: 220,
+  Z: 30,
+} as const;
+
+export const ENEMY_SEARCHLIGHT = {
+  RADIUS: 360,
+  INTENSITY: 1.1,
+  INNER_ANGLE: 0.10,
+  OUTER_ANGLE: 0.42,
+  Z: 40,
+} as const;

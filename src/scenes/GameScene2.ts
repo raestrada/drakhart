@@ -18,8 +18,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnLavaSplash, spawnProjectileImpact } from '../effects/Particles';
 import { drawLightningBolt } from '../effects/LightningBolt';
-import { BloomSystem } from '../effects/BloomSystem';
-import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilters';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
@@ -69,7 +68,6 @@ export class GameScene2 extends BaseLevelScene {
   private lastHeatDamageSoundTime = 0;
   private emberTimer = 0;
   private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
-  private bloom!: BloomSystem;
   private weatherSystem!: WeatherSystem;
   private terrainGen!: TerrainGenerator;
   private echoFragments: EchoFragment[] = [];
@@ -125,15 +123,12 @@ export class GameScene2 extends BaseLevelScene {
     this.events.once('shutdown', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
-      this.bloom?.destroy();
     });
     this.events.once('destroy', () => {
       this.gameAudio.stopBGM();
       this.gameAudio.stopAmbient();
-      this.bloom?.destroy();
     });
 
-    this.bloom = new BloomSystem(this);
     this.terrainGen = new TerrainGenerator(this);
     this.currentBiome = 'refinery';
 
@@ -642,11 +637,6 @@ export class GameScene2 extends BaseLevelScene {
     shadow.fillRect(0, LEVEL_HEIGHT - 80, LEVEL_WIDTH, 80); // bottom screen vignette
     shadow.setScrollFactor(0);
     shadow.setDepth(400);
-
-    const { width, height } = this.scale;
-    this.vignette = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
-    this.vignette.setScrollFactor(0);
-    this.vignette.setDepth(299);
   }
 
   update(time: number, delta: number): void {
@@ -674,7 +664,6 @@ export class GameScene2 extends BaseLevelScene {
     this.updateSwordVsEnemies();
     this.updateBulletCleanup();
     this.updateEmbers(delta);
-    this.updateBloom();
     this.updateVignettePulse();
     this.updateMoltenDrips(delta);
     this.updateBulletLights();
@@ -811,13 +800,13 @@ export class GameScene2 extends BaseLevelScene {
   private setupLightingAndPipelines(): void {
     if (!this.lights || !this.lights.active) return;
 
-    this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
-    this.hazards.getChildren().forEach((child: any) => child.setLighting(true));
-    this.barricades.getChildren().forEach((child: any) => child.setLighting(true));
-    this.enemies.getChildren().forEach((child: any) => child.setLighting(true));
-    this.steamVents.getChildren().forEach((child: any) => child.setLighting(true));
-    this.coolingValves.getChildren().forEach((child: any) => child.setLighting(true));
-    this.energyPickups.getChildren().forEach((child: any) => child.setLighting(true));
+    this.platforms.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.hazards.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.barricades.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.enemies.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.steamVents.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.coolingValves.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
+    this.energyPickups.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
 
     if (this.player && this.player.active) {
       this.player.setLighting(true);
@@ -883,7 +872,7 @@ export class GameScene2 extends BaseLevelScene {
     }
 
     // 6. Tarot cards & crystal props
-    this.children.list.forEach((child: any) => {
+    (this.children.list as Phaser.GameObjects.Sprite[]).forEach(child => {
       if (child.texture && child.texture.key === 'prop-crystal') {
         child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
@@ -940,29 +929,9 @@ export class GameScene2 extends BaseLevelScene {
     }
   }
 
-  private updateBloom(): void {
-    if (this.skyCore && this.skyCore.active) {
-      this.bloom.add(this.skyCore.x, this.skyCore.y, 18, 0x44aaff, 1.2);
-    }
-
-    this.player.combatSystem.bullets.getChildren().forEach((b) => {
-      const bullet = b as Phaser.Physics.Arcade.Sprite;
-      if (bullet.active) {
-        this.bloom.add(bullet.x, bullet.y, 8, 0xff4400, 0.6);
-      }
-    });
-
-    const state = this.player.formMachine.state;
-    if (state === FormState.MECHA || state === FormState.DRAGON) {
-      this.bloom.add(this.player.x, this.player.y - 10, 10, state === FormState.DRAGON ? 0xff0066 : 0xff5ea2, 0.3);
-    }
-
-    this.bloom.update();
-  }
-
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const vignette = this.cameras.main.filters.internal.list.find((f: any) => f.renderNode === 'FilterVignette');
+    const vignette = this.cameras.main.filters.internal.list.find((f: Phaser.Filters.Controller) => f.renderNode === 'FilterVignette') as Phaser.Filters.Vignette | undefined;
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;

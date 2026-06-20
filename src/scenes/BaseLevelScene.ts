@@ -3,7 +3,6 @@ import Phaser from 'phaser';
 export class BaseLevelScene extends Phaser.Scene {
   public currentBiome: 'forest' | 'refinery' | 'gorge' | 'foundry' | undefined;
   protected parallaxLayers: Phaser.GameObjects.TileSprite[] = [];
-  protected vignette!: Phaser.GameObjects.Rectangle;
   protected gameAudio: any = null;
   private emberRainTimer: Phaser.Time.TimerEvent | null = null;
 
@@ -18,36 +17,6 @@ export class BaseLevelScene extends Phaser.Scene {
       this.scene.pause();
       this.scene.launch('PauseScene', { gameScene: this.scene.key });
     });
-  }
-
-  protected updateVignette(alpha: number = 0): void {
-    if (this.vignette && this.vignette.active) {
-      this.vignette.setAlpha(alpha);
-    }
-  }
-
-  protected updateVignetteFromPlayer(healthRatio: number, heatLevel: string): void {
-    if (!this.vignette || !this.vignette.active) return;
-
-    let targetAlpha = 0;
-
-    if (healthRatio < 0.3) {
-      targetAlpha = 0.35 + 0.1 * Math.sin(Date.now() * 0.005);
-      this.vignette.setFillStyle(0x880000, targetAlpha);
-    } else if (healthRatio < 0.5) {
-      targetAlpha = 0.15;
-      this.vignette.setFillStyle(0x000000, targetAlpha);
-    }
-
-    if (heatLevel === 'danger') {
-      targetAlpha = Math.max(targetAlpha, 0.3 + 0.15 * Math.sin(Date.now() * 0.015));
-      this.vignette.setFillStyle(0xff2200, targetAlpha);
-    } else if (heatLevel === 'warning') {
-      targetAlpha = Math.max(targetAlpha, 0.12 + 0.06 * Math.sin(Date.now() * 0.008));
-      this.vignette.setFillStyle(0x880000, targetAlpha);
-    }
-
-    this.vignette.setAlpha(targetAlpha);
   }
 
   protected startEmberRain(): void {
@@ -112,31 +81,32 @@ export class BaseLevelScene extends Phaser.Scene {
 
   protected irisOut(duration = 800, onComplete?: () => void): void {
     const { width, height } = this.scale;
-    const maxRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+    const cx = width / 2;
+    const cy = height / 2;
+    const maxRadius = Math.sqrt(cx ** 2 + cy ** 2);
 
-    for (let i = 0; i < 8; i++) {
-      const g = this.add.graphics();
-      g.setDepth(500);
-      g.setScrollFactor(0);
+    const maskCircle = this.add.graphics();
+    maskCircle.fillStyle(0xffffff, 1);
+    maskCircle.fillCircle(0, 0, maxRadius);
+    maskCircle.setPosition(cx, cy);
+    maskCircle.setDepth(500).setScrollFactor(0);
 
-      this.tweens.addCounter({
-        from: 0,
-        to: maxRadius,
-        duration: duration + i * 40,
-        ease: 'Power3',
-        onUpdate: (tween) => {
-          const r = tween.getValue();
-          if (r == null) return;
-          g.clear();
-          g.fillStyle(0x000000, 1 - (r / maxRadius) * 0.5);
-          g.fillCircle(width / 2, height / 2, r);
-        },
-        onComplete: () => g.destroy(),
-      });
-    }
+    const stencil = this.add.stencil(0, 0, [maskCircle], {
+      stencilLayerMode: 'addLayer',
+      stencilInvert: true,
+    });
+    stencil.setDepth(500).setScrollFactor(0);
 
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0)
-      .setDepth(499).setScrollFactor(0);
+    const overlay = this.add.rectangle(cx, cy, width, height, 0x000000, 0)
+      .setDepth(501).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: maskCircle,
+      scaleX: 0,
+      scaleY: 0,
+      duration,
+      ease: 'Power3',
+    });
 
     this.tweens.add({
       targets: overlay,
@@ -144,6 +114,9 @@ export class BaseLevelScene extends Phaser.Scene {
       duration: duration + 200,
       delay: duration * 0.4,
       onComplete: () => {
+        maskCircle.destroy();
+        stencil.destroy();
+        overlay.destroy();
         if (onComplete) onComplete();
       },
     });
@@ -151,34 +124,43 @@ export class BaseLevelScene extends Phaser.Scene {
 
   protected irisIn(duration = 800): void {
     const { width, height } = this.scale;
-    const maxRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+    const cx = width / 2;
+    const cy = height / 2;
+    const maxRadius = Math.sqrt(cx ** 2 + cy ** 2);
 
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1)
-      .setDepth(500).setScrollFactor(0);
+    const maskCircle = this.add.graphics();
+    maskCircle.fillStyle(0xffffff, 1);
+    maskCircle.fillCircle(0, 0, maxRadius);
+    maskCircle.setPosition(cx, cy);
+    maskCircle.setScale(0);
+    maskCircle.setDepth(500).setScrollFactor(0);
+
+    const stencil = this.add.stencil(0, 0, [maskCircle], {
+      stencilLayerMode: 'addLayer',
+      stencilInvert: true,
+    });
+    stencil.setDepth(500).setScrollFactor(0);
+
+    const overlay = this.add.rectangle(cx, cy, width, height, 0x000000, 1)
+      .setDepth(501).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: maskCircle,
+      scaleX: 1,
+      scaleY: 1,
+      duration,
+      ease: 'Power4',
+      onComplete: () => {
+        maskCircle.destroy();
+        stencil.destroy();
+        overlay.destroy();
+      },
+    });
 
     this.tweens.add({
       targets: overlay,
       alpha: 0,
       duration: duration * 0.6,
-    });
-
-    const g = this.add.graphics();
-    g.setDepth(501);
-    g.setScrollFactor(0);
-
-    this.tweens.addCounter({
-      from: 0,
-      to: maxRadius * 3,
-      duration: duration,
-      ease: 'Power4',
-      onUpdate: (tween) => {
-        const r = tween.getValue();
-        if (r == null) return;
-        g.clear();
-        g.fillStyle(0x000000, 1 - Math.min(1, (r - maxRadius * 2) / maxRadius));
-        g.fillCircle(width / 2, height / 2, maxRadius - r + maxRadius);
-      },
-      onComplete: () => g.destroy(),
     });
   }
 

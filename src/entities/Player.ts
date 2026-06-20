@@ -14,10 +14,12 @@ import {
   PLAYER_MECHA_HOVER_MAX_TIME,
   PLAYER_MAX_HEALTH,
   INVINCIBILITY_DURATION,
+  VISOR_CONE,
 } from '../utils/constants';
 import { TarotSystem } from '../systems/TarotSystem';
 import { GamepadSystem } from '../systems/GamepadSystem';
 import { spawnLandingDust, spawnHoverThrust, spawnDragonExhaust, spawnHitParticles } from '../effects/Particles';
+import { applyGlow } from '../effects/CameraFilters';
 import { spawnDamageNumber } from '../effects/DamageNumbers';
 
 const DRAGON_FRAME_MS = 220;
@@ -66,6 +68,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private visorGlowTween: Phaser.Tweens.Tween | null = null;
   private visorGlow: Phaser.GameObjects.Rectangle | null = null;
   private visorLight: Phaser.GameObjects.Light | null = null;
+  private glowFilter: Phaser.Filters.Glow | null = null;
   private visorTrailTimer = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -86,11 +89,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setupInput(scene);
     this.createVisorGlow(scene);
     this.setupVisorLight(scene);
+    this.glowFilter = applyGlow(this, 0xff5ea2, 2, 0, 2, false, 8, 14);
   }
 
   private setupVisorLight(scene: Phaser.Scene): void {
     if (scene.lights && scene.lights.active) {
-      this.visorLight = scene.lights.addLight(this.x, this.y, 120, 0x00ffcc, 1.1);
+      this.visorLight = scene.lights.addConeLight(
+        this.x, this.y, VISOR_CONE.RADIUS, 0x00ffcc, 0, 0, VISOR_CONE.INNER_ANGLE, VISOR_CONE.OUTER_ANGLE, VISOR_CONE.Z
+      );
     }
   }
 
@@ -586,6 +592,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private updateVisorGlowPosition(): void {
     if (!this.visorGlow) return;
     const state = this.formMachine.state;
+    if (this.glowFilter) {
+      if (state === FormState.DRAGON) {
+        this.glowFilter.active = true;
+        this.glowFilter.color = 0xff0066;
+        this.setTint2(0xff4400).setTintMode(Phaser.TintModes.MULTIPLY_TWO);
+      } else if (state === FormState.MECHA) {
+        this.glowFilter.active = true;
+        this.glowFilter.color = 0xff5ea2;
+        this.setTint2(0x222222).setTintMode(Phaser.TintModes.MULTIPLY_TWO);
+      } else {
+        this.glowFilter.active = false;
+        this.setTint2(0x000000).setTintMode(Phaser.TintModes.MULTIPLY_TWO);
+      }
+    }
     if (state === FormState.DRAGON) {
       this.visorGlow.setVisible(false);
       if (this.visorLight) this.visorLight.setIntensity(0);
@@ -602,8 +622,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.visorGlow.fillColor = 0xff3322;
       if (this.visorLight) {
         this.visorLight.setColor(0xff3322);
-        this.visorLight.setRadius(180);
-        this.visorLight.setIntensity(1.5);
+        this.visorLight.setRadius(VISOR_CONE.RADIUS);
+        this.visorLight.setIntensity(VISOR_CONE.INTENSITY);
+        this.visorLight.setCone(this.facingRight ? 0 : Math.PI, VISOR_CONE.INNER_ANGLE, VISOR_CONE.OUTER_ANGLE);
       }
     } else {
       lx = this.x + dir * 8;
@@ -614,6 +635,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.visorLight.setColor(0x00ffcc);
         this.visorLight.setRadius(120);
         this.visorLight.setIntensity(1.1);
+        this.visorLight.disableCone();
       }
     }
     if (this.visorLight) {

@@ -3,9 +3,11 @@ import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { FormState } from '../../systems/FormStateMachine';
 import { spawnHitParticles, spawnMetalSparks, spawnOilSmoke } from '../../effects/Particles';
+import { ENEMY_SEARCHLIGHT } from '../../utils/constants';
 
 export class MechaEnemy extends BaseEnemy {
   private chargeCooldown = false;
+  private searchLight: Phaser.GameObjects.Light | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -37,11 +39,24 @@ export class MechaEnemy extends BaseEnemy {
     this.setScale(1.4);
     (this.body as Phaser.Physics.Arcade.Body).setSize(44, 30);
     (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 6);
+
+    if (scene.lights && scene.lights.active) {
+      this.searchLight = scene.lights.addConeLight(
+        this.x, this.y - 10, ENEMY_SEARCHLIGHT.RADIUS, 0xffaa33, ENEMY_SEARCHLIGHT.INTENSITY,
+        0, ENEMY_SEARCHLIGHT.INNER_ANGLE, ENEMY_SEARCHLIGHT.OUTER_ANGLE, ENEMY_SEARCHLIGHT.Z
+      );
+    }
   }
 
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     if (!this.active || !this.isActive || this.health <= 0) return;
+
+    if (this.searchLight) {
+      this.searchLight.x = this.x;
+      this.searchLight.y = this.y - 10;
+      this.searchLight.setConeRotation(this.flipX ? Math.PI : 0);
+    }
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMoving = Math.abs(body.velocity.x) > 10;
@@ -150,6 +165,10 @@ export class MechaEnemy extends BaseEnemy {
   }
 
   protected die(): void {
+    if (this.searchLight && this.scene.lights) {
+      this.scene.lights.removeLight(this.searchLight);
+      this.searchLight = null;
+    }
     spawnMetalSparks(this.scene, this.x, this.y, 16);
     spawnOilSmoke(this.scene, this.x, this.y);
     (this.scene as any).gameAudio?.playEnemyDeath();
