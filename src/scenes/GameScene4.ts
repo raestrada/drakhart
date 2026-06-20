@@ -18,7 +18,7 @@ import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '.
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { BaseLevelScene } from './BaseLevelScene';
-import { applyBiomePostFX, setVignetteFromPlayer, getCustomPostFX } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON } from '../utils/constants';
 
@@ -162,6 +162,7 @@ export class GameScene4 extends BaseLevelScene {
   private bossActive = false;
   private playerShadow!: Phaser.GameObjects.Image;
   private echoFragments: EchoFragment[] = [];
+  private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
 
   private pendingSpawnX = 150;
   private pendingSpawnY = 400;
@@ -202,6 +203,7 @@ export class GameScene4 extends BaseLevelScene {
     this.events.once('destroy', () => { this.gameAudio.stopBGM(); this.bloom?.destroy(); });
 
     this.echoFragments = [];
+    this.bulletLights.clear();
     this.bloom = new BloomSystem(this);
     this.terrainGen = new TerrainGenerator(this);
     this.currentBiome = 'foundry';
@@ -363,6 +365,7 @@ export class GameScene4 extends BaseLevelScene {
       this.add.rectangle(x, 660, 5, 14, 0x332211).setDepth(5);
       if (this.lights) {
         const flame = this.lights.addLight(x, 650, 35, 0xff6622, 0.25);
+        flame.z = 15;
         this.tweens.add({ targets: flame, intensity: { from: 0.18, to: 0.32 }, radius: { from: 28, to: 42 }, duration: 200 + Math.random() * 200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
@@ -408,6 +411,40 @@ export class GameScene4 extends BaseLevelScene {
     this.barricades.getChildren().forEach((c: any) => c.setLighting(true));
     this.player.setLighting(true);
     this.enemies.getChildren().forEach((c: any) => { if (c.body) c.setLighting(true); });
+
+    // 1. Ambient large foundry spots
+    const l1 = this.lights.addLight(2000, 300, 1000, 0xff5500, 0.45);
+    const l2 = this.lights.addLight(5000, 300, 1000, 0xff5500, 0.45);
+    const l3 = this.lights.addLight(8000, 300, 1000, 0xff5500, 0.45);
+    const l4 = this.lights.addLight(11000, 300, 1000, 0xff5500, 0.45);
+    const l5 = this.lights.addLight(14000, 300, 1000, 0xff5500, 0.45);
+    l1.z = 200;
+    l2.z = 200;
+    l3.z = 200;
+    l4.z = 200;
+    l5.z = 200;
+
+    // 2. Tarot cards and crystals lights
+    this.children.list.forEach((child: any) => {
+      if (child.texture && child.texture.key === 'prop-crystal') {
+        child.setLighting(true);
+        const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
+        cLight.z = 30;
+        this.tweens.add({
+          targets: cLight,
+          intensity: { from: 0.85, to: 1.6 },
+          duration: Phaser.Math.Between(1600, 2600),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+      if (child.texture && child.texture.key === 'prop-card') {
+        child.setLighting(true);
+        const cardLight = this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+        cardLight.z = 25;
+      }
+    });
   }
 
   private showIntroText(): void {
@@ -437,6 +474,7 @@ export class GameScene4 extends BaseLevelScene {
     this.bloom.add(this.player.x, this.player.y - 10, 10, this.player.formMachine.state === FormState.DRAGON ? 0xff0066 : 0xff5ea2, 0.3);
     this.bloom.update();
     this.updateVignettePulse();
+    this.updateBulletLights();
     this.checkBossTrigger();
     this.checkTransition();
   }
@@ -463,9 +501,42 @@ export class GameScene4 extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const pipeline = getCustomPostFX(this.cameras.main);
-    if (!pipeline) return;
-    setVignetteFromPlayer(pipeline, this.player.health / this.player.maxHealth, this.player.formMachine.heat.level);
+    const vignette = this.cameras.main.filters.internal.list.find((f: any) => f.renderNode === 'FilterVignette');
+    if (!vignette) return;
+    const hpRatio = this.player.health / this.player.maxHealth;
+    const heatLevel = this.player.formMachine.heat.level;
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
+  }
+
+  private updateBulletLights(): void {
+    this.player.combatSystem.bullets.getChildren().forEach((b) => {
+      const bullet = b as Phaser.Physics.Arcade.Sprite;
+      if (bullet.active) {
+        bullet.setLighting(true);
+        if (this.lights && this.lights.active) {
+          let light = this.bulletLights.get(bullet);
+          if (!light) {
+            light = this.lights.addLight(bullet.x, bullet.y, 100, 0xff5500, 1.4);
+            light.z = 25;
+            this.bulletLights.set(bullet, light);
+          } else {
+            light.x = bullet.x;
+            light.y = bullet.y;
+            light.setIntensity(1.4);
+          }
+        }
+      }
+    });
+
+    // Clean up inactive bullet lights
+    this.bulletLights.forEach((light, bullet) => {
+      if (!bullet.active) {
+        if (this.lights && this.lights.active) {
+          this.lights.removeLight(light);
+        }
+        this.bulletLights.delete(bullet);
+      }
+    });
   }
 
   private checkBossTrigger(): void {

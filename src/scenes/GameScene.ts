@@ -24,7 +24,7 @@ import {
 import { BloomSystem } from '../effects/BloomSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { drawLightningBolt } from '../effects/LightningBolt';
-import { applyBiomePostFX, setVignetteFromPlayer, applyCustomPostFX, getCustomPostFX } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import {
@@ -2076,11 +2076,11 @@ export class GameScene extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const pipeline = getCustomPostFX(this.cameras.main);
-    if (!pipeline) return;
+    const vignette = this.cameras.main.filters.internal.list.find((f: any) => f.renderNode === 'FilterVignette');
+    if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    setVignetteFromPlayer(pipeline, hpRatio, heatLevel);
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
   }
 
   private updateSwordVsEnemies(): void {
@@ -2128,10 +2128,6 @@ export class GameScene extends BaseLevelScene {
   }
 
   private setupLightingAndPipelines(): void {
-    if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      applyCustomPostFX(this.cameras.main);
-    }
-
     if (!this.lights || !this.lights.active) return;
 
     this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
@@ -2146,15 +2142,19 @@ export class GameScene extends BaseLevelScene {
     }
 
     // 1. Ambient large moonlight spots
-    this.lights.addLight(1500, 300, 800, 0x882244, 0.65);
-    this.lights.addLight(4500, 300, 800, 0x882244, 0.65);
-    this.lights.addLight(7000, 300, 800, 0x882244, 0.65);
+    const l1 = this.lights.addLight(1500, 300, 800, 0x882244, 0.65);
+    const l2 = this.lights.addLight(4500, 300, 800, 0x882244, 0.65);
+    const l3 = this.lights.addLight(7000, 300, 800, 0x882244, 0.65);
+    l1.z = 200;
+    l2.z = 200;
+    l3.z = 200;
 
     // 2. Crystal lights that pulse
     this.children.list.forEach((child: any) => {
       if (child.texture && child.texture.key === 'prop-crystal') {
         child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
+        cLight.z = 30;
         this.tweens.add({
           targets: cLight,
           intensity: { from: 0.85, to: 1.6 },
@@ -2174,6 +2174,7 @@ export class GameScene extends BaseLevelScene {
     if (this.dragonCore && this.dragonCore.active) {
       this.dragonCore.setLighting(true);
       const coreLight = this.lights.addLight(this.dragonCore.x, this.dragonCore.y, 160, 0xffaa00, 2.0);
+      coreLight.z = 50;
       this.tweens.add({
         targets: coreLight,
         intensity: { from: 1.5, to: 2.5 },
@@ -2189,7 +2190,8 @@ export class GameScene extends BaseLevelScene {
     this.children.list.forEach((child: any) => {
       if (child.texture && child.texture.key === 'prop-card') {
         child.setLighting(true);
-        this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+        const tLight = this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+        tLight.z = 25;
       }
     });
   }
@@ -2203,6 +2205,7 @@ export class GameScene extends BaseLevelScene {
           let light = this.bulletLights.get(bullet);
           if (!light) {
             light = this.lights.addLight(bullet.x, bullet.y, 100, 0xff5500, 1.4);
+            light.z = 25;
             this.bulletLights.set(bullet, light);
           } else {
             light.x = bullet.x;

@@ -13,7 +13,7 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
 import { BloomSystem } from '../effects/BloomSystem';
-import { applyBiomePostFX, setVignetteFromPlayer, applyCustomPostFX, getCustomPostFX } from '../effects/PostFXPipelines';
+import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/PostFXPipelines';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { BaseLevelScene } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
@@ -961,10 +961,6 @@ export class GameScene3 extends BaseLevelScene {
   }
 
   private setupLightingAndPipelines(): void {
-    if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      applyCustomPostFX(this.cameras.main);
-    }
-
     if (!this.lights || !this.lights.active) return;
 
     this.platforms.getChildren().forEach((child: any) => child.setLighting(true));
@@ -982,6 +978,7 @@ export class GameScene3 extends BaseLevelScene {
     if (this.bgReactor) {
       this.bgReactor.setLighting(true);
       const rLight = this.lights.addLight(this.bgReactor.x, this.bgReactor.y, 450, 0x9900ff, 2.2);
+      rLight.z = 100;
       this.tweens.add({
         targets: rLight,
         intensity: { from: 1.6, to: 2.6 },
@@ -994,16 +991,21 @@ export class GameScene3 extends BaseLevelScene {
     }
 
     // 2. Add some giant spotlight sources for gorge ambient
-    this.lights.addLight(2000, 300, 1000, 0x660099, 0.65);
-    this.lights.addLight(5000, 300, 1000, 0x660099, 0.65);
-    this.lights.addLight(8000, 300, 1000, 0x660099, 0.65);
-    this.lights.addLight(11000, 300, 1000, 0x660099, 0.65);
+    const gl1 = this.lights.addLight(2000, 300, 1000, 0x660099, 0.65);
+    const gl2 = this.lights.addLight(5000, 300, 1000, 0x660099, 0.65);
+    const gl3 = this.lights.addLight(8000, 300, 1000, 0x660099, 0.65);
+    const gl4 = this.lights.addLight(11000, 300, 1000, 0x660099, 0.65);
+    gl1.z = 200;
+    gl2.z = 200;
+    gl3.z = 200;
+    gl4.z = 200;
 
     // 3. Steam Pipes, Laser Gates, Pistons lights
     this.steamPipes.forEach((p: any) => {
       if (p.pipeSprite) {
         p.pipeSprite.setLighting(true);
-        this.lights.addLight(p.x, p.y - (p.isCeiling ? -15 : 15), 110, 0xff5500, 1.2);
+        const pipeLight = this.lights.addLight(p.x, p.y - (p.isCeiling ? -15 : 15), 110, 0xff5500, 1.2);
+        pipeLight.z = 30;
       }
     });
 
@@ -1012,8 +1014,10 @@ export class GameScene3 extends BaseLevelScene {
       if (g.nodeBottom) g.nodeBottom.setLighting(true);
       if (g.beam) g.beam.setLighting(true);
       // Add red glowing warning lights
-      this.lights.addLight(g.nodeTop.x, g.nodeTop.y + 12, 100, 0xff0033, 1.4);
-      this.lights.addLight(g.nodeBottom.x, g.nodeBottom.y - 12, 100, 0xff0033, 1.4);
+      const nodeTopLight = this.lights.addLight(g.nodeTop.x, g.nodeTop.y + 12, 100, 0xff0033, 1.4);
+      const nodeBottomLight = this.lights.addLight(g.nodeBottom.x, g.nodeBottom.y - 12, 100, 0xff0033, 1.4);
+      nodeTopLight.z = 25;
+      nodeBottomLight.z = 25;
     });
 
     // 4. Tarot cards & crystals
@@ -1021,6 +1025,7 @@ export class GameScene3 extends BaseLevelScene {
       if (child.texture && child.texture.key === 'prop-crystal') {
         child.setLighting(true);
         const cLight = this.lights.addLight(child.x, child.y - 12, 110, 0x00ffcc, 1.25);
+        cLight.z = 30;
         this.tweens.add({
           targets: cLight,
           intensity: { from: 0.85, to: 1.6 },
@@ -1032,7 +1037,8 @@ export class GameScene3 extends BaseLevelScene {
       }
       if (child.texture && child.texture.key === 'prop-card') {
         child.setLighting(true);
-        this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+        const cardLight = this.lights.addLight(child.x, child.y, 80, 0xff44aa, 1.4);
+        cardLight.z = 25;
       }
     });
   }
@@ -1046,6 +1052,7 @@ export class GameScene3 extends BaseLevelScene {
           let light = this.bulletLights.get(bullet);
           if (!light) {
             light = this.lights.addLight(bullet.x, bullet.y, 100, 0xff5500, 1.4);
+            light.z = 25;
             this.bulletLights.set(bullet, light);
           } else {
             light.x = bullet.x;
@@ -1106,11 +1113,11 @@ export class GameScene3 extends BaseLevelScene {
 
   private updateVignettePulse(): void {
     if (!(this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return;
-    const pipeline = getCustomPostFX(this.cameras.main);
-    if (!pipeline) return;
+    const vignette = this.cameras.main.filters.internal.list.find((f: any) => f.renderNode === 'FilterVignette');
+    if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    setVignetteFromPlayer(pipeline, hpRatio, heatLevel);
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
   }
 
   private createPistons(): void {

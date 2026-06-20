@@ -5,7 +5,6 @@ import { AudioMute } from '../systems/AudioMute';
 import { clearSave, loadGame } from '../systems/SaveSystem';
 import { createPlayerAnims, createEnemyAnims } from '../animations/PlayerAnims';
 import { TexturesGenerator } from '../generators/TexturesGenerator';
-import { registerCustomPostFX } from '../effects/PostFXPipelines';
 
 export class BootScene extends Phaser.Scene {
   private titleAudio!: TitleAudio;
@@ -19,7 +18,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-moon-raw', `assets/bg-moon-raw.png?${v}`);
     this.load.image('bg-castle-raw', `assets/bg-castle-raw.png?${v}`);
     this.load.image('bg-refinery-sun-raw', `assets/bg_refinery_sun.png?${v}`);
-    this.load.image('bg-furnace-raw', `assets/bg_furnace.png?${v}`);
+    this.load.image('bg-furnace-raw', `assets/bg_furnace_raw.png?${v}`);
     this.load.image('bg-furnace-pipes-raw', `assets/bg_furnace_pipes.png?${v}`);
     this.load.image('bg-gorge-sky-raw', `assets/bg_gorge_sky.png?${v}`);
     this.load.image('bg-gorge-walls-raw', `assets/bg_gorge_walls.png?${v}`);
@@ -37,10 +36,6 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.cameras.main;
     this.cameras.main.setBackgroundColor('#050308');
-
-    if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-      registerCustomPostFX(this.renderer);
-    }
 
     // 1. Splash image background cover
     const splash = this.add.image(width / 2, height / 2, 'title-splash');
