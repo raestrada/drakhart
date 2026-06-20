@@ -25,7 +25,7 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
       // Set vignette properties
       vignette.radius = 1.2;
       vignette.strength = 0.35;
-      vignette.color = 0x08030d; // hex representation of [0.03, 0.01, 0.05]
+      vignette.setColor(0x08030d); // hex representation of [0.03, 0.01, 0.05]
       break;
     case 'refinery':
       colorMatrix.colorMatrix.saturate(0.05); // saturation 1.05
@@ -34,7 +34,7 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
       
       vignette.radius = 1.15;
       vignette.strength = 0.4;
-      vignette.color = 0x140505; // [0.08, 0.02, 0.02]
+      vignette.setColor(0x140505); // [0.08, 0.02, 0.02]
       break;
     case 'gorge':
       colorMatrix.colorMatrix.saturate(-0.3); // saturation 0.7
@@ -43,7 +43,7 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
       
       vignette.radius = 1.2;
       vignette.strength = 0.45;
-      vignette.color = 0x0d050f; // [0.05, 0.02, 0.06]
+      vignette.setColor(0x0d050f); // [0.05, 0.02, 0.06]
       break;
     case 'foundry':
       colorMatrix.colorMatrix.saturate(-0.1); // saturation 0.9
@@ -52,7 +52,7 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
       
       vignette.radius = 1.15;
       vignette.strength = 0.35;
-      vignette.color = 0x0d0505; // [0.05, 0.02, 0.02]
+      vignette.setColor(0x0d0505); // [0.05, 0.02, 0.02]
       break;
   }
 }
@@ -86,5 +86,5 @@ export function setVignetteFromPlayer(vignette: any, healthRatio: number, heatLe
 
   vignette.radius = radius;
   vignette.strength = strength;
-  vignette.color = color;
+  vignette.setColor(color);
 }
