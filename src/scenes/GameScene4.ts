@@ -383,9 +383,10 @@ export class GameScene4 extends BaseLevelScene {
     ];
     gaps.forEach(gap => {
       const w = gap.end - gap.start;
-      const lava = this.lavaHazards.create(gap.start + w / 2, groundY + 16, 'tile-refinery-lava') as Phaser.Physics.Arcade.Sprite;
-      lava.setDisplaySize(w, 32);
-      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(w, 250);
+      const lavaHeight = 1000 - groundY; // 232 pixels
+      const lava = this.lavaHazards.create(gap.start + w / 2, groundY + lavaHeight / 2, 'tile-refinery-lava') as Phaser.Physics.Arcade.Sprite;
+      lava.setDisplaySize(w, lavaHeight);
+      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(w, lavaHeight);
       lava.refreshBody();
       lava.setDepth(4);
       lava.setTint(0xff6622);
