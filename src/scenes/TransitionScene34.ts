@@ -46,18 +46,28 @@ export class TransitionScene34 extends Phaser.Scene {
     this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene34' }); });
 
-    // Backgrounds — gorge into foundry
-    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x221133);
-    this.add.tileSprite(0, H * 0.3, W * 1.5, H * 0.6, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.08).setDepth(-20).setAlpha(0.4).setTint(0x443355);
-    const mist = this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.15).setDepth(-18).setAlpha(0.25).setTint(0x9944aa);
-    this.tweens.add({ targets: mist, tilePositionX: 500, duration: 20000, loop: -1 });
-    const mist2 = this.add.tileSprite(0, H * 0.55, W * 1.5, H * 0.25, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-17).setAlpha(0.18).setTint(0xff6622);
-    this.tweens.add({ targets: mist2, tilePositionX: -300, duration: 28000, loop: -1 });
+    // Backgrounds — Gorge storm meeting Foundry fire
+    // Layer 0: Sky — deep purple
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x1a0f2e);
+    // Layer 1: Far mountains — purple silhouette
+    this.add.tileSprite(0, H * 0.30, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.06).setDepth(-24).setAlpha(0.55).setTint(0x3a2550);
+    // Layer 2: Mid mountains — slightly different tint
+    this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.50, 'bg-ruins').setOrigin(0, 0).setScrollFactor(0.10).setDepth(-22).setAlpha(0.45).setTint(0x4a3060);
+    // Layer 3: Purple mist — slow drift
+    const mist1 = this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.30, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.14).setDepth(-20).setAlpha(0.5).setTint(0x8844cc);
+    this.tweens.add({ targets: mist1, tilePositionX: 500, duration: 25000, loop: -1 });
+    // Layer 4: Orange smog — foundry heat bleeding in
+    const mist2 = this.add.tileSprite(0, H * 0.40, W * 1.5, H * 0.28, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.20).setDepth(-19).setAlpha(0.45).setTint(0xff5500);
+    this.tweens.add({ targets: mist2, tilePositionX: -400, duration: 20000, loop: -1 });
+    // Layer 5: Forest base
+    this.add.tileSprite(0, H * 0.48, W * 1.5, H * 0.35, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.28).setDepth(-16).setAlpha(0.5).setTint(0x221133);
 
-    // Floating gorge rocks (silhouettes)
+    // Floating gorge rocks
     this.drawGorgeFloatingRocks(W, H);
-    // Foundry wall on the right side
+    // Foundry wall on the right
     this.drawFoundryWall(W, H);
+    // Lightning strikes
+    this.startGorgeLightning(W, H);
 
     // Organic ground
     const groundY = 736;
@@ -157,19 +167,57 @@ export class TransitionScene34 extends Phaser.Scene {
   private drawGorgeFloatingRocks(W: number, H: number): void {
     const g = this.add.graphics().setDepth(-12);
     const rocks = [
-      { x: W * 0.25, y: H * 0.25, w: 60, h: 20 },
-      { x: W * 0.45, y: H * 0.2, w: 80, h: 24 },
-      { x: W * 0.7, y: H * 0.28, w: 50, h: 16 },
-      { x: W * 0.55, y: H * 0.32, w: 70, h: 18 },
+      { x: W * 0.20, y: H * 0.22, w: 90, h: 28 },
+      { x: W * 0.42, y: H * 0.18, w: 110, h: 34 },
+      { x: W * 0.68, y: H * 0.25, w: 70, h: 22 },
+      { x: W * 0.55, y: H * 0.30, w: 100, h: 26 },
+      { x: W * 0.30, y: H * 0.35, w: 60, h: 20 },
     ];
-    for (const r of rocks) {
-      g.fillStyle(0x1a1520, 1);
+    for (let i = 0; i < rocks.length; i++) {
+      const r = rocks[i];
+      g.fillStyle(0x1a1530, 1);
       g.fillRect(r.x, r.y, r.w, r.h);
-      g.fillStyle(0x221d28, 0.6);
-      g.fillRect(r.x + 4, r.y - 4, r.w - 8, r.h + 6);
-      g.fillStyle(0x0d0a12, 0.8);
-      g.fillRect(r.x, r.y + r.h - 4, r.w, 6);
+      g.fillStyle(0x2a2040, 0.7);
+      g.fillRect(r.x + 4, r.y - 6, r.w - 8, r.h + 8);
+      g.fillStyle(0x0d0a18, 0.9);
+      g.fillRect(r.x, r.y + r.h - 6, r.w, 8);
+      // Subtle bobbing
+      const baseY = r.y;
+      this.tweens.add({
+        targets: { val: 0 }, val: 1, duration: 3000 + i * 500,
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        onUpdate: (t) => {
+          g.clear();
+          const oy = baseY + Math.sin((t as any).val * Math.PI * 2) * 4;
+          r.y = oy;
+          g.fillStyle(0x1a1530, 1); g.fillRect(r.x, r.y, r.w, r.h);
+          g.fillStyle(0x2a2040, 0.7); g.fillRect(r.x + 4, r.y - 6, r.w - 8, r.h + 8);
+          g.fillStyle(0x0d0a18, 0.9); g.fillRect(r.x, r.y + r.h - 6, r.w, 8);
+        }
+      });
     }
+  }
+
+  private startGorgeLightning(W: number, H: number): void {
+    const bolt = (): void => {
+      const sx = Phaser.Math.Between(W * 0.15, W * 0.7);
+      const g = this.add.graphics().setDepth(50).setScrollFactor(0);
+      g.lineStyle(2, 0x8866ff, 0.9);
+      g.beginPath(); g.moveTo(sx, 0);
+      let x = sx, y = 0;
+      for (let i = 0; i < 8; i++) {
+        x += Phaser.Math.Between(-30, 30);
+        y += Phaser.Math.Between(30, 80);
+        g.lineTo(x, y);
+      }
+      g.strokePath();
+      // Flash
+      this.cameras.main.flash(100, 100, 80, 255, true);
+      this.time.delayedCall(120, () => g.destroy());
+    };
+    this.time.addEvent({ delay: Phaser.Math.Between(4000, 8000), loop: true, callback: bolt });
+    // Initial bolt
+    this.time.delayedCall(1500, bolt);
   }
 
   private drawFoundryWall(W: number, H: number): void {

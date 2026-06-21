@@ -51,17 +51,30 @@ export class TransitionScene23 extends Phaser.Scene {
     this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); this.gameAudio.stopChoirSave(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene23' }); });
 
-    // Full-viewport backgrounds
-    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30).setTint(0x331133);
-    this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.45).setTint(0x332244);
-    const smog = this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.35, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-18).setAlpha(0.3).setTint(0xff6622);
-    this.tweens.add({ targets: smog, tilePositionX: 600, duration: 25000, loop: -1 });
-    const smog2 = this.add.tileSprite(0, H * 0.55, W * 1.5, H * 0.25, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.12).setDepth(-17).setAlpha(0.2).setTint(0x884422);
-    this.tweens.add({ targets: smog2, tilePositionX: -400, duration: 35000, loop: -1 });
-    const moon2 = this.add.image(W * 0.82, H * 0.18, 'bg-moon').setOrigin(0.5).setScrollFactor(0.02).setDepth(-25).setAlpha(0.7).setTint(0xff8844);
-    this.tweens.add({ targets: moon2, y: moon2.y - 4, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    // Foreground smog over mountain base
-    this.add.tileSprite(0, H * 0.5, W * 1.5, H * 0.3, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.25).setDepth(-14).setAlpha(0.3).setTint(0x332211);
+    // Full-viewport backgrounds — Refinery industrial depth
+    // Layer 0: Sky
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x331133);
+    // Layer 1: Moon — bright orange, bobbing
+    const moon = this.add.image(W * 0.78, H * 0.16, 'bg-moon').setOrigin(0.5).setScrollFactor(0.02).setDepth(-28).setAlpha(0.85).setTint(0xff8844);
+    this.tweens.add({ targets: moon, y: moon.y - 6, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // Layer 2: Mountains — visible silhouette
+    this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.08).setDepth(-22).setAlpha(0.55).setTint(0x332244);
+    // Layer 3: Far smog — slow drift, orange
+    const smogFar = this.add.tileSprite(0, H * 0.30, W * 1.5, H * 0.30, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.12).setDepth(-20).setAlpha(0.5).setTint(0xff5500);
+    this.tweens.add({ targets: smogFar, tilePositionX: 400, duration: 30000, loop: -1 });
+    // Layer 4: Mid smog — faster drift, red-orange
+    const smogMid = this.add.tileSprite(0, H * 0.40, W * 1.5, H * 0.28, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.18).setDepth(-19).setAlpha(0.45).setTint(0xff3300);
+    this.tweens.add({ targets: smogMid, tilePositionX: -500, duration: 20000, loop: -1 });
+    // Layer 5: Near smog — fast, dense
+    const smogNear = this.add.tileSprite(0, H * 0.50, W * 1.5, H * 0.22, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.25).setDepth(-18).setAlpha(0.4).setTint(0xcc4400);
+    this.tweens.add({ targets: smogNear, tilePositionX: 700, duration: 15000, loop: -1 });
+    // Layer 6: Forest silhouette at base
+    this.add.tileSprite(0, H * 0.50, W * 1.5, H * 0.35, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.30).setDepth(-15).setAlpha(0.5).setTint(0x331100);
+    // Layer 7: Furnace glow — animated large point lights
+    this.drawRefineryFurnaceGlow(W, H);
+
+    // Ember rain
+    this.startRefineryEmbers(W, H);
 
     this.drawRefineryBackdrop(W);
 
@@ -227,5 +240,42 @@ export class TransitionScene23 extends Phaser.Scene {
       this.time.delayedCall(50, () => g2.destroy());
     }});
     this.time.delayedCall(900, onComplete);
+  }
+
+  private drawRefineryFurnaceGlow(W: number, H: number): void {
+    // Large furnace glow behind the scene — animated
+    const furnaces = [
+      { x: W * 0.15, y: H * 0.55, r: 200, color: 0xff3300, int: 0.8 },
+      { x: W * 0.55, y: H * 0.52, r: 250, color: 0xff4400, int: 0.9 },
+      { x: W * 0.85, y: H * 0.58, r: 180, color: 0xff2200, int: 0.7 },
+    ];
+    for (const f of furnaces) {
+      const light = this.add.pointlight(f.x, f.y, f.color, f.r, f.int).setDepth(-12);
+      this.tweens.add({
+        targets: light,
+        intensity: { from: f.int * 0.6, to: f.int * 1.3 },
+        radius: { from: f.r * 0.7, to: f.r * 1.2 },
+        duration: Phaser.Math.Between(1800, 3000),
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+      });
+    }
+  }
+
+  private startRefineryEmbers(W: number, H: number): void {
+    this.time.addEvent({
+      delay: 60,
+      loop: true,
+      callback: () => {
+        const x = Phaser.Math.Between(50, W + 150);
+        const ember = this.add.rectangle(x, -10, Phaser.Math.Between(2, 5), Phaser.Math.Between(2, 5),
+          Phaser.Utils.Array.GetRandom([0xff4400, 0xff6600, 0xffaa00, 0xcc2200]), 0.7);
+        ember.setBlendMode(Phaser.BlendModes.ADD).setDepth(20).setScrollFactor(0);
+        this.tweens.add({
+          targets: ember, x: x + Phaser.Math.Between(-100, 100), y: H + 20,
+          alpha: 0, duration: Phaser.Math.Between(2000, 5000),
+          onComplete: () => ember.destroy()
+        });
+      }
+    });
   }
 }

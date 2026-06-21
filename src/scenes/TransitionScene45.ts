@@ -47,16 +47,31 @@ export class TransitionScene45 extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene45' }); });
 
     // Backgrounds — foundry atmosphere
-    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-refinery-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x662222, 0x662222, 0x331111, 0x331111);
-    this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.55, 'bg-refinery-furnaces').setOrigin(0, 0).setScrollFactor(0.08).setDepth(-20).setAlpha(0.4).setTint(0x664444, 0x663344, 0x331122, 0x442233);
-    const smog = this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-18).setAlpha(0.28).setTint(0xff4422);
-    this.tweens.add({ targets: smog, tilePositionX: 400, duration: 18000, loop: -1 });
-    const smog2 = this.add.tileSprite(0, H * 0.55, W * 1.5, H * 0.2, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.12).setDepth(-17).setAlpha(0.2).setTint(0xaa5522);
-    this.tweens.add({ targets: smog2, tilePositionX: -300, duration: 25000, loop: -1 });
-    // Dark forest silhouette at base
-    this.add.tileSprite(0, H * 0.55, W * 1.5, H * 0.3, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.28).setDepth(-14).setAlpha(0.35).setTint(0x331100);
+    // Backgrounds — Forge fire finale
+    // Layer 0: Sky — deep red-orange
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-refinery-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30)
+      .setTint(0x772222, 0x662222, 0x441111, 0x441111);
+    // Layer 1: Furnaces backdrop — bright, animated
+    this.add.tileSprite(0, H * 0.25, W * 1.5, H * 0.60, 'bg-refinery-furnaces').setOrigin(0, 0).setScrollFactor(0.07).setDepth(-22)
+      .setAlpha(0.55).setTint(0x885544, 0x774444, 0x553322, 0x543322);
+    // Layer 2: Far smog — slow, heavy
+    const farsmog = this.add.tileSprite(0, H * 0.28, W * 1.5, H * 0.30, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.12).setDepth(-20).setAlpha(0.5).setTint(0xff4400);
+    this.tweens.add({ targets: farsmog, tilePositionX: 300, duration: 22000, loop: -1 });
+    // Layer 3: Mid smog — faster
+    const midsmog = this.add.tileSprite(0, H * 0.38, W * 1.5, H * 0.25, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.20).setDepth(-19).setAlpha(0.45).setTint(0xff3300);
+    this.tweens.add({ targets: midsmog, tilePositionX: -500, duration: 16000, loop: -1 });
+    // Layer 4: Near smog
+    const nearsmog = this.add.tileSprite(0, H * 0.48, W * 1.5, H * 0.20, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.28).setDepth(-18).setAlpha(0.4).setTint(0xcc2200);
+    this.tweens.add({ targets: nearsmog, tilePositionX: 600, duration: 12000, loop: -1 });
+    // Layer 5: Forest base — dark silhouette
+    this.add.tileSprite(0, H * 0.48, W * 1.5, H * 0.38, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.35).setDepth(-16).setAlpha(0.55).setTint(0x220800);
 
+    // Forge fire glow
+    this.drawForgeFireGlow(W, H);
+    // Foundry gate
     this.drawFoundryGate(W, H);
+    // Ember storm
+    this.startForgeEmbers(W, H);
 
     // Organic ground
     const groundY = 736;
@@ -152,6 +167,43 @@ export class TransitionScene45 extends Phaser.Scene {
       this.time.delayedCall(50, () => g2.destroy());
     }});
     this.time.delayedCall(900, onComplete);
+  }
+
+  private drawForgeFireGlow(W: number, H: number): void {
+    const forges = [
+      { x: W * 0.20, y: H * 0.55, r: 280, color: 0xff2200, int: 1.0 },
+      { x: W * 0.50, y: H * 0.50, r: 320, color: 0xff3300, int: 1.2 },
+      { x: W * 0.75, y: H * 0.58, r: 240, color: 0xff1100, int: 0.9 },
+    ];
+    for (const f of forges) {
+      const light = this.add.pointlight(f.x, f.y, f.color, f.r, f.int).setDepth(-12);
+      this.tweens.add({
+        targets: light,
+        intensity: { from: f.int * 0.5, to: f.int * 1.4 },
+        radius: { from: f.r * 0.6, to: f.r * 1.3 },
+        duration: Phaser.Math.Between(1500, 2500),
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+      });
+    }
+  }
+
+  private startForgeEmbers(W: number, H: number): void {
+    this.time.addEvent({
+      delay: 40,
+      loop: true,
+      callback: () => {
+        const x = Phaser.Math.Between(50, W + 150);
+        const colors = [0xff4400, 0xff6600, 0xffaa00, 0xff8800, 0xcc2200];
+        const ember = this.add.rectangle(x, -10, Phaser.Math.Between(2, 6), Phaser.Math.Between(2, 6),
+          Phaser.Utils.Array.GetRandom(colors), 0.8);
+        ember.setBlendMode(Phaser.BlendModes.ADD).setDepth(25).setScrollFactor(0);
+        this.tweens.add({
+          targets: ember, x: x + Phaser.Math.Between(-120, 120), y: H + 20,
+          alpha: 0, scale: 0.2, duration: Phaser.Math.Between(1800, 4000),
+          onComplete: () => ember.destroy()
+        });
+      }
+    });
   }
 
   private drawFoundryGate(W: number, H: number): void {
