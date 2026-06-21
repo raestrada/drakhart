@@ -949,9 +949,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.cameras.main.shake(SHAKE.DEATH.duration, SHAKE.DEATH.intensity);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(0, 0);
     body.enable = false;
     body.allowGravity = false;
-    body.setVelocity(0, 0);
+
+    const isMecha = this.formMachine.state === FormState.MECHA || this.formMachine.state === FormState.DRAGON;
+    this.animState = 'kneeling';
+    this.setTexture(isMecha ? 'm-kneeling' : 'h-kneeling');
+    this.setScale(isMecha ? 1.4 : 0.8);
+    this.stop();
+    this.setTint(0x333333);
 
     // Delegate dramatic death sequence to the GameScene
     if (typeof (this.scene as any).triggerDramaticDeath === 'function') {
