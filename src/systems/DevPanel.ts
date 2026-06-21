@@ -137,6 +137,8 @@ export class DevPanel {
     this.addButton('L4: Sky Gate (Start)', () => this.teleportToScene('GameScene4', 200, 650));
     this.addButton('L4: Forge Floor (X: 6000)', () => this.teleportToScene('GameScene4', 6000, 650));
     this.addButton('L4: Boss Arena (X: 12500)', () => this.teleportToScene('GameScene4', 12000, 500));
+    this.addButton('Altar 1→2 (Trans12)', () => this.teleportToScene('TransitionScene12', 150, 650));
+    this.addButton('Altar 2→3 (Trans23)', () => this.teleportToScene('TransitionScene23', 150, 650));
     this.addButton('Altar 3→4 (Trans34)', () => this.teleportToScene('TransitionScene34', 150, 650));
     this.addButton('Altar 4→5 (Trans45)', () => this.teleportToScene('TransitionScene45', 150, 650));
 
