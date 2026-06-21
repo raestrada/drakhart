@@ -53,9 +53,15 @@ export class TransitionScene23 extends Phaser.Scene {
 
     // Full-viewport backgrounds
     this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30).setTint(0x331133);
-    this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.5, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.4).setTint(0x332244);
-    const smog = this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.35, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-18).setAlpha(0.3).setTint(0xff6622);
+    this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.45).setTint(0x332244);
+    const smog = this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.35, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.2).setDepth(-18).setAlpha(0.3).setTint(0xff6622);
     this.tweens.add({ targets: smog, tilePositionX: 600, duration: 25000, loop: -1 });
+    const smog2 = this.add.tileSprite(0, H * 0.55, W * 1.5, H * 0.25, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.12).setDepth(-17).setAlpha(0.2).setTint(0x884422);
+    this.tweens.add({ targets: smog2, tilePositionX: -400, duration: 35000, loop: -1 });
+    const moon2 = this.add.image(W * 0.82, H * 0.18, 'bg-moon').setOrigin(0.5).setScrollFactor(0.02).setDepth(-25).setAlpha(0.7).setTint(0xff8844);
+    this.tweens.add({ targets: moon2, y: moon2.y - 4, duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // Foreground smog over mountain base
+    this.add.tileSprite(0, H * 0.5, W * 1.5, H * 0.3, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.25).setDepth(-14).setAlpha(0.3).setTint(0x332211);
 
     this.drawRefineryBackdrop(W);
 
@@ -140,6 +146,19 @@ export class TransitionScene23 extends Phaser.Scene {
     g.lineStyle(2, 0xffffff, 1);
     g.strokeCircle(190, 400, 8);
     this.add.pointlight(190, 400, 0xffa502, 60, 0.5).setDepth(-9);
+
+    // Flame torches on factory wall
+    for (let fy = 440; fy < 700; fy += 90) {
+      const torchG = this.add.graphics().setDepth(-11);
+      torchG.fillStyle(0x332211, 1);
+      torchG.fillRect(206, fy - 8, 10, 24);
+      torchG.fillStyle(0xff6600, 1);
+      torchG.fillCircle(211, fy - 4, 5);
+      torchG.fillStyle(0xffaa00, 0.6);
+      torchG.fillCircle(211, fy - 6, 3);
+      this.tweens.add({ targets: torchG, alpha: { from: 0.6, to: 1 }, duration: Phaser.Math.Between(400, 700), yoyo: true, repeat: -1 });
+      this.add.pointlight(211, fy, 0xff4400, 30, 0.3).setDepth(-10);
+    }
 
     // Cliff edge background structure
     const cliffEdgeX = W - 300;

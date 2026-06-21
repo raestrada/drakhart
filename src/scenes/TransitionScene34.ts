@@ -46,11 +46,18 @@ export class TransitionScene34 extends Phaser.Scene {
     this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); });
     this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene34' }); });
 
-    // Backgrounds
-    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.05).setDepth(-30).setTint(0x441122);
-    this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.5, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-20).setAlpha(0.3).setTint(0x553344);
-    const mist = this.add.tileSprite(0, H * 0.5, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.15).setDepth(-18).setAlpha(0.2).setTint(0xff4422);
+    // Backgrounds — gorge into foundry
+    this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x221133);
+    this.add.tileSprite(0, H * 0.3, W * 1.5, H * 0.6, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.08).setDepth(-20).setAlpha(0.4).setTint(0x443355);
+    const mist = this.add.tileSprite(0, H * 0.4, W * 1.5, H * 0.3, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.15).setDepth(-18).setAlpha(0.25).setTint(0x9944aa);
     this.tweens.add({ targets: mist, tilePositionX: 500, duration: 20000, loop: -1 });
+    const mist2 = this.add.tileSprite(0, H * 0.55, W * 1.5, H * 0.25, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.1).setDepth(-17).setAlpha(0.18).setTint(0xff6622);
+    this.tweens.add({ targets: mist2, tilePositionX: -300, duration: 28000, loop: -1 });
+
+    // Floating gorge rocks (silhouettes)
+    this.drawGorgeFloatingRocks(W, H);
+    // Foundry wall on the right side
+    this.drawFoundryWall(W, H);
 
     // Organic ground
     const groundY = 736;
@@ -70,6 +77,8 @@ export class TransitionScene34 extends Phaser.Scene {
 
     // Altar
     this.saveAltar = new SaveAltar(this, W / 2, groundY, 'TransitionScene34');
+    const altarGlow = this.add.pointlight(W / 2, groundY - 180, 0xff0044, 80, 0.4).setDepth(-1);
+    this.tweens.add({ targets: altarGlow, radius: 100, intensity: 0.6, duration: 1500, yoyo: true, repeat: -1 });
 
     this.physics.add.collider(this.player, this.platforms);
 
@@ -79,6 +88,17 @@ export class TransitionScene34 extends Phaser.Scene {
       this.platforms.getChildren().forEach(c => (c as Phaser.GameObjects.Sprite).setLighting(true));
       if (this.player && this.player.active) this.player.setLighting(true);
       this.saveAltar.setLighting(true);
+
+      const altarLight = this.lights.addLight(W / 2, groundY - 180, 180, 0xff0044, 1.8);
+      this.tweens.add({
+        targets: altarLight,
+        intensity: { from: 1.2, to: 2.2 },
+        radius: { from: 150, to: 200 },
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
     }
 
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
@@ -132,5 +152,55 @@ export class TransitionScene34 extends Phaser.Scene {
       this.time.delayedCall(50, () => g2.destroy());
     }});
     this.time.delayedCall(900, onComplete);
+  }
+
+  private drawGorgeFloatingRocks(W: number, H: number): void {
+    const g = this.add.graphics().setDepth(-12);
+    const rocks = [
+      { x: W * 0.25, y: H * 0.25, w: 60, h: 20 },
+      { x: W * 0.45, y: H * 0.2, w: 80, h: 24 },
+      { x: W * 0.7, y: H * 0.28, w: 50, h: 16 },
+      { x: W * 0.55, y: H * 0.32, w: 70, h: 18 },
+    ];
+    for (const r of rocks) {
+      g.fillStyle(0x1a1520, 1);
+      g.fillRect(r.x, r.y, r.w, r.h);
+      g.fillStyle(0x221d28, 0.6);
+      g.fillRect(r.x + 4, r.y - 4, r.w - 8, r.h + 6);
+      g.fillStyle(0x0d0a12, 0.8);
+      g.fillRect(r.x, r.y + r.h - 4, r.w, 6);
+    }
+  }
+
+  private drawFoundryWall(W: number, H: number): void {
+    const gateX = W - 300;
+    const groundY = 736;
+    const g = this.add.graphics().setDepth(-10);
+    g.fillStyle(0x151210, 1);
+    g.fillRect(gateX, 300, W - gateX, 450);
+    g.fillStyle(0x1c1814, 0.6);
+    g.fillRect(gateX + 10, 310, W - gateX - 20, 430);
+    g.fillStyle(0x0d0a08, 0.5);
+    for (let sy = 340; sy < 760; sy += 40) g.fillRect(gateX, sy, W - gateX, 3);
+    g.fillRect(gateX + 80, 300, 6, 460);
+    g.fillRect(gateX + 200, 300, 6, 460);
+
+    const doorW = 120, doorH = 240;
+    g.fillStyle(0x0a0705, 1);
+    g.fillRect(gateX + 10, groundY - doorH, doorW, doorH);
+    g.lineStyle(4, 0x3a2a1a, 1);
+    g.strokeRect(gateX + 10, groundY - doorH, doorW, doorH);
+    g.fillStyle(0xd4a030, 1);
+    g.fillRect(gateX + 10 + doorW, groundY - doorH, 15, doorH);
+    g.fillStyle(0x1c1814, 1);
+    for (let sy = groundY - doorH; sy < groundY; sy += 24) {
+      g.beginPath(); g.moveTo(gateX + 10 + doorW, sy); g.lineTo(gateX + 10 + doorW + 15, sy + 12); g.lineTo(gateX + 10 + doorW + 15, sy + 24); g.lineTo(gateX + 10 + doorW, sy + 12); g.closePath(); g.fillPath();
+    }
+
+    g.fillStyle(0xff4400, 1);
+    g.fillCircle(gateX + 150, 370, 8);
+    g.lineStyle(2, 0xff6622, 0.6);
+    g.strokeCircle(gateX + 150, 370, 10);
+    this.add.pointlight(gateX + 150, 370, 0xff3300, 70, 0.5).setDepth(-9);
   }
 }
