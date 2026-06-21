@@ -374,56 +374,59 @@ export class GameScene4 extends BaseLevelScene {
     this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 500, 'refinery', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 4600, groundY, 400, 'refinery', 6);
 
-    const gaps = [
-      { start: 600, end: 1000 },
-      { start: 1500, end: 1900 },
-      { start: 2300, end: 2700 },
-      { start: 3300, end: 3700 },
-      { start: 4200, end: 4600 }
-    ];
-    gaps.forEach(gap => {
-      const w = gap.end - gap.start;
-      const lavaHeight = 1000 - groundY; // 232 pixels
-      const lava = this.lavaHazards.create(gap.start + w / 2, groundY + lavaHeight / 2, 'tile-refinery-lava') as Phaser.Physics.Arcade.Sprite;
-      lava.setDisplaySize(w, lavaHeight);
-      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(w, lavaHeight);
-      lava.refreshBody();
-      lava.setDepth(4);
-      lava.setTint(0xff6622);
+    // Continuous lava river at the very bottom (y=984, height 32)
+    const lavaRiver = this.add.tileSprite(2250, 984, 4500, 32, 'tile-refinery-lava');
+    this.physics.add.existing(lavaRiver, true);
+    lavaRiver.setDepth(4);
+    lavaRiver.setTint(0xff6622);
+    this.lavaHazards.add(lavaRiver);
 
-      if (this.lights) {
-        const l = this.lights.addLight(gap.start + w / 2, groundY - 10, w * 0.8, 0xff3300, 0.85);
+    (lavaRiver.body as Phaser.Physics.Arcade.StaticBody).setSize(4500, 48);
+
+    // Pulse lights along the bottom of the canyon
+    if (this.lights) {
+      for (let lx = 500; lx < 4500; lx += 1000) {
+        const l = this.lights.addLight(lx, 940, 600, 0xff3300, 0.8);
         this.tweens.add({
           targets: l,
-          intensity: { from: 0.6, to: 1.1 },
-          duration: 1000 + Math.random() * 500,
+          intensity: { from: 0.5, to: 0.9 },
+          duration: 1500 + Math.random() * 500,
           yoyo: true,
           repeat: -1,
           ease: 'Sine.easeInOut'
         });
       }
+    }
 
-      if (!this.textures.exists('px-lava-bubble')) {
-        const g = this.add.graphics();
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(3, 3, 3);
-        g.generateTexture('px-lava-bubble', 6, 6);
-        g.destroy();
-      }
+    // Generate custom bubble/ember texture
+    if (!this.textures.exists('px-lava-bubble')) {
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(3, 3, 3);
+      g.generateTexture('px-lava-bubble', 6, 6);
+      g.destroy();
+    }
 
-      this.add.particles(gap.start + w / 2, groundY + 10, 'px-lava-bubble', {
-        x: { min: -w / 2, max: w / 2 },
-        y: 0,
-        speedY: { min: -140, max: -40 },
-        speedX: { min: -25, max: 25 },
-        scale: { start: 1.6, end: 0 },
-        alpha: { start: 0.9, end: 0 },
-        tint: [0xff3300, 0xffaa00, 0xff6600, 0xff2200],
-        lifespan: { min: 700, max: 1400 },
-        frequency: 100,
-      }).setDepth(5);
+    // Single large particle emitter for rising embers across Section A
+    this.add.particles(2250, 970, 'px-lava-bubble', {
+      x: { min: -2250, max: 2250 },
+      y: 0,
+      speedY: { min: -100, max: -30 },
+      speedX: { min: -20, max: 20 },
+      scale: { start: 1.4, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      tint: [0xff3300, 0xffaa00, 0xff6600, 0xff2200],
+      lifespan: { min: 800, max: 1800 },
+      frequency: 150,
+    }).setDepth(5);
+
+    // Random floating platforms inside the gaps at y=880 (like Episode I / III Mustafar/Naboo shafts)
+    const floatingRocks = [800, 1700, 2500, 3500, 4400];
+    floatingRocks.forEach((x, i) => {
+      this.terrainGen.generatePlatform(this.platforms, x - 40, 880 + Math.sin(i) * 10, 80, 'refinery');
     });
 
+    // Main upper floating platforms for Section A
     [400, 800, 1300, 1700, 2200, 2500, 3100, 3400, 4000, 4400].forEach((x, i) => {
       this.terrainGen.generatePlatform(this.platforms, x, 450 + Math.sin(i * 1.3) * 60, 64, 'refinery');
     });
