@@ -879,11 +879,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.cameras.main.shake(120, isMecha ? 0.002 : 0.004);
 
     if (this.glowFilter) {
-      this.glowFilter.color = 0xff2200;
-      this.glowFilter.outerStrength = 3;
+      this.glowFilter.color = 0xff1100;
+      this.glowFilter.outerStrength = 6;
       this.glowFilter.active = true;
     }
-    this.scene.time.delayedCall(150, () => {
+    this.scene.time.delayedCall(200, () => {
       if (this.glowFilter) this.glowFilter.outerStrength = 2;
     });
 
