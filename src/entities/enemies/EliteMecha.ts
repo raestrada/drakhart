@@ -5,6 +5,7 @@ import { FormState } from '../../systems/FormStateMachine';
 import { spawnHitParticles, spawnDeathExplosion } from '../../effects/Particles';
 import { t } from '../../i18n';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
+import { HITSTOP } from '../../systems/HitstopSystem';
 
 export class EliteMecha extends BaseEnemy {
   private stompCooldown = false;
@@ -324,6 +325,7 @@ export class EliteMecha extends BaseEnemy {
       // Heavy stomp impact sound/shake
       getSceneAudio(this.scene)?.playLand?.();
       this.scene.cameras.main.shake(320, 0.009);
+      this.player.combatSystem.hitstop.freeze(HITSTOP.ELITE_STOMP.duration, HITSTOP.ELITE_STOMP.intensity);
 
       // Create ground shockwaves expanding left and right
       const shockL = this.scene.add.rectangle(this.x - 20, this.y + 40, 20, 8, 0xff7700);

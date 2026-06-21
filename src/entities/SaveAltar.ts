@@ -189,7 +189,11 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
       dragonUnlocked: player.formMachine.isDragonUnlocked(),
       playerX: this.x,
       playerY: player.y,
-      currentScene: this.sceneKey
+      currentScene: this.sceneKey,
+      playerHealth: player.health,
+      playerEnergy: player.formMachine.energy.currentEnergy,
+      playerHeat: player.formMachine.heat.heat,
+      currentForm: player.formMachine.state,
     });
 
     // Play dramatic religious prayer BGM sweep — stop altar BGM first
@@ -207,9 +211,10 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     player.setScale(isMecha ? 1.0 : 0.75);
     player.animState = 'kneeling';
 
-    // Restore full HP & Energy
+    // Restore full HP & Energy, clear heat
     player.health = 100;
     player.formMachine.energy.addEnergy(100);
+    player.formMachine.heat.clearHeat();
 
     // Create dramatic light beam from sky (trapezoid, multi-layer glow)
     this.scene.time.delayedCall(300, () => {

@@ -1087,7 +1087,7 @@ export class GameScene3 extends BaseLevelScene {
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel, this.time.now);
   }
 
   private createPistons(): void {

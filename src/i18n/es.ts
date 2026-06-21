@@ -4,6 +4,7 @@ export const es: typeof en = {
   ui: {
     health: 'VIDA',
     energy: 'ENERGÍA',
+    heat: 'CALOR',
     transform: 'TRANSFORMAR',
     transformReady: 'NÚCLEO ACTIVO',
     mechaActive: 'DRACONEL ACTIVO',
@@ -45,6 +46,8 @@ export const es: typeof en = {
     cinematicDragon2: 'A medida que el mecha absorbe la gema, las placas de metal y hueso se desplazan. Los propulsores y el marco de las alas esqueléticas se despliegan desde los hombros, encajando en su lugar.',
     cinematicDragon3: 'El Sky Graver emprende el vuelo. Activando sus propulsores de viento, el dragón-mecha biomecánico se eleva fuera de la chimenea de la fábrica, huyendo de la refinería industrial del Imperio hacia el desfiladero.',
     dragonUnlockedPrompt: '¡NÚCLEO DE VUELO ADQUIRIDO!\n\nHas desbloqueado la forma de Dragón.\nPresiona \'C\' para volar.',
+    barricadeHint: 'Piedra pesada — requiere arcilla Draconel\nPresiona C para transformar',
+    dragonFlightHint: 'WASD: Volar | X: Aliento de Fuego | C: Revertir',
     demoEndPrompt: 'ENVUELTO EN CENIZAS...\n\nEl demo termina aquí.\nContinuará...',
     hintPickUp: '¡RECÓGELO!',
     hintDragonCore: '> > > NÚCLEO DRAGÓN > > >',

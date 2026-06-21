@@ -7,6 +7,10 @@ export interface SaveData {
   playerX: number;
   playerY: number;
   currentScene?: string;
+  playerHealth?: number;
+  playerEnergy?: number;
+  playerHeat?: number;
+  currentForm?: string;
 }
 
 export function saveGame(data: SaveData): void {

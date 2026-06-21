@@ -1666,6 +1666,8 @@ export class GameAudio {
       this.startRefineryAmbient(t);
     } else if (zone === 3) {
       this.startGorgeAmbient(t);
+    } else if (zone === 4) {
+      this.startFoundryAmbient(t);
     }
   }
 
@@ -1794,6 +1796,64 @@ export class GameAudio {
       noiseSource: windSource,
       filter: windFilter,
     });
+  }
+
+  private startFoundryAmbient(t: number): void {
+    if (!this.ctx || !this.noiseBuffer) return;
+    const ctx = this.ctx;
+
+    const furnaceNoise = ctx.createBufferSource();
+    furnaceNoise.buffer = this.noiseBuffer;
+    furnaceNoise.loop = true;
+
+    const furnaceFilter = ctx.createBiquadFilter();
+    furnaceFilter.type = 'lowpass';
+    furnaceFilter.frequency.value = 120;
+    furnaceFilter.Q.value = 1.5;
+
+    const furnaceGain = ctx.createGain();
+    furnaceGain.gain.setValueAtTime(0, t);
+    furnaceGain.gain.linearRampToValueAtTime(0.12, t + 3.0);
+
+    furnaceNoise.connect(furnaceFilter);
+    furnaceFilter.connect(furnaceGain);
+    furnaceGain.connect(this.sfxGainNode);
+    furnaceNoise.start(t);
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.07;
+    lfoGain.gain.value = 40;
+    lfo.connect(lfoGain);
+    lfoGain.connect(furnaceFilter.frequency);
+    lfo.start(t);
+
+    this.ambientNodes.push({
+      oscillators: [lfo],
+      gainNode: furnaceGain,
+      noiseSource: furnaceNoise,
+    });
+
+    const ringOsc = ctx.createOscillator();
+    const ringGain = ctx.createGain();
+    ringOsc.type = 'sine';
+    ringOsc.frequency.value = 240;
+    ringGain.gain.setValueAtTime(0.015, t);
+    ringGain.gain.setValueAtTime(0.015, t + 4.5);
+    ringGain.gain.linearRampToValueAtTime(0.001, t + 5.0);
+    ringOsc.connect(ringGain);
+    ringGain.connect(this.sfxGainNode);
+    ringOsc.start(t);
+    ringOsc.stop(t + 5.2);
+    setInterval(() => {
+      const now = ctx.currentTime;
+      try {
+        ringOsc.frequency.setValueAtTime(240 + Math.random() * 60, now);
+        ringGain.gain.setValueAtTime(0.015, now);
+        ringGain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+      } catch (e) {}
+    }, 5000);
   }
 
   public stopAmbient(): void {

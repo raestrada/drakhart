@@ -43,6 +43,6 @@ export const HITSTOP = {
   ELITE_STOMP:    { duration: 120, intensity: 0.012 },
   BOSS_HIT:       { duration: 100, intensity: 0.010 },
   EXPLOSION:      { duration: 100, intensity: 0.015 },
-  TRANSFORM:      { duration: 0,   intensity: 0.012 },
+  TRANSFORM:      { duration: 180, intensity: 0.012 },
   DEATH:          { duration: 200, intensity: 0.020 },
 };

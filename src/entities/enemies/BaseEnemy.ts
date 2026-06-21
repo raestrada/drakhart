@@ -3,6 +3,7 @@ import { Player } from '../Player';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { distanceBetween } from '../../utils/helpers';
 import { spawnDamageNumber, DamageType } from '../../effects/DamageNumbers';
+import { spawnHitParticles } from '../../effects/Particles';
 
 export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   public health: number;
@@ -240,6 +241,7 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
   protected die(): void {
     getSceneAudio(this.scene)?.playEnemyDeath();
+    spawnHitParticles(this.scene, this.x, this.y, 8);
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x333333);

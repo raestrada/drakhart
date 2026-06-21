@@ -14,6 +14,8 @@ import {
 } from '../utils/constants';
 import { playFlash } from '../effects/ScreenEffects';
 import { getSceneAudio } from '../scenes/BaseLevelScene';
+import { HITSTOP } from './HitstopSystem';
+import { t } from '../i18n';
 
 export enum FormState {
   HUMAN = 'HUMAN',
@@ -203,6 +205,7 @@ export class FormStateMachine {
 
     this.scene.cameras.main.shake(400, SHAKE.TRANSFORM.intensity);
     playFlash(this.scene, 400, 255, 255, 255);
+    this.player.combatSystem.hitstop.freeze(HITSTOP.TRANSFORM.duration, HITSTOP.TRANSFORM.intensity);
 
     this.startVortexStream(0xff0066); // Crimson Mecha core vortex
 
@@ -239,7 +242,8 @@ export class FormStateMachine {
     body.allowGravity = false;
 
     this.scene.cameras.main.shake(TRANSFORM_DURATION, SHAKE.TRANSFORM.intensity);
-    playFlash(this.scene, TRANSFORM_DURATION, 255, 0, 100); // magenta flash for mecha-dragon
+    playFlash(this.scene, TRANSFORM_DURATION, 255, 0, 100);
+    this.player.combatSystem.hitstop.freeze(HITSTOP.TRANSFORM.duration, HITSTOP.TRANSFORM.intensity); // magenta flash for mecha-dragon
 
     this.startVortexStream(0xff5500); // Orange Dragon core vortex
 
@@ -262,6 +266,13 @@ export class FormStateMachine {
     this.player.y -= (body.bottom - oldBottom);
     body.updateFromGameObject();
     this.flightSystem.activate();
+    getSceneAudio(this.scene)?.setDragonActive(true);
+
+    const hint = this.scene.add.text(this.player.x, this.player.y - 50, t('story.dragonFlightHint'), {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ffaa44', align: 'center',
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(400);
+    this.scene.tweens.add({ targets: hint, alpha: 0, duration: 800, delay: 3000, onComplete: () => hint.destroy() });
 
     this.scene.cameras.main.zoomTo(
       CAMERA_ZOOM_DRAGON,
@@ -271,6 +282,7 @@ export class FormStateMachine {
 
   private startRevert(): void {
     this.currentState = FormState.EXHAUSTED;
+    getSceneAudio(this.scene)?.setDragonActive(false);
     this.player.setTexture('player-human');
     getSceneAudio(this.scene)?.playRevert();
     this.player.setScale(0.8);

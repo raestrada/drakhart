@@ -1124,7 +1124,7 @@ export class GameScene extends BaseLevelScene {
     saveGame({
       cardsCollected: this.tarotSystem.collectedCards,
       mechaUnlocked: this.player.formMachine.hasTransform(),
-      dragonUnlocked: false,
+      dragonUnlocked: this.player.formMachine.isDragonUnlocked(),
       playerX: this.player.x,
       playerY: this.player.y,
     });
@@ -2046,7 +2046,7 @@ export class GameScene extends BaseLevelScene {
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel, this.time.now);
   }
 
   private updateSwordVsEnemies(): void {

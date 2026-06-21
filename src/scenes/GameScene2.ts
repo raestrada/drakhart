@@ -934,7 +934,7 @@ export class GameScene2 extends BaseLevelScene {
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel, this.time.now);
   }
 
   private createLavaBubbles(): void {

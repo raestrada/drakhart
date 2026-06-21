@@ -3,6 +3,7 @@ import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { spawnDeathExplosion } from '../../effects/Particles';
 import { applyGlow } from '../../effects/CameraFilters';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 
 class DreadnoughtCannon extends BaseEnemy {
   public isTop: boolean;
@@ -175,6 +176,7 @@ export class DreadnoughtBoss extends BaseEnemy {
   }
 
   public activate(): void {
+    getSceneAudio(this.scene)?.setBossActive(true);
     this.phase = 'shielded';
     this.topCannon = new DreadnoughtCannon(this.scene, this.x, this.y - 110, true, this, this.player);
     this.bottomCannon = new DreadnoughtCannon(this.scene, this.x, this.y + 110, false, this, this.player);
@@ -313,6 +315,7 @@ export class DreadnoughtBoss extends BaseEnemy {
   }
 
   protected die(): void {
+    getSceneAudio(this.scene)?.setBossActive(false);
     this.phase = 'dead';
     this.isActive = false;
     if (this.coreLight && this.scene.lights) this.scene.lights.removeLight(this.coreLight);

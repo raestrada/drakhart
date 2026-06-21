@@ -3,6 +3,8 @@ import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
 import { t } from '../../i18n';
 import { spawnDeathExplosion, spawnProjectileTrail } from '../../effects/Particles';
+import { HITSTOP } from '../../systems/HitstopSystem';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 
 type BossPhase = 'phase1' | 'phase2' | 'dead';
 
@@ -51,6 +53,7 @@ export class Boss extends BaseEnemy {
 
   activate(): void {
     this.bossActive = true;
+    getSceneAudio(this.scene)?.setBossActive(true);
     this.showUI();
   }
 
@@ -160,6 +163,7 @@ export class Boss extends BaseEnemy {
 
   takeDamage(amount: number): void {
     super.takeDamage(amount);
+    this.player.combatSystem.hitstop.freeze(HITSTOP.BOSS_HIT.duration, HITSTOP.BOSS_HIT.intensity);
 
     if (
       this.health > 0 &&
@@ -177,6 +181,7 @@ export class Boss extends BaseEnemy {
   }
 
   protected die(): void {
+    getSceneAudio(this.scene)?.setBossActive(false);
     this.phase = 'dead';
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;

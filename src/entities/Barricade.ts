@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { spawnImmuneText } from '../effects/DamageNumbers';
 import { getSceneAudio } from '../scenes/BaseLevelScene';
+import { t } from '../i18n';
 
 export class Barricade extends Phaser.Physics.Arcade.Sprite {
   public health = 75;
@@ -38,6 +39,11 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
   private spawnImmuneEffects(): void {
     getSceneAudio(this.scene)?.playEnemyHit();
     spawnImmuneText(this.scene, this.x, this.y - 16);
+    const hint = this.scene.add.text(this.x, this.y - 40, t('story.barricadeHint'), {
+      fontSize: '8px', fontFamily: 'monospace', color: '#ffaa00', align: 'center',
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(100);
+    this.scene.tweens.add({ targets: hint, alpha: 0, y: hint.y - 15, duration: 2500, delay: 1500, onComplete: () => hint.destroy() });
 
     // Sparks
     for (let i = 0; i < 4; i++) {

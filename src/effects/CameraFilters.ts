@@ -52,7 +52,7 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
   }
 }
 
-export function setVignetteFromPlayer(vignette: Phaser.Filters.Vignette, healthRatio: number, heatLevel: string): void {
+export function setVignetteFromPlayer(vignette: Phaser.Filters.Vignette, healthRatio: number, heatLevel: string, time: number = Date.now()): void {
   if (!vignette) return;
 
   let strength = 0.15;
@@ -60,7 +60,7 @@ export function setVignetteFromPlayer(vignette: Phaser.Filters.Vignette, healthR
   let color = 0x000000;
 
   if (healthRatio < 0.3) {
-    strength = 0.5 + 0.15 * Math.sin(Date.now() * 0.005);
+    strength = 0.5 + 0.15 * Math.sin(time * 0.005);
     radius = 0.8;
     color = 0x590505;
   } else if (healthRatio < 0.5) {
@@ -70,11 +70,11 @@ export function setVignetteFromPlayer(vignette: Phaser.Filters.Vignette, healthR
   }
 
   if (heatLevel === 'danger') {
-    strength = Math.max(strength, 0.45 + 0.15 * Math.sin(Date.now() * 0.015));
+    strength = Math.max(strength, 0.45 + 0.15 * Math.sin(time * 0.015));
     radius = Math.min(radius, 0.9);
     color = 0x801a0d;
   } else if (heatLevel === 'warning') {
-    strength = Math.max(strength, 0.25 + 0.1 * Math.sin(Date.now() * 0.008));
+    strength = Math.max(strength, 0.25 + 0.1 * Math.sin(time * 0.008));
     radius = Math.min(radius, 1.1);
     color = 0x4d0c00;
   }

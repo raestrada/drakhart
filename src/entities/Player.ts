@@ -15,7 +15,9 @@ import {
   PLAYER_MAX_HEALTH,
   INVINCIBILITY_DURATION,
   VISOR_CONE,
+  SHAKE,
 } from '../utils/constants';
+import { HITSTOP } from '../systems/HitstopSystem';
 import { TarotSystem } from '../systems/TarotSystem';
 import { getSceneAudio } from '../scenes/BaseLevelScene';
 import { GamepadSystem } from '../systems/GamepadSystem';
@@ -939,7 +941,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private die(): void {
     this.alive = false;
     this.health = 0;
-    
+
+    this.combatSystem.hitstop.freeze(HITSTOP.DEATH.duration, HITSTOP.DEATH.intensity);
+    this.scene.cameras.main.shake(SHAKE.DEATH.duration, SHAKE.DEATH.intensity);
+
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.enable = false;
     body.allowGravity = false;

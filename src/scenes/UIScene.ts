@@ -169,7 +169,7 @@ export class UIScene extends Phaser.Scene {
     const y = this.pad + this.panelY + 70 * this.scaleFactor;
 
     this.add
-      .text(x, y - 2 * this.scaleFactor, 'HEAT', {
+      .text(x, y - 2 * this.scaleFactor, t('ui.heat'), {
         fontSize: `${Math.round(9 * this.scaleFactor)}px`,
         fontFamily: 'monospace',
         color: '#cc5533',

@@ -2,6 +2,7 @@ export const en = {
   ui: {
     health: 'HEALTH',
     energy: 'ENERGY',
+    heat: 'HEAT',
     transform: 'TRANSFORM',
     transformReady: 'CORE ACTIVE',
     mechaActive: 'DRACONEL ACTIVE',
@@ -42,6 +43,8 @@ export const en = {
     cinematicDragon1: 'Within the deep molten furnace chambers of the refinery, the mecha discovers a glowing blue gemstone—the Flight Core, humming with wind energies.',
     cinematicDragon2: 'As the mecha absorbs the gemstone, metal and bone plates shift. Volumetric thrusters and skeletal wing frames unfold from the shoulder joints, locking into place.',
     cinematicDragon3: 'The Sky Graver takes flight. Unleashing its wind thrusters, the biomechanical mecha-dragon soars out of the factory smoke stack, fleeing the Empire\'s industrial refinery into the open gorge.',
+    barricadeHint: 'Heavy stone — requires Draconel claymore\nPress C to transform',
+    dragonFlightHint: 'WASD: Fly | X: Fire Breath | C: Revert',
     dragonUnlockedPrompt: 'FLIGHT CORE ACQUIRED!\n\nYou have unlocked the Dragon form.\nPress \'C\' to fly.',
     demoEndPrompt: 'SHROUDED IN ASH...\n\nThe demo ends here.\nTo be continued...',
     hintPickUp: 'PICK IT UP !',

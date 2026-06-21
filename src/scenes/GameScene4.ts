@@ -216,6 +216,7 @@ export class GameScene4 extends BaseLevelScene {
 
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(5);
+    this.gameAudio.playAmbientZone(4);
     this.events.once('shutdown', () => { this.gameAudio?.stopBGM(); });
     this.events.once('destroy', () => { this.gameAudio?.stopBGM(); });
 
@@ -519,7 +520,7 @@ export class GameScene4 extends BaseLevelScene {
     if (!vignette) return;
     const hpRatio = this.player.health / this.player.maxHealth;
     const heatLevel = this.player.formMachine.heat.level;
-    setVignetteFromPlayer(vignette, hpRatio, heatLevel);
+    setVignetteFromPlayer(vignette, hpRatio, heatLevel, this.time.now);
   }
 
   private updateBulletLights(): void {
