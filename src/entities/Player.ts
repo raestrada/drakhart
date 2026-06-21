@@ -525,7 +525,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const hpRatio = this.health / this.maxHealth;
     if (hpRatio < 0.3) {
-      this.setTint(0xff5533);
       this.breathTimer += delta;
       if (this.breathTimer > 800) {
         this.breathTimer = 0;
@@ -879,9 +878,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.cameras.main.shake(120, isMecha ? 0.002 : 0.004);
 
-    this.setTint(0xff0000);
-    this.scene.time.delayedCall(80, () => {
-      if (this.active) this.clearTint();
+    if (this.glowFilter) {
+      this.glowFilter.color = 0xff2200;
+      this.glowFilter.outerStrength = 3;
+      this.glowFilter.active = true;
+    }
+    this.scene.time.delayedCall(150, () => {
+      if (this.glowFilter) this.glowFilter.outerStrength = 2;
     });
 
     // Flickering invincibility effect using a repeating tween
