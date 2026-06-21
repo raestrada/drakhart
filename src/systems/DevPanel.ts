@@ -54,21 +54,10 @@ export class DevPanel {
   private getGameScene(): any {
     const game = (window as any).game;
     if (game && game.scene && game.scene.keys) {
-      const scene1 = game.scene.keys.GameScene;
-      if (scene1 && scene1.sys && scene1.sys.isActive()) {
-        return scene1;
-      }
-      const scene2 = game.scene.keys.GameScene2;
-      if (scene2 && scene2.sys && scene2.sys.isActive()) {
-        return scene2;
-      }
-      const scene3 = game.scene.keys.GameScene3;
-      if (scene3 && scene3.sys && scene3.sys.isActive()) {
-        return scene3;
-      }
-      const scene4 = game.scene.keys.GameScene4;
-      if (scene4 && scene4.sys && scene4.sys.isActive()) {
-        return scene4;
+      for (const key of ['GameScene', 'GameScene2', 'GameScene3', 'GameScene4',
+                          'TransitionScene12', 'TransitionScene23', 'TransitionScene34', 'TransitionScene45']) {
+        const scene = game.scene.keys[key];
+        if (scene && scene.sys && scene.sys.isActive()) return scene;
       }
     }
     return null;
