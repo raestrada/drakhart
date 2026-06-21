@@ -600,6 +600,7 @@ export class GameScene4 extends BaseLevelScene {
         cardsCollected: this.tarotSystem.collectedCards,
         mechaUnlocked: true,
         dragonUnlocked: true,
+        showBossCinematic: true,
       });
     });
   }

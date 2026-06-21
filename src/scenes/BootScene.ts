@@ -31,6 +31,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('cinematic-dragon-1', `assets/cinematic_dragon_1.png`);
     this.load.image('cinematic-dragon-2', `assets/cinematic_dragon_2.png`);
     this.load.image('cinematic-dragon-3', `assets/cinematic_dragon_3.png`);
+    this.load.image('cinematic-boss-1', `assets/cinematic_boss_1.png`);
+    this.load.image('cinematic-boss-2', `assets/cinematic_boss_2.png`);
+    this.load.image('cinematic-boss-3', `assets/cinematic_boss_3.png`);
   }
 
   create(): void {

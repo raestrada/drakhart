@@ -5,6 +5,7 @@ import { GameAudio } from '../systems/GameAudio';
 import { TarotSystem } from '../systems/TarotSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { CAMERA_LERP } from '../utils/constants';
+import { t } from '../i18n';
 
 export class TransitionScene45 extends Phaser.Scene {
   public gameAudio!: GameAudio;
@@ -21,15 +22,19 @@ export class TransitionScene45 extends Phaser.Scene {
   private pendingCardsToCollect: string[] = [];
   private hasTransitioned = false;
   private frameCount = 0;
+  private pendingShowBossCinematic = false;
+  private isCutsceneActive = false;
 
   constructor() { super({ key: 'TransitionScene45' }); }
 
   init(data?: any): void {
     this.hasTransitioned = false;
     this.frameCount = 0;
+    this.isCutsceneActive = false;
     if (data) {
       if (data.startPos) { this.pendingSpawnX = data.startPos.x; this.pendingSpawnY = data.startPos.y; }
       if (data.cardsCollected) this.pendingCardsToCollect = data.cardsCollected;
+      if (data.showBossCinematic !== undefined) this.pendingShowBossCinematic = data.showBossCinematic;
     }
   }
 
@@ -44,7 +49,12 @@ export class TransitionScene45 extends Phaser.Scene {
     this.currentBiome = 'foundry';
     this.events.once('shutdown', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); });
     this.events.once('destroy', () => { this.gameAudio.stopSacredAltarBGM(); this.gameAudio.stopBGM(); });
-    this.input.keyboard?.on('keydown-ESC', () => { this.physics.world.pause(); this.scene.pause(); this.scene.launch('PauseScene', { gameScene: 'TransitionScene45' }); });
+    this.input.keyboard?.on('keydown-ESC', () => {
+      if (this.isCutsceneActive) return;
+      this.physics.world.pause();
+      this.scene.pause();
+      this.scene.launch('PauseScene', { gameScene: 'TransitionScene45' });
+    });
 
     // Backgrounds — foundry atmosphere
     // Backgrounds — Forge fire finale
@@ -117,10 +127,28 @@ export class TransitionScene45 extends Phaser.Scene {
 
     this.cameras.main.startFollow(this.player, true, CAMERA_LERP, CAMERA_LERP);
     this.cameras.main.setBounds(0, 0, W, H);
+
+    if (this.pendingShowBossCinematic) {
+      this.pendingShowBossCinematic = false;
+      this.isCutsceneActive = true;
+      this.player.setInputEnabled(false);
+      this.player.setVelocity(0, 0);
+      this.time.delayedCall(1000, () => {
+        this.showBossCinematicSequence();
+      });
+    }
   }
 
   update(time: number, delta: number): void {
     this.frameCount++;
+    if (this.isCutsceneActive) {
+      if (this.player?.active) {
+        this.player.setVelocity(0, 0);
+        this.playerShadow.x = this.player.x;
+        this.playerShadow.y = this.player.y + 24;
+      }
+      return;
+    }
     if (this.player?.active) {
       this.player.update(time, delta);
       this.saveAltar.updatePrompt(this.player);
@@ -302,5 +330,182 @@ export class TransitionScene45 extends Phaser.Scene {
       g.fillStyle(0x0d0804, 0.5);
       g.fillRect(vx + 2, 280, 8, 12);
     }
+  }
+
+  private showBossCinematicSequence(): void {
+    this.gameAudio.stopSacredAltarBGM();
+    this.gameAudio.stopBGM();
+    
+    this.scene.setVisible(false, 'UIScene');
+
+    const cam = this.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+    const scale = cam.width / 800;
+
+    const originalZoom = cam.zoom;
+    cam.setZoom(1.0);
+
+    const backdrop = this.add.rectangle(cx, cy, cam.width, cam.height, 0x000000, 0.75)
+      .setScrollFactor(0)
+      .setDepth(498)
+      .setAlpha(0);
+
+    const barHeight = 85 * scale;
+    const topBar = this.add.rectangle(cx, barHeight / 2, cam.width, barHeight, 0x000000, 1)
+      .setScrollFactor(0)
+      .setDepth(500);
+
+    const bottomBar = this.add.rectangle(cx, cam.height - barHeight / 2, cam.width, barHeight, 0x000000, 1)
+      .setScrollFactor(0)
+      .setDepth(500);
+
+    const topBorder = this.add.rectangle(cx, barHeight, cam.width, 2 * scale, 0x996633)
+      .setScrollFactor(0)
+      .setDepth(501);
+
+    const bottomBorder = this.add.rectangle(cx, cam.height - barHeight, cam.width, 2 * scale, 0x996633)
+      .setScrollFactor(0)
+      .setDepth(501);
+
+    const slideSprite = this.add.image(cx, cy, 'cinematic-boss-1')
+      .setScrollFactor(0)
+      .setDepth(499)
+      .setAlpha(0);
+
+    const targetHeight = cam.height - barHeight * 2 - 10 * scale;
+    const aspect = slideSprite.width / slideSprite.height;
+    slideSprite.setDisplaySize(targetHeight * aspect, targetHeight);
+
+    const subtitle = this.add.text(cx, cam.height - barHeight / 2, '', {
+      fontSize: `${Math.round(11 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#ddccbb',
+      align: 'center',
+      wordWrap: { width: cam.width - 60 * scale },
+      lineSpacing: 4 * scale
+    })
+    .setOrigin(0.5)
+    .setScrollFactor(0)
+    .setDepth(502);
+
+    const hintText = this.add.text(cam.width - 25 * scale, cam.height - 15 * scale, t('story.introSkip') || 'ENTER / CLICK TO CONTINUE', {
+      fontSize: `${Math.round(8 * scale)}px`,
+      fontFamily: 'monospace',
+      color: '#665544'
+    })
+    .setOrigin(1, 0.5)
+    .setScrollFactor(0)
+    .setDepth(502);
+
+    this.tweens.add({
+      targets: [backdrop, slideSprite],
+      alpha: 1,
+      duration: 600
+    });
+
+    let currentSlide = 1;
+    const totalSlides = 3;
+    let typingTimer: Phaser.Time.TimerEvent | null = null;
+    let isTyping = false;
+    let fullText = '';
+    let currentTypedText = '';
+
+    const startTypewriter = (text: string) => {
+      if (typingTimer) {
+        typingTimer.destroy();
+      }
+      isTyping = true;
+      fullText = text;
+      currentTypedText = '';
+      subtitle.setText('');
+      
+      let charIndex = 0;
+      typingTimer = this.time.addEvent({
+        delay: 25,
+        repeat: text.length - 1,
+        callback: () => {
+          if (!isTyping) return;
+          currentTypedText += text[charIndex];
+          subtitle.setText(currentTypedText);
+          charIndex++;
+          if (charIndex >= text.length) {
+            isTyping = false;
+          }
+        }
+      });
+    };
+
+    const skipTyping = () => {
+      isTyping = false;
+      if (typingTimer) {
+        typingTimer.destroy();
+        typingTimer = null;
+      }
+      subtitle.setText(t(`story.cinematicBoss${currentSlide}`));
+    };
+
+    startTypewriter(t(`story.cinematicBoss1`));
+
+    const endCutscene = () => {
+      this.tweens.add({
+        targets: [backdrop, topBar, bottomBar, topBorder, bottomBorder, slideSprite, subtitle, hintText],
+        alpha: 0,
+        duration: 800,
+        onComplete: () => {
+          backdrop.destroy();
+          topBar.destroy();
+          bottomBar.destroy();
+          topBorder.destroy();
+          bottomBorder.destroy();
+          slideSprite.destroy();
+          subtitle.destroy();
+          hintText.destroy();
+
+          this.isCutsceneActive = false;
+          this.player.setInputEnabled(true);
+          this.cameras.main.setZoom(originalZoom);
+          
+          this.scene.setVisible(true, 'UIScene');
+          this.gameAudio.playSacredAltarBGM();
+        }
+      });
+    };
+
+    const advanceSlide = () => {
+      if (isTyping) {
+        skipTyping();
+        return;
+      }
+
+      currentSlide++;
+      if (currentSlide > totalSlides) {
+        this.input.keyboard?.off('keydown-ENTER', handleInteraction);
+        this.input.off('pointerdown', handleInteraction);
+        endCutscene();
+      } else {
+        this.tweens.add({
+          targets: slideSprite,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            slideSprite.setTexture(`cinematic-boss-${currentSlide}`);
+            this.tweens.add({
+              targets: slideSprite,
+              alpha: 1,
+              duration: 300
+            });
+            startTypewriter(t(`story.cinematicBoss${currentSlide}`));
+          }
+        });
+      }
+    };
+
+    const handleInteraction = () => {
+      advanceSlide();
+    };
+
+    this.input.keyboard?.on('keydown-ENTER', handleInteraction);
+    this.input.on('pointerdown', handleInteraction);
   }
 }

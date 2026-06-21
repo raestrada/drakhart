@@ -60,6 +60,9 @@ export const es: typeof en = {
     echo1: 'Los Wardens cayeron aquí... su armadura aún sostiene las cenizas.',
     echo2: 'Quemaron los núcleos para detener al Imperio. No fue suficiente.',
     echo3: 'La forja nunca duerme. Tiene hambre de hueso de dragón.',
+    cinematicBoss1: 'El Guardián de Hierro se desmorona en escoria fundida y acero retorcido. Por primera vez en un siglo, la imparable máquina de guerra del Imperio de Hierro ha probado la derrota.',
+    cinematicBoss2: 'A lo largo de la red industrial, las alarmas de advertencia resuenan. En las torres de mando brutalistas, las transmisiones de datos confirman lo impensable: el antiguo Núcleo de Dragón ha despertado.',
+    cinematicBoss3: 'El Imperio se moviliza. Cada acorazado diésel, tanque de riel pesado y escuadrón de soldados de élite es desplegado en el desfiladero. La caza del Guardián ha comenzado.',
   },
   boss: {
     name: 'DRACONEL CORRUPTO',

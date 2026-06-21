@@ -58,6 +58,9 @@ export const en = {
     echo1: 'The Wardens fell here... their armor still holds the ash.',
     echo2: 'They burned the cores to stop the Empire. It was not enough.',
     echo3: 'The forge never sleeps. It hungers for dragon bone.',
+    cinematicBoss1: 'The Iron Gatekeeper crumbles into molten slag and twisted steel. For the first time in a century, the Iron Empire\'s unstoppable war machine has tasted defeat.',
+    cinematicBoss2: 'Across the industrial grid, warning alarms blare. In the high command brutalist towers, data streams confirm the unthinkable: the ancient Dragon Core has awakened.',
+    cinematicBoss3: 'The Empire mobilizes. Every diesel dreadnought, heavy railgun tank, and elite trooper squad is deployed into the gorge. The hunt for the Warden has begun.',
   },
   boss: {
     name: 'CORRUPTED DRACONEL',
