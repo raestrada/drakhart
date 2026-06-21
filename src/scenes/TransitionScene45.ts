@@ -66,8 +66,8 @@ export class TransitionScene45 extends Phaser.Scene {
     // Layer 5: Forest base — dark silhouette
     this.add.tileSprite(0, H * 0.48, W * 1.5, H * 0.38, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.35).setDepth(-16).setAlpha(0.55).setTint(0x220800);
 
-    // Forge fire glow
-    this.drawForgeFireGlow(W, H);
+    // Forge fire glow — volcanic flame behind mountains (Mordor style)
+    this.drawVolcanicFlames(W, H);
     // Foundry gate
     this.drawFoundryGate(W, H);
     // Ember storm
@@ -169,20 +169,67 @@ export class TransitionScene45 extends Phaser.Scene {
     this.time.delayedCall(900, onComplete);
   }
 
-  private drawForgeFireGlow(W: number, H: number): void {
-    const forges = [
-      { x: W * 0.20, y: H * 0.55, r: 280, color: 0xff2200, int: 1.0 },
-      { x: W * 0.50, y: H * 0.50, r: 320, color: 0xff3300, int: 1.2 },
-      { x: W * 0.75, y: H * 0.58, r: 240, color: 0xff1100, int: 0.9 },
+  private drawVolcanicFlames(W: number, H: number): void {
+    const g = this.add.graphics().setDepth(-14).setScrollFactor(0.04);
+    const cx = W * 0.45, baseY = H * 0.62;
+
+    // Volcano cone
+    g.fillStyle(0x0a0505, 1);
+    g.beginPath();
+    g.moveTo(cx - 160, baseY);
+    g.lineTo(cx, baseY - 200);
+    g.lineTo(cx + 180, baseY);
+    g.closePath();
+    g.fillPath();
+
+    // Secondary cone
+    g.fillStyle(0x0d0808, 1);
+    g.beginPath();
+    g.moveTo(cx - 100, baseY);
+    g.lineTo(cx + 30, baseY - 160);
+    g.lineTo(cx + 140, baseY);
+    g.closePath();
+    g.fillPath();
+
+    // Crater glow — base orange
+    const craterG = this.add.graphics().setDepth(-13).setScrollFactor(0.04);
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const dist = 20 + Math.random() * 30;
+      const fx = cx + Math.cos(angle) * dist;
+      const fy = baseY - 195 - Math.sin(angle) * (10 + Math.random() * 15);
+      craterG.fillStyle(0xff5500, 0.7 + Math.random() * 0.3);
+      craterG.fillCircle(fx, fy, 6 + Math.random() * 10);
+    }
+
+    // Lava veins down the cone
+    g.fillStyle(0xff2200, 0.8);
+    g.fillRect(cx - 8, baseY - 170, 6, 50);
+    g.fillStyle(0xff4400, 0.6);
+    g.fillRect(cx + 15, baseY - 130, 4, 35);
+    g.fillRect(cx - 30, baseY - 140, 3, 28);
+
+    // Crater pointlight — pulsing
+    const craterLight = this.add.pointlight(cx, baseY - 200, 0xff3300, 180, 1.2).setDepth(-13).setScrollFactor(0.04);
+    this.tweens.add({
+      targets: craterLight,
+      intensity: { from: 0.8, to: 1.6 },
+      radius: { from: 150, to: 220 },
+      duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+    });
+
+    // Smaller flank cones
+    const flanks = [
+      { x: cx - 180, y: baseY - 60, r: 80 },
+      { x: cx + 200, y: baseY - 50, r: 70 },
     ];
-    for (const f of forges) {
-      const light = this.add.pointlight(f.x, f.y, f.color, f.r, f.int).setDepth(-12);
+    for (const f of flanks) {
+      g.fillStyle(0x080404, 1);
+      g.fillTriangle(f.x - 40, baseY, f.x, f.y, f.x + 40, baseY);
+      const fl = this.add.pointlight(f.x, f.y, 0xff2200, f.r, 0.5).setDepth(-13).setScrollFactor(0.04);
       this.tweens.add({
-        targets: light,
-        intensity: { from: f.int * 0.5, to: f.int * 1.4 },
-        radius: { from: f.r * 0.6, to: f.r * 1.3 },
-        duration: Phaser.Math.Between(1500, 2500),
-        yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+        targets: fl, intensity: { from: 0.3, to: 0.7 }, radius: { from: f.r * 0.7, to: f.r * 1.2 },
+        duration: Phaser.Math.Between(2500, 4000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
       });
     }
   }

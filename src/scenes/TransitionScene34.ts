@@ -49,18 +49,24 @@ export class TransitionScene34 extends Phaser.Scene {
     // Backgrounds — Gorge storm meeting Foundry fire
     // Layer 0: Sky — deep purple
     this.add.tileSprite(0, 0, W * 1.5, H, 'bg-sky').setOrigin(0, 0).setScrollFactor(0.03).setDepth(-30).setTint(0x1a0f2e);
+    // Layer 0.5: Moon — bright purple glow
+    const moon34 = this.add.image(W * 0.22, H * 0.14, 'bg-moon').setOrigin(0.5).setScrollFactor(0.02).setDepth(-28).setAlpha(0.75).setTint(0x8866cc);
+    this.tweens.add({ targets: moon34, y: moon34.y - 5, duration: 4000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     // Layer 1: Far mountains — purple silhouette
-    this.add.tileSprite(0, H * 0.30, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.06).setDepth(-24).setAlpha(0.55).setTint(0x3a2550);
-    // Layer 2: Mid mountains — slightly different tint
-    this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.50, 'bg-ruins').setOrigin(0, 0).setScrollFactor(0.10).setDepth(-22).setAlpha(0.45).setTint(0x4a3060);
+    this.add.tileSprite(0, H * 0.28, W * 1.5, H * 0.55, 'bg-mountains').setOrigin(0, 0).setScrollFactor(0.06).setDepth(-24).setAlpha(0.65).setTint(0x4a3060);
+    // Layer 2: Mid mountains
+    this.add.tileSprite(0, H * 0.33, W * 1.5, H * 0.50, 'bg-ruins').setOrigin(0, 0).setScrollFactor(0.10).setDepth(-22).setAlpha(0.55).setTint(0x5a3870);
     // Layer 3: Purple mist — slow drift
-    const mist1 = this.add.tileSprite(0, H * 0.35, W * 1.5, H * 0.30, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.14).setDepth(-20).setAlpha(0.5).setTint(0x8844cc);
+    const mist1 = this.add.tileSprite(0, H * 0.32, W * 1.5, H * 0.30, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.14).setDepth(-20).setAlpha(0.6).setTint(0x8855cc);
     this.tweens.add({ targets: mist1, tilePositionX: 500, duration: 25000, loop: -1 });
     // Layer 4: Orange smog — foundry heat bleeding in
-    const mist2 = this.add.tileSprite(0, H * 0.40, W * 1.5, H * 0.28, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.20).setDepth(-19).setAlpha(0.45).setTint(0xff5500);
+    const mist2 = this.add.tileSprite(0, H * 0.38, W * 1.5, H * 0.28, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.20).setDepth(-19).setAlpha(0.55).setTint(0xff5533);
     this.tweens.add({ targets: mist2, tilePositionX: -400, duration: 20000, loop: -1 });
     // Layer 5: Forest base
-    this.add.tileSprite(0, H * 0.48, W * 1.5, H * 0.35, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.28).setDepth(-16).setAlpha(0.5).setTint(0x221133);
+    this.add.tileSprite(0, H * 0.45, W * 1.5, H * 0.38, 'bg-forest').setOrigin(0, 0).setScrollFactor(0.28).setDepth(-16).setAlpha(0.6).setTint(0x2a1538);
+
+    // Background ambient point lights for depth
+    this.drawGorgeAmbientLights(W, H);
 
     // Floating gorge rocks
     this.drawGorgeFloatingRocks(W, H);
@@ -175,11 +181,11 @@ export class TransitionScene34 extends Phaser.Scene {
     ];
     for (let i = 0; i < rocks.length; i++) {
       const r = rocks[i];
-      g.fillStyle(0x1a1530, 1);
+      g.fillStyle(0x2a2048, 1);
       g.fillRect(r.x, r.y, r.w, r.h);
-      g.fillStyle(0x2a2040, 0.7);
+      g.fillStyle(0x3a2a58, 0.8);
       g.fillRect(r.x + 4, r.y - 6, r.w - 8, r.h + 8);
-      g.fillStyle(0x0d0a18, 0.9);
+      g.fillStyle(0x1a1028, 0.9);
       g.fillRect(r.x, r.y + r.h - 6, r.w, 8);
       // Subtle bobbing
       const baseY = r.y;
@@ -190,10 +196,26 @@ export class TransitionScene34 extends Phaser.Scene {
           g.clear();
           const oy = baseY + Math.sin((t as any).val * Math.PI * 2) * 4;
           r.y = oy;
-          g.fillStyle(0x1a1530, 1); g.fillRect(r.x, r.y, r.w, r.h);
-          g.fillStyle(0x2a2040, 0.7); g.fillRect(r.x + 4, r.y - 6, r.w - 8, r.h + 8);
-          g.fillStyle(0x0d0a18, 0.9); g.fillRect(r.x, r.y + r.h - 6, r.w, 8);
+          g.fillStyle(0x2a2048, 1); g.fillRect(r.x, r.y, r.w, r.h);
+          g.fillStyle(0x3a2a58, 0.8); g.fillRect(r.x + 4, r.y - 6, r.w - 8, r.h + 8);
+          g.fillStyle(0x1a1028, 0.9); g.fillRect(r.x, r.y + r.h - 6, r.w, 8);
         }
+      });
+    }
+  }
+
+  private drawGorgeAmbientLights(W: number, H: number): void {
+    const spots = [
+      { x: W * 0.3, y: H * 0.40, r: 300, color: 0x4422aa, int: 0.4 },
+      { x: W * 0.6, y: H * 0.45, r: 250, color: 0x5533bb, int: 0.35 },
+      { x: W * 0.85, y: H * 0.50, r: 200, color: 0x6622cc, int: 0.45 },
+    ];
+    for (const s of spots) {
+      const l = this.add.pointlight(s.x, s.y, s.color, s.r, s.int).setDepth(-15).setScrollFactor(0.05);
+      this.tweens.add({
+        targets: l, intensity: { from: s.int * 0.5, to: s.int * 1.3 },
+        radius: { from: s.r * 0.7, to: s.r * 1.2 },
+        duration: Phaser.Math.Between(2500, 4000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
       });
     }
   }
