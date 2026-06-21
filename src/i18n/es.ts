@@ -30,6 +30,8 @@ export const es: typeof en = {
     manual: 'MANUAL',
     nowPlaying: 'REPRODUCIENDO',
     stop: 'PARAR',
+    dragonNeeded: 'SE REQUIERE FORMA DE DRAGÓN',
+    humanNeeded: 'SE REQUIERE FORMA DE GUERRERO',
   },
   story: {
     intro1: 'El viejo mundo es ceniza.',
@@ -69,5 +71,8 @@ export const es: typeof en = {
     phase2: 'ARMADURA DESTRUIDA — NÚCLEO EXPUESTO',
     defeated: 'DRACONEL DERROTADO',
     eliteName: 'BASTIÓN DRACONEL',
+    foundryP1: 'FASE 1 — ROMPE EL ESCUDO EN FORMA MECHA',
+    foundryP2: 'FASE 2 — PERSIGUE EN VUELO DE DRAGÓN',
+    foundryP3: 'FASE 3 — LUCHA A PIE COMO GUERRERO',
   },
 };

@@ -16,10 +16,12 @@ import { TarotSystem } from '../systems/TarotSystem';
 import { EchoFragment } from '../entities/EchoFragment';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
-import { BaseLevelScene } from './BaseLevelScene';
+import { BaseLevelScene, getSceneAudio } from './BaseLevelScene';
 import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilters';
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON, ENEMY_SEARCHLIGHT } from '../utils/constants';
+import { t } from '../i18n';
+import { spawnImmuneText } from '../effects/DamageNumbers';
 
 class Gatekeeper extends Boss {
   public gatePhase: 'armor' | 'flight' | 'duel' = 'armor';
@@ -31,7 +33,7 @@ class Gatekeeper extends Boss {
     this.health = 900;
     this.maxHealth = 900;
     this.setScale(2.5);
-    this.setTint(0x886644, 0x554433, 0x332211, 0x665544);
+    this.setTint(0x886644);
     this.setAlpha(1);
     this.setDepth(15);
 
@@ -104,8 +106,18 @@ class Gatekeeper extends Boss {
   takeDamage(amount: number): void {
     if (this.health <= 0) return;
     const ps = this.player.formMachine.state;
-    if (this.gatePhase === 'armor' && ps !== FormState.MECHA) return;
-    if (this.gatePhase === 'flight' && ps !== FormState.DRAGON) return;
+
+    // Phase immunity checks
+    let isImmune = false;
+    if (this.gatePhase === 'armor' && ps !== FormState.MECHA) isImmune = true;
+    else if (this.gatePhase === 'flight' && ps !== FormState.DRAGON) isImmune = true;
+    else if (this.gatePhase === 'duel' && ps !== FormState.HUMAN) isImmune = true;
+
+    if (isImmune) {
+      spawnImmuneText(this.scene, this.x, this.y - 40);
+      getSceneAudio(this.scene)?.playEnemyHit();
+      return;
+    }
 
     this.health -= amount;
     this.setTint(0xffffff);
@@ -116,7 +128,10 @@ class Gatekeeper extends Boss {
       this.setTint(0x4488cc);
       this.scene.cameras.main.shake(600, 0.01);
       this.scene.cameras.main.flash(300, 100, 150, 255);
-      this.showPhaseText('PHASE 2 — AERIAL PURSUIT');
+      this.showPhaseText(t('boss.foundryP2'));
+      this.y = 350; // Fly up!
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.allowGravity = false;
     } else if (this.health <= 300 && this.gatePhase === 'flight') {
       this.gatePhase = 'duel';
       this.setTint(0xcc4444);
@@ -125,7 +140,7 @@ class Gatekeeper extends Boss {
       const body = this.body as Phaser.Physics.Arcade.Body;
       body.allowGravity = true;
       body.setVelocityY(-100);
-      this.showPhaseText('PHASE 3 — FINAL DUEL');
+      this.showPhaseText(t('boss.foundryP3'));
     }
 
     if (this.health <= 0) this.die();
@@ -172,6 +187,7 @@ export class GameScene4 extends BaseLevelScene {
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
   private barricades!: Phaser.Physics.Arcade.StaticGroup;
+  private lavaHazards!: Phaser.Physics.Arcade.StaticGroup;
   private tarotSystem!: TarotSystem;
   private weatherSystem!: WeatherSystem;
   private terrainGen!: TerrainGenerator;
@@ -180,6 +196,10 @@ export class GameScene4 extends BaseLevelScene {
   private playerShadow!: Phaser.GameObjects.Image;
   private echoFragments: EchoFragment[] = [];
   private bulletLights: Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Light> = new Map();
+
+  private refinerySunImages: Phaser.GameObjects.Image[] = [];
+  private furnaceImages: Phaser.GameObjects.Image[] = [];
+  private reactorImages: Phaser.GameObjects.Image[] = [];
 
   private pendingSpawnX = 150;
   private pendingSpawnY = 400;
@@ -211,7 +231,7 @@ export class GameScene4 extends BaseLevelScene {
 
     if (this.renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
       this.lights.enable();
-      this.lights.setAmbientColor(0x554433);
+      this.lights.setAmbientColor(0x332222);
     }
 
     this.gameAudio = new GameAudio();
@@ -222,6 +242,9 @@ export class GameScene4 extends BaseLevelScene {
 
     this.echoFragments = [];
     this.bulletLights.clear();
+    this.refinerySunImages = [];
+    this.furnaceImages = [];
+    this.reactorImages = [];
     this.terrainGen = new TerrainGenerator(this);
     this.currentBiome = 'foundry';
 
@@ -259,55 +282,220 @@ export class GameScene4 extends BaseLevelScene {
   }
 
   private createParallax(): void {
-    this.add.tileSprite(0, 0, this.WORLD_W, 1200, 'bg-refinery-sky').setOrigin(0, 0).setScrollFactor(0.02, 0).setDepth(-30).setTint(0x552222, 0x552222, 0x221111, 0x221111);
-    this.add.tileSprite(0, 180, this.WORLD_W, 800, 'bg-refinery-furnaces').setOrigin(0, 0).setScrollFactor(0.06, 0).setDepth(-20).setTint(0x664433, 0x553344, 0x331122, 0x442233);
-    this.add.tileSprite(0, 240, this.WORLD_W, 800, 'bg-refinery-structures').setOrigin(0, 0).setScrollFactor(0.14, 0).setDepth(-10).setTint(0x443322, 0x443344, 0x221111, 0x331122);
+    this.add.tileSprite(0, 0, this.WORLD_W, 1200, 'bg-refinery-sky').setOrigin(0, 0).setScrollFactor(0.02, 0).setDepth(-30).setTint(0x442222, 0x442222, 0x221111, 0x221111);
+    this.add.tileSprite(0, 180, this.WORLD_W, 800, 'bg-refinery-furnaces').setOrigin(0, 0).setScrollFactor(0.06, 0).setDepth(-20).setTint(0x553333, 0x442222, 0x221111, 0x331111);
+    this.add.tileSprite(0, 240, this.WORLD_W, 800, 'bg-refinery-structures').setOrigin(0, 0).setScrollFactor(0.14, 0).setDepth(-10).setTint(0x332211, 0x332211, 0x110808, 0x221111);
 
-    // Mist layer
     const mist = this.add.tileSprite(0, 500, this.WORLD_W, 200, 'bg-mist').setOrigin(0, 0).setScrollFactor(0.1, 0).setDepth(-8).setAlpha(0.15).setTint(0xff4422);
     this.tweens.add({ targets: mist, tilePositionX: 300, duration: 15000, loop: -1 });
+
+    this.refinerySunImages = [];
+    if (this.textures.exists('image-refinery-sun')) {
+      [800, 2400, 3800].forEach(x => {
+        const frame = this.add.rectangle(0, 0, 130, 100, 0x0a0505, 0.85)
+          .setDepth(-29).setStrokeStyle(3, 0x4a2a2a);
+        frame.setData('anchorX', x);
+
+        const img = this.add.image(0, 0, 'image-refinery-sun')
+          .setOrigin(0.5, 0.5)
+          .setDepth(-28)
+          .setScale(0.55)
+          .setAlpha(0.65)
+          .setTint(0xff5533);
+        img.setData('anchorX', x);
+        img.setData('frame', frame);
+        this.refinerySunImages.push(img);
+      });
+    }
+
+    this.furnaceImages = [];
+    if (this.textures.exists('image-furnace')) {
+      [5200, 6800, 8200].forEach(x => {
+        const frame = this.add.rectangle(0, 0, 160, 120, 0x0a0505, 0.85)
+          .setDepth(-19).setStrokeStyle(3, 0x4a2a2a);
+        frame.setData('anchorX', x);
+
+        const img = this.add.image(0, 0, 'image-furnace')
+          .setOrigin(0.5, 0.5)
+          .setDepth(-18)
+          .setScale(0.5)
+          .setAlpha(0.6)
+          .setTint(0xff4422);
+        img.setData('anchorX', x);
+        img.setData('frame', frame);
+        this.furnaceImages.push(img);
+      });
+    }
+
+    this.reactorImages = [];
+    if (this.textures.exists('bg-gorge-reactor')) {
+      [11000, 13500].forEach(x => {
+        const frame = this.add.rectangle(0, 0, 200, 200, 0x070308, 0.9)
+          .setDepth(-19).setStrokeStyle(4, 0x662244);
+        frame.setData('anchorX', x);
+
+        const img = this.add.image(0, 0, 'bg-gorge-reactor')
+          .setOrigin(0.5, 0.5)
+          .setDepth(-18)
+          .setScale(0.45)
+          .setAlpha(0.7)
+          .setTint(0xff2266);
+        img.setData('anchorX', x);
+        img.setData('frame', frame);
+        this.reactorImages.push(img);
+
+        if (this.lights) {
+          const l = this.lights.addLight(x, 500, 220, 0xff0066, 0.9);
+          this.tweens.add({
+            targets: l,
+            intensity: { from: 0.6, to: 1.4 },
+            radius: { from: 180, to: 260 },
+            duration: 2000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+          });
+        }
+      });
+    }
   }
 
   private createLevel(): void {
     this.platforms = this.physics.add.staticGroup();
     this.barricades = this.physics.add.staticGroup();
+    this.lavaHazards = this.physics.add.staticGroup();
     const groundY = 768;
 
-    // ── Section A: Sky Gate (0-5000) — Dragon flight zone ──
-    // Scattered islands with gaps (flight needed)
-    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 600, 'forest', 1);
-    this.terrainGen.generateGroundSegment(this.platforms, 1000, groundY, 500, 'forest', 2);
-    this.terrainGen.generateGroundSegment(this.platforms, 1900, groundY, 400, 'forest', 3);
-    this.terrainGen.generateGroundSegment(this.platforms, 2700, groundY, 600, 'forest', 4);
-    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 500, 'forest', 5);
-    this.terrainGen.generateGroundSegment(this.platforms, 4600, groundY, 400, 'forest', 6);
+    // ── Section A: Sky Gate / Molten Gorge (0-4500) ──
+    this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, 600, 'refinery', 1);
+    this.terrainGen.generateGroundSegment(this.platforms, 1000, groundY, 500, 'refinery', 2);
+    this.terrainGen.generateGroundSegment(this.platforms, 1900, groundY, 400, 'refinery', 3);
+    this.terrainGen.generateGroundSegment(this.platforms, 2700, groundY, 600, 'refinery', 4);
+    this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 500, 'refinery', 5);
+    this.terrainGen.generateGroundSegment(this.platforms, 4600, groundY, 400, 'refinery', 6);
 
-    // Floating platforms (dragon can reach, warrior can't)
+    const gaps = [
+      { start: 600, end: 1000 },
+      { start: 1500, end: 1900 },
+      { start: 2300, end: 2700 },
+      { start: 3300, end: 3700 },
+      { start: 4200, end: 4600 }
+    ];
+    gaps.forEach(gap => {
+      const w = gap.end - gap.start;
+      const lava = this.lavaHazards.create(gap.start + w / 2, groundY + 16, 'tile-refinery-lava') as Phaser.Physics.Arcade.Sprite;
+      lava.setDisplaySize(w, 32);
+      (lava.body as Phaser.Physics.Arcade.StaticBody).setSize(w, 250);
+      lava.refreshBody();
+      lava.setDepth(4);
+      lava.setTint(0xff6622);
+
+      if (this.lights) {
+        const l = this.lights.addLight(gap.start + w / 2, groundY - 10, w * 0.8, 0xff3300, 0.85);
+        this.tweens.add({
+          targets: l,
+          intensity: { from: 0.6, to: 1.1 },
+          duration: 1000 + Math.random() * 500,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+
+      if (!this.textures.exists('px-lava-bubble')) {
+        const g = this.add.graphics();
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(3, 3, 3);
+        g.generateTexture('px-lava-bubble', 6, 6);
+        g.destroy();
+      }
+
+      this.add.particles(gap.start + w / 2, groundY + 10, 'px-lava-bubble', {
+        x: { min: -w / 2, max: w / 2 },
+        y: 0,
+        speedY: { min: -140, max: -40 },
+        speedX: { min: -25, max: 25 },
+        scale: { start: 1.6, end: 0 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [0xff3300, 0xffaa00, 0xff6600, 0xff2200],
+        lifespan: { min: 700, max: 1400 },
+        frequency: 100,
+      }).setDepth(5);
+    });
+
     [400, 800, 1300, 1700, 2200, 2500, 3100, 3400, 4000, 4400].forEach((x, i) => {
-      this.terrainGen.generatePlatform(this.platforms, x, 450 + Math.sin(i * 1.3) * 60, 64, 'forest');
+      this.terrainGen.generatePlatform(this.platforms, x, 450 + Math.sin(i * 1.3) * 60, 64, 'refinery');
     });
 
-    // Barricade at Section A end (5000) — forces Mecha
-    // Barricade at Section B end (9900) — forces Mecha again
+    // ── Section B: Smelting Refinery (4500-9000) ──
+    this.terrainGen.generateGroundSegment(this.platforms, 4600, groundY, 4400, 'refinery', 8);
 
-    // ── Section B: Forge Floor (5000-10000) — Mecha combat zone ──
-    this.terrainGen.generateGroundSegment(this.platforms, 5100, groundY, 1800, 'refinery', 7);
-    this.terrainGen.generateGroundSegment(this.platforms, 7100, groundY, 1400, 'refinery', 8);
-    this.terrainGen.generateGroundSegment(this.platforms, 8700, groundY, 1300, 'refinery', 9);
+    for (let cx = 4500; cx < 9000; cx += 256) {
+      const ceil = this.platforms.create(cx + 128, 480, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      ceil.setDisplaySize(256, 32);
+      ceil.refreshBody();
+      ceil.setDepth(3);
+      ceil.setTint(0x2a1a1a);
+    }
 
-    // Platforms for vertical traversal
-    [5400, 5800, 6200, 6600, 7200, 7600, 8000, 8400, 8800, 9200, 9600].forEach((x, i) => {
-      this.terrainGen.generatePlatform(this.platforms, x, 550 + Math.sin(i * 0.8) * 50, 80, 'refinery');
+    [5200, 7000, 8800].forEach(x => {
+      const b = new Barricade(this, x, 624);
+      b.setScale(1.2, 3.8);
+      (b.body as Phaser.Physics.Arcade.StaticBody).setSize(38, 244);
+      b.refreshBody();
+      b.setDepth(4);
+      this.barricades.add(b);
     });
 
-    // Barricade at Section B end (9900) — forces Mecha again
+    [5600, 6000, 6400, 7400, 7800, 8200].forEach((x, i) => {
+      this.terrainGen.generatePlatform(this.platforms, x, 620 + Math.sin(i * 0.5) * 40, 80, 'refinery');
+    });
 
-    // ── Section C: The Reliquary (10000-15000) — Boss arena ──
-    this.terrainGen.generateGroundSegment(this.platforms, 10100, groundY, 4900, 'gorge', 10);
+    // ── Section C: Warrior Tunnels (9000-12000) ──
+    this.terrainGen.generateGroundSegment(this.platforms, 9000, groundY, 3000, 'refinery', 9);
 
-    // Arena pillars
-    [10800, 11200, 11600, 12000, 12400, 12800, 13200, 13600, 14000].forEach(x => {
-      this.terrainGen.generatePlatform(this.platforms, x, 520, 48, 'gorge');
+    for (let cx = 9000; cx < 9460; cx += 32) {
+      const ceil = this.platforms.create(cx + 16, 706 - 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      ceil.setDisplaySize(32, 32); ceil.refreshBody(); ceil.setDepth(3); ceil.setTint(0x1a1a1a);
+    }
+
+    for (let cy = 520; cy < 706; cy += 32) {
+      const p = this.platforms.create(9460 - 16, cy + 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      p.setDisplaySize(32, 32); p.refreshBody(); p.setDepth(3); p.setTint(0x1a1a1a);
+    }
+    for (let cy = 520; cy < 768; cy += 32) {
+      const p = this.platforms.create(9540 + 16, cy + 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      p.setDisplaySize(32, 32); p.refreshBody(); p.setDepth(3); p.setTint(0x1a1a1a);
+    }
+
+    for (let cx = 9500; cx < 10500; cx += 32) {
+      const fl = this.platforms.create(cx + 16, 520 + 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      fl.setDisplaySize(32, 32); fl.refreshBody(); fl.setDepth(3); fl.setTint(0x1a1a1a);
+      const cl = this.platforms.create(cx + 16, 458 - 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      cl.setDisplaySize(32, 32); cl.refreshBody(); cl.setDepth(3); cl.setTint(0x1a1a1a);
+    }
+
+    this.terrainGen.generateThornPatch(this.platforms, 9750, 520, 160, 88);
+
+    for (let cy = 520; cy < 768; cy += 32) {
+      const p = this.platforms.create(10460 - 16, cy + 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      p.setDisplaySize(32, 32); p.refreshBody(); p.setDepth(3); p.setTint(0x1a1a1a);
+    }
+    for (let cy = 520; cy < 706; cy += 32) {
+      const p = this.platforms.create(10540 + 16, cy + 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      p.setDisplaySize(32, 32); p.refreshBody(); p.setDepth(3); p.setTint(0x1a1a1a);
+    }
+
+    for (let cx = 10540; cx < 12000; cx += 32) {
+      const ceil = this.platforms.create(cx + 16, 706 - 16, 'tile-ground') as Phaser.Physics.Arcade.Sprite;
+      ceil.setDisplaySize(32, 32); ceil.refreshBody(); ceil.setDepth(3); ceil.setTint(0x1a1a1a);
+    }
+
+    // ── Section C: Altar / Boss Arena (12000-15000) ──
+    this.terrainGen.generateGroundSegment(this.platforms, 12000, groundY, 3000, 'gorge', 10);
+
+    [12400, 12800, 13200, 13600, 14000].forEach(x => {
+      this.terrainGen.generatePlatform(this.platforms, x, 520, 80, 'gorge');
     });
   }
 
@@ -318,7 +506,7 @@ export class GameScene4 extends BaseLevelScene {
   private createEnemies(): void {
     this.enemies = this.physics.add.group();
 
-    // ── Section A: Sky Gate (0-5000) — Dragon zone, aerial enemies ──
+    // ── Section A: Sky Gate (0-5000) ──
     const a: BaseEnemy[] = [
       new FlyingEnemy(this, 500, 350, this.player),
       new FlyingEnemy(this, 900, 300, this.player),
@@ -330,10 +518,9 @@ export class GameScene4 extends BaseLevelScene {
       new FlyingEnemy(this, 4100, 380, this.player),
       new FlyingEnemy(this, 4500, 340, this.player),
       new LeaperEnemy(this, 2800, 738, this.player, { health: 60, damage: 15, speed: 80, patrolMinX: 2750, patrolMaxX: 2900 }),
-      new LeaperEnemy(this, 4800, 738, this.player, { health: 65, damage: 16, speed: 85, patrolMinX: 4700, patrolMaxX: 4900 }),
     ];
 
-    // ── Section B: Forge Floor (5000-10000) — Mecha zone, heavy ground enemies ──
+    // ── Section B: Smelting Refinery (5000-9000) ──
     const b: BaseEnemy[] = [
       new MechaEnemy(this, 5400, 700, this.player, { health: 380, speed: 65, patrolMinX: 5100, patrolMaxX: 5700 }),
       new MechaEnemy(this, 6200, 700, this.player, { health: 400, speed: 70, patrolMinX: 5900, patrolMaxX: 6500 }),
@@ -342,17 +529,14 @@ export class GameScene4 extends BaseLevelScene {
       new SpitterEnemy(this, 7800, 650, this.player, { health: 50, damage: 14, patrolMinX: 7700, patrolMaxX: 7900 }),
       new ShieldEnemy(this, 8200, 700, this.player, { health: 75, damage: 18, speed: 55, patrolMinX: 8100, patrolMaxX: 8300 }),
       new MechaEnemy(this, 8600, 700, this.player, { health: 420, speed: 70, patrolMinX: 8500, patrolMaxX: 8800 }),
-      new LeaperEnemy(this, 9100, 700, this.player, { health: 60, damage: 16, speed: 85, patrolMinX: 9000, patrolMaxX: 9200 }),
-      new ShieldEnemy(this, 9500, 700, this.player, { health: 75, damage: 18, speed: 55, patrolMinX: 9400, patrolMaxX: 9600 }),
     ];
 
-    // ── Section C: The Reliquary (10000-15000) — Mixed, pre-boss ──
+    // ── Section C: Warrior Tunnels (9000-12000) ──
     const c: BaseEnemy[] = [
-      new FlyingEnemy(this, 10300, 350, this.player),
-      new FlyingEnemy(this, 10700, 380, this.player),
-      new ShieldEnemy(this, 11000, 738, this.player, { health: 80, damage: 20, speed: 55, patrolMinX: 10800, patrolMaxX: 11200 }),
-      new LeaperEnemy(this, 11300, 738, this.player, { health: 65, damage: 18, speed: 85, patrolMinX: 11200, patrolMaxX: 11400 }),
-      new SpitterEnemy(this, 10500, 650, this.player, { health: 55, damage: 15, patrolMinX: 10400, patrolMaxX: 10600 }),
+      new SpitterEnemy(this, 9300, 676, this.player, { health: 40, damage: 12, patrolMinX: 9100, patrolMaxX: 9400 }),
+      new LeaperEnemy(this, 10000, 490, this.player, { health: 50, damage: 15, speed: 70, patrolMinX: 9800, patrolMaxX: 10300 }),
+      new SpitterEnemy(this, 10800, 676, this.player, { health: 40, damage: 12, patrolMinX: 10600, patrolMaxX: 11000 }),
+      new FlyingEnemy(this, 11500, 350, this.player),
     ];
 
     this.enemies.addMultiple([...a, ...b, ...c]);
@@ -410,12 +594,53 @@ export class GameScene4 extends BaseLevelScene {
   private setupCollisions(): void {
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.enemies, this.platforms);
+    this.physics.add.collider(this.player, this.barricades);
+    this.physics.add.collider(this.enemies, this.barricades);
+
     this.physics.add.collider(this.player, this.enemies, (_player, _enemy) => {
       const enemy = _enemy as BaseEnemy;
       if (!enemy.active || enemy.health <= 0) return;
       const knockDir = this.player.x < enemy.x ? -1 : 1;
       this.player.takeDamage(enemy.attackDamage, knockDir);
     });
+
+    // Player overlap with lava hazards -> instant death
+    this.physics.add.overlap(this.player, this.lavaHazards, () => {
+      if (this.player.alive) {
+        this.player.takeDamage(100, 0);
+      }
+    });
+
+    // Bullets vs platforms
+    this.physics.add.collider(
+      this.player.combatSystem.bullets,
+      this.platforms,
+      (_bullet) => {
+        const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        spawnProjectileImpact(this, b.x, b.y, [0xff6600, 0xff8800], 4);
+        b.disableBody(true, true);
+      }
+    );
+
+    // Bullets vs enemies
+    this.physics.add.overlap(
+      this.player.combatSystem.bullets,
+      this.enemies,
+      (_bullet, _enemy) => {
+        const b = _bullet as Phaser.Physics.Arcade.Sprite;
+        if (!b.active) return;
+        const target = _enemy as BaseEnemy;
+        if (target.health <= 0) return;
+
+        let pierce = (b.getData('pierce') as number) ?? 2;
+        pierce--;
+        b.setData('pierce', pierce);
+        if (pierce <= 0) b.disableBody(true, true);
+
+        target.takeDamage(this.player.combatSystem.getFireDamage());
+        spawnHitParticles(this, target.x, target.y);
+      }
+    );
 
     this.echoFragments.forEach((e) => {
       this.physics.add.overlap(this.player, e, () => { if (e.active) e.collect(); });
@@ -486,12 +711,68 @@ export class GameScene4 extends BaseLevelScene {
 
     if (this.demoEnded) return;
 
+    this.updateParallax();
     this.weatherSystem?.update(this.cameras.main.scrollX, time);
     this.updateSwordVsEnemies();
     this.updateVignettePulse();
     this.updateBulletLights();
     this.checkBossTrigger();
     this.checkTransition();
+  }
+
+  private updateParallax(): void {
+    const cam = this.cameras.main;
+    const camX = cam.scrollX;
+    const w = this.scale.width;
+    const h = this.scale.height;
+
+    this.refinerySunImages.forEach(img => {
+      if (!img || !img.active) return;
+      const ax = img.getData('anchorX') as number;
+      const targetScreenX = w * 0.70 - (camX * 0.02) + ax;
+      const targetScreenY = h * 0.65;
+      img.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      img.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      img.setScale(0.55 / cam.zoom);
+      const frame = img.getData('frame') as Phaser.GameObjects.Rectangle;
+      if (frame) {
+        frame.x = img.x;
+        frame.y = img.y;
+        frame.setScale(1.0 / cam.zoom);
+      }
+    });
+
+    this.furnaceImages.forEach(img => {
+      if (!img || !img.active) return;
+      const ax = img.getData('anchorX') as number;
+      const targetScreenX = w * 0.50 - (camX * 0.06) + ax;
+      const targetScreenY = h * 0.70;
+      img.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      img.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      img.setScale(0.5 / cam.zoom);
+      const frame = img.getData('frame') as Phaser.GameObjects.Rectangle;
+      if (frame) {
+        frame.x = img.x;
+        frame.y = img.y;
+        frame.setScale(1.0 / cam.zoom);
+      }
+    });
+
+    this.reactorImages.forEach(img => {
+      if (!img || !img.active) return;
+      const ax = img.getData('anchorX') as number;
+      const targetScreenX = w * 0.35 - (camX * 0.12) + ax;
+      const targetScreenY = h * 0.55;
+      img.x = (targetScreenX - cam.centerX) / cam.zoom + cam.centerX;
+      img.y = (targetScreenY - cam.centerY) / cam.zoom + cam.centerY;
+      img.setScale(0.45 / cam.zoom);
+      const frame = img.getData('frame') as Phaser.GameObjects.Rectangle;
+      if (frame) {
+        frame.x = img.x;
+        frame.y = img.y;
+        frame.setScale(1.0 / cam.zoom);
+      }
+    });
   }
 
   private updateSwordVsEnemies(): void {
@@ -569,7 +850,7 @@ export class GameScene4 extends BaseLevelScene {
     const warn = this.add.text(sw / 2, sh / 2 - 60, 'THE GATEKEEPER', {
       fontSize: '28px', fontFamily: 'monospace', color: '#ff4400', stroke: '#000000', strokeThickness: 6,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
-    const sub = this.add.text(sw / 2, sh / 2 + 10, 'Armor → Aerial → Duel', {
+    const sub = this.add.text(sw / 2, sh / 2 + 10, t('boss.foundryP1'), {
       fontSize: '14px', fontFamily: 'monospace', color: '#ffaa44', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 

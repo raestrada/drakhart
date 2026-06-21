@@ -28,6 +28,8 @@ export const en = {
     manual: 'MANUAL',
     nowPlaying: 'NOW PLAYING',
     stop: 'STOP',
+    dragonNeeded: 'DRAGON FORM REQUIRED',
+    humanNeeded: 'WARRIOR FORM REQUIRED',
   },
   story: {
     intro1: 'The old world is ash.',
@@ -67,5 +69,8 @@ export const en = {
     phase2: 'ARMOR DESTROYED — CORE EXPOSED',
     defeated: 'DRACONEL DEFEATED',
     eliteName: 'DRACONEL BASTION',
+    foundryP1: 'PHASE 1 — SHATTER SHIELD AS MECHA',
+    foundryP2: 'PHASE 2 — PURSUE IN DRAGON FLIGHT',
+    foundryP3: 'PHASE 3 — FIGHT ON FOOT AS WARRIOR',
   },
 };
