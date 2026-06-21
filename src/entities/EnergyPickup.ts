@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 import { Player } from './Player';
 
 export class EnergyPickup extends Phaser.Physics.Arcade.Sprite {
@@ -86,7 +87,7 @@ export class EnergyPickup extends Phaser.Physics.Arcade.Sprite {
       onComplete: () => text.destroy()
     });
 
-    (this.scene as any).gameAudio?.playCardCollect?.();
+    getSceneAudio(this.scene)?.playCardCollect?.();
     this.scene.cameras.main.flash(200, 0, 180, 255);
 
     this.destroy();

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { FormState } from '../../systems/FormStateMachine';
 import { spawnMetalSparks } from '../../effects/Particles';
 
@@ -47,10 +48,11 @@ export class ShieldEnemy extends BaseEnemy {
         if (this.active) this.clearTint();
       });
 
-      if ((this.scene as any).gameAudio && typeof (this.scene as any).gameAudio.playShieldBlock === 'function') {
-        (this.scene as any).gameAudio.playShieldBlock();
+      const audio = getSceneAudio(this.scene);
+      if (audio) {
+        audio.playShieldBlock();
       } else {
-        (this.scene as any).gameAudio?.playEnemyHit?.();
+        getSceneAudio(this.scene)?.playEnemyHit?.();
       }
 
       this.spawnShieldSparks();
@@ -98,7 +100,7 @@ export class ShieldEnemy extends BaseEnemy {
 
   protected die(): void {
     spawnMetalSparks(this.scene, this.x, this.y, 14);
-    (this.scene as any).gameAudio?.playEnemyDeath();
+    getSceneAudio(this.scene)?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x887744);

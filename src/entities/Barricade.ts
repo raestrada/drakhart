@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { spawnImmuneText } from '../effects/DamageNumbers';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 
 export class Barricade extends Phaser.Physics.Arcade.Sprite {
   public health = 75;
@@ -35,7 +36,7 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
   }
 
   private spawnImmuneEffects(): void {
-    (this.scene as any).gameAudio?.playEnemyHit();
+    getSceneAudio(this.scene)?.playEnemyHit();
     spawnImmuneText(this.scene, this.x, this.y - 16);
 
     // Sparks
@@ -60,7 +61,7 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
   }
 
   private shatter(): void {
-    (this.scene as any).gameAudio?.playDestruction();
+    getSceneAudio(this.scene)?.playDestruction();
     this.alive = false;
 
     this.scene.cameras.main.shake(200, 0.006);

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { distanceBetween } from '../../utils/helpers';
 import { spawnDarkMist } from '../../effects/Particles';
 
@@ -60,7 +61,7 @@ export class LeaperEnemy extends BaseEnemy {
         body.setVelocityX(dir * this.moveSpeed * 1.5);
         body.setVelocityY(-260);
 
-        (this.scene as any).gameAudio?.playJump?.();
+        getSceneAudio(this.scene)?.playJump?.();
 
         this.scene.tweens.add({
           targets: this,
@@ -76,7 +77,7 @@ export class LeaperEnemy extends BaseEnemy {
 
   protected die(): void {
     spawnDarkMist(this.scene, this.x, this.y);
-    (this.scene as any).gameAudio?.playEnemyDeath();
+    getSceneAudio(this.scene)?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x443333);

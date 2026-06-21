@@ -4,6 +4,7 @@ import { Player } from '../Player';
 import { distanceBetween } from '../../utils/helpers';
 import { spawnProjectileTrail, spawnProjectileImpact, spawnDeathExplosion } from '../../effects/Particles';
 import { ENEMY_SEARCHLIGHT } from '../../utils/constants';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 
 export class FlyingEnemy extends BaseEnemy {
   private searchLight: Phaser.GameObjects.Light | null = null;
@@ -138,7 +139,7 @@ export class FlyingEnemy extends BaseEnemy {
       this.searchLight = null;
     }
     spawnDeathExplosion(this.scene, this.x, this.y);
-    (this.scene as any).gameAudio?.playEnemyDeath();
+    getSceneAudio(this.scene)?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x663388);

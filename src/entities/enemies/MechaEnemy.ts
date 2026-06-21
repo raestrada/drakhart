@@ -4,6 +4,7 @@ import { Player } from '../Player';
 import { FormState } from '../../systems/FormStateMachine';
 import { spawnHitParticles, spawnMetalSparks, spawnOilSmoke } from '../../effects/Particles';
 import { ENEMY_SEARCHLIGHT } from '../../utils/constants';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 
 export class MechaEnemy extends BaseEnemy {
   private chargeCooldown = false;
@@ -76,7 +77,7 @@ export class MechaEnemy extends BaseEnemy {
 
     const playerState = this.player.formMachine.state;
     if (playerState === FormState.HUMAN || playerState === FormState.EXHAUSTED) {
-      (this.scene as any).gameAudio?.playShieldBlock?.();
+      getSceneAudio(this.scene)?.playShieldBlock?.();
 
       spawnHitParticles(this.scene, this.x, this.y, 6);
 
@@ -119,7 +120,7 @@ export class MechaEnemy extends BaseEnemy {
     this.player.takeDamage(this.attackDamage, knockDir);
 
     this.scene.cameras.main.shake(220, 0.004);
-    (this.scene as any).gameAudio?.playLand?.();
+    getSceneAudio(this.scene)?.playLand?.();
 
     const dust = this.scene.add.rectangle(this.x, this.y + 14, 10, 5, 0x444444);
     this.scene.tweens.add({
@@ -171,7 +172,7 @@ export class MechaEnemy extends BaseEnemy {
     }
     spawnMetalSparks(this.scene, this.x, this.y, 16);
     spawnOilSmoke(this.scene, this.x, this.y);
-    (this.scene as any).gameAudio?.playEnemyDeath();
+    getSceneAudio(this.scene)?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x664444);

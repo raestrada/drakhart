@@ -17,6 +17,7 @@ import {
   VISOR_CONE,
 } from '../utils/constants';
 import { TarotSystem } from '../systems/TarotSystem';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 import { GamepadSystem } from '../systems/GamepadSystem';
 import { spawnLandingDust, spawnHoverThrust, spawnDragonExhaust, spawnHitParticles } from '../effects/Particles';
 import { applyGlow } from '../effects/CameraFilters';
@@ -298,7 +299,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     ) {
       body.setVelocityY(PLAYER_HUMAN_JUMP * 0.8);
       this.hasDoubleJumped = true;
-      (this.scene as any).gameAudio?.playJump();
+      getSceneAudio(this.scene)?.playJump();
       const baseScale = this.formMachine.state === FormState.MECHA ? 1.4 : (this.formMachine.state === FormState.DRAGON ? 1.45 : 0.8);
       this.scene.tweens.add({
         targets: this,
@@ -526,7 +527,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.breathTimer += delta;
       if (this.breathTimer > 800) {
         this.breathTimer = 0;
-        (this.scene as any).gameAudio?.playLowHealth?.();
+        getSceneAudio(this.scene)?.playLowHealth?.();
       }
       // Ember drip
       this.lowHP_steamTimer += delta;
@@ -656,7 +657,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const interval = heavy ? 480 : 340;
     if (this.footstepTimer >= interval) {
       this.footstepTimer = 0;
-      (this.scene as any).gameAudio?.playFootstep?.(surface, heavy);
+      getSceneAudio(this.scene)?.playFootstep?.(surface, heavy);
       this.spawnFootstepParticles(surface, heavy);
     }
   }
@@ -794,7 +795,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private triggerJumpJuice(): void {
-    (this.scene as any).gameAudio?.playJump();
+    getSceneAudio(this.scene)?.playJump();
     const baseScale = this.formMachine.state === FormState.MECHA ? 1.4 : (this.formMachine.state === FormState.DRAGON ? 1.45 : 0.8);
     this.scene.tweens.add({
       targets: this,
@@ -807,7 +808,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private triggerLandingJuice(): void {
-    (this.scene as any).gameAudio?.playLand();
+    getSceneAudio(this.scene)?.playLand();
     const baseScale = this.formMachine.state === FormState.MECHA ? 1.4 : (this.formMachine.state === FormState.DRAGON ? 1.45 : 0.8);
     this.scene.tweens.add({
       targets: this,
@@ -857,7 +858,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.isInvincible || !this.alive) return;
 
     this.health -= amount;
-    (this.scene as any).gameAudio?.playDamage();
+    getSceneAudio(this.scene)?.playDamage();
     this.isInvincible = true;
 
     const body = this.body as Phaser.Physics.Arcade.Body;

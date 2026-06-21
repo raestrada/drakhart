@@ -168,7 +168,6 @@ class Gatekeeper extends Boss {
 }
 
 export class GameScene4 extends BaseLevelScene {
-  public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -217,8 +216,8 @@ export class GameScene4 extends BaseLevelScene {
 
     this.gameAudio = new GameAudio();
     this.gameAudio.playBGM(5);
-    this.events.once('shutdown', () => { this.gameAudio.stopBGM(); });
-    this.events.once('destroy', () => { this.gameAudio.stopBGM(); });
+    this.events.once('shutdown', () => { this.gameAudio?.stopBGM(); });
+    this.events.once('destroy', () => { this.gameAudio?.stopBGM(); });
 
     this.echoFragments = [];
     this.bulletLights.clear();
@@ -238,7 +237,7 @@ export class GameScene4 extends BaseLevelScene {
     this.createDecorations();
     this.createEchoFragments();
     this.tarotSystem = new TarotSystem();
-    if (this.pendingCardsToCollect?.length) this.pendingCardsToCollect.forEach(id => this.tarotSystem.collect(id, null as any));
+    if (this.pendingCardsToCollect?.length) this.pendingCardsToCollect.forEach(id => this.tarotSystem.collect(id, null));
     this.createPlayer();
     this.player.tarotSystem = this.tarotSystem;
     if (this.pendingMechaUnlock) this.player.formMachine.unlockTransform();

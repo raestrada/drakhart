@@ -4,6 +4,7 @@ import { FormState } from './FormStateMachine';
 import { HitstopSystem, HITSTOP } from './HitstopSystem';
 import { spawnProjectileTrail } from '../effects/Particles';
 import { applyGlow } from '../effects/CameraFilters';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 import {
   SWORD_DAMAGE,
   SWORD_RANGE,
@@ -64,7 +65,7 @@ export class CombatSystem {
     this.swordActive = true;
     this.swordCooldown = true;
     this.activeDamage = SWORD_DAMAGE;
-    (this.scene as any).gameAudio?.playAttack();
+    getSceneAudio(this.scene)?.playAttack();
 
     this.hitstop.freeze(HITSTOP.SWORD_LIGHT.duration, HITSTOP.SWORD_LIGHT.intensity);
 
@@ -146,7 +147,7 @@ export class CombatSystem {
     this.swordActive = true;
     this.swordCooldown = true;
     this.activeDamage = this.player.tarotSystem?.hasStrength() ? Math.round(MECHA_SWORD_DAMAGE * 1.5) : MECHA_SWORD_DAMAGE;
-    (this.scene as any).gameAudio?.playHeavyAttack();
+    getSceneAudio(this.scene)?.playHeavyAttack();
 
     this.hitstop.freeze(HITSTOP.MECHA_CLAYMORE.duration, HITSTOP.MECHA_CLAYMORE.intensity);
 
@@ -247,7 +248,7 @@ export class CombatSystem {
 
     this.fireCooldown = true;
     this.player.formMachine.energy.consumeShoot();
-    (this.scene as any).gameAudio?.playFireball();
+    getSceneAudio(this.scene)?.playFireball();
 
     const dir = facingRight ? 1 : -1;
     

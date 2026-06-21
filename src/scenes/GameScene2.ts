@@ -42,7 +42,6 @@ interface PlatformDef {
 }
 
 export class GameScene2 extends BaseLevelScene {
-  public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -121,12 +120,12 @@ export class GameScene2 extends BaseLevelScene {
     this.gameAudio.playAmbientZone(2);
 
     this.events.once('shutdown', () => {
-      this.gameAudio.stopBGM();
-      this.gameAudio.stopAmbient();
+      this.gameAudio?.stopBGM();
+      this.gameAudio?.stopAmbient();
     });
     this.events.once('destroy', () => {
-      this.gameAudio.stopBGM();
-      this.gameAudio.stopAmbient();
+      this.gameAudio?.stopBGM();
+      this.gameAudio?.stopAmbient();
     });
 
     this.terrainGen = new TerrainGenerator(this);
@@ -154,7 +153,7 @@ export class GameScene2 extends BaseLevelScene {
 
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
       this.pendingCardsToCollect.forEach((cardId) => {
-        this.tarotSystem.collect(cardId, null as any);
+        this.tarotSystem.collect(cardId, null);
       });
     }
 
@@ -1024,7 +1023,7 @@ export class GameScene2 extends BaseLevelScene {
       this.physics.add.overlap(this.player, pickup, () => {
         if (!pickup.active) return;
         this.player.formMachine.energy.addEnergy(20);
-        (this.scene as any).gameAudio?.playCardCollect?.();
+        this.gameAudio?.playCardCollect?.();
         pickup.destroy();
       });
       this.time.delayedCall(8000, () => { if (pickup.active) pickup.destroy(); });

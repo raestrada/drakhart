@@ -13,6 +13,7 @@ import {
   SHAKE,
 } from '../utils/constants';
 import { playFlash } from '../effects/ScreenEffects';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 
 export enum FormState {
   HUMAN = 'HUMAN',
@@ -196,7 +197,7 @@ export class FormStateMachine {
   private beginTransformToMecha(): void {
     this.currentState = FormState.TRANSFORMING;
     this.player.setVelocity(0, 0);
-    (this.scene as any).gameAudio?.playTransform();
+    getSceneAudio(this.scene)?.playTransform();
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
@@ -233,7 +234,7 @@ export class FormStateMachine {
   private beginTransformToDragon(): void {
     this.currentState = FormState.TRANSFORMING;
     this.player.setVelocity(0, 0);
-    (this.scene as any).gameAudio?.playTransform();
+    getSceneAudio(this.scene)?.playTransform();
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
@@ -248,7 +249,7 @@ export class FormStateMachine {
     });
   }
 
-  private enterDragon(): void {
+  public enterDragon(): void {
     this.currentState = FormState.DRAGON;
     this.player.setTexture('player-dragon');
     this.player.setScale(1.45);
@@ -271,7 +272,7 @@ export class FormStateMachine {
   private startRevert(): void {
     this.currentState = FormState.EXHAUSTED;
     this.player.setTexture('player-human');
-    (this.scene as any).gameAudio?.playRevert();
+    getSceneAudio(this.scene)?.playRevert();
     this.player.setScale(0.8);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = true;

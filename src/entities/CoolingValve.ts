@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from './Player';
 import { BaseEnemy } from './enemies/BaseEnemy';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 
 export class CoolingValve extends Phaser.Physics.Arcade.Sprite {
   public alive = true;
@@ -39,14 +40,14 @@ export class CoolingValve extends Phaser.Physics.Arcade.Sprite {
       });
     }
 
-    (this.scene as any).gameAudio?.playShieldBlock?.();
+    getSceneAudio(this.scene)?.playShieldBlock?.();
 
     this.scene.time.delayedCall(this.rechargeTime, () => {
       if (this.active) {
         this.isOnCooldown = false;
         this.setAlpha(1.0);
         this.clearTint();
-        (this.scene as any).gameAudio?.playCardCollect?.();
+        getSceneAudio(this.scene)?.playCardCollect?.();
       }
     });
   }

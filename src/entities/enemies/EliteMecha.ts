@@ -4,6 +4,7 @@ import { Player } from '../Player';
 import { FormState } from '../../systems/FormStateMachine';
 import { spawnHitParticles, spawnDeathExplosion } from '../../effects/Particles';
 import { t } from '../../i18n';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 
 export class EliteMecha extends BaseEnemy {
   private stompCooldown = false;
@@ -147,7 +148,7 @@ export class EliteMecha extends BaseEnemy {
     const playerState = this.player.formMachine.state;
     if (playerState === FormState.HUMAN || playerState === FormState.EXHAUSTED) {
       // Immune to human attacks
-      (this.scene as any).gameAudio?.playShieldBlock?.();
+      getSceneAudio(this.scene)?.playShieldBlock?.();
 
       for (let i = 0; i < 8; i++) {
         const spark = this.scene.add.rectangle(
@@ -210,7 +211,7 @@ export class EliteMecha extends BaseEnemy {
     this.isAttacking = false;
 
     this.setTint(0xff6644);
-    (this.scene as any).gameAudio?.playShieldBlock?.();
+    getSceneAudio(this.scene)?.playShieldBlock?.();
 
     this.scene.time.delayedCall(2000, () => {
       this.staggerVulnerable = false;
@@ -251,7 +252,7 @@ export class EliteMecha extends BaseEnemy {
     this.attackDuration = 800;
     this.play('elm-attack', true);
 
-    (this.scene as any).gameAudio?.playFireball?.();
+    getSceneAudio(this.scene)?.playFireball?.();
 
     const shootDir = this.player.x < this.x ? -1 : 1;
     this.setFlipX(shootDir < 0);
@@ -321,7 +322,7 @@ export class EliteMecha extends BaseEnemy {
       if (!this.active || this.health <= 0) return;
 
       // Heavy stomp impact sound/shake
-      (this.scene as any).gameAudio?.playLand?.();
+      getSceneAudio(this.scene)?.playLand?.();
       this.scene.cameras.main.shake(320, 0.009);
 
       // Create ground shockwaves expanding left and right
@@ -393,7 +394,7 @@ export class EliteMecha extends BaseEnemy {
 
     // Death explosion cascade
     this.scene.cameras.main.shake(1200, 0.015);
-    (this.scene as any).gameAudio?.playEnemyDeath?.();
+    getSceneAudio(this.scene)?.playEnemyDeath?.();
 
     for (let i = 0; i < 8; i++) {
       this.scene.time.delayedCall(i * 150, () => {

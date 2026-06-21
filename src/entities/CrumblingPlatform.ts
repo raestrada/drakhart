@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 
 export class CrumblingPlatform {
   private scene: Phaser.Scene;
@@ -38,7 +39,7 @@ export class CrumblingPlatform {
     if (this.isCrumbling || this.isFallen) return;
 
     this.isCrumbling = true;
-    (this.scene as any).gameAudio?.playCrumble?.();
+    getSceneAudio(this.scene)?.playCrumble?.();
 
     // Spark glow on edges before crumbling
     for (let i = 0; i < 4; i++) {
@@ -78,7 +79,7 @@ export class CrumblingPlatform {
     this.isFallen = true;
     this.sprite.setTint(0x222222);
 
-    (this.scene as any).gameAudio?.playDestruction?.();
+    getSceneAudio(this.scene)?.playDestruction?.();
     this.scene.cameras.main.shake(80, 0.002);
 
     // Dust puff

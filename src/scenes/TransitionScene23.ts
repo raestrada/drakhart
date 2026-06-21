@@ -67,7 +67,7 @@ export class TransitionScene23 extends Phaser.Scene {
 
     // Tarot
     this.tarotSystem = new TarotSystem();
-    if (this.pendingCardsToCollect?.length) this.pendingCardsToCollect.forEach(id => this.tarotSystem.collect(id, null as any));
+    if (this.pendingCardsToCollect?.length) this.pendingCardsToCollect.forEach(id => this.tarotSystem.collect(id, null));
 
     // Player
     this.player = new Player(this, this.pendingSpawnX, this.pendingSpawnY);

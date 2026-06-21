@@ -43,7 +43,6 @@ interface PlatformDef {
 }
 
 export class GameScene extends BaseLevelScene {
-  public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -142,12 +141,12 @@ export class GameScene extends BaseLevelScene {
 
     // Cleanup BGM when transitioning/destroying scene
     this.events.once('shutdown', () => {
-      this.gameAudio.stopBGM();
-      this.gameAudio.stopAmbient();
+      this.gameAudio?.stopBGM();
+      this.gameAudio?.stopAmbient();
     });
     this.events.once('destroy', () => {
-      this.gameAudio.stopBGM();
-      this.gameAudio.stopAmbient();
+      this.gameAudio?.stopBGM();
+      this.gameAudio?.stopAmbient();
     });
 
     this.terrainGen = new TerrainGenerator(this);
@@ -175,7 +174,7 @@ export class GameScene extends BaseLevelScene {
     this.tarotSystem = new TarotSystem();
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
       this.pendingCardsToCollect.forEach((cardId) => {
-        this.tarotSystem.collect(cardId, null as any);
+        this.tarotSystem.collect(cardId, null);
       });
     }
 
@@ -1111,7 +1110,7 @@ export class GameScene extends BaseLevelScene {
   private restoreSave(data: ReturnType<typeof loadGame>): void {
     if (!data) return;
     data.cardsCollected.forEach((cardId) => {
-      this.tarotSystem.collect(cardId, null as any);
+      this.tarotSystem.collect(cardId, null);
     });
     if (data.mechaUnlocked) {
       this.pendingMechaUnlock = true;

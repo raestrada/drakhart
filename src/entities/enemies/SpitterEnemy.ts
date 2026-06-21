@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BaseEnemy } from './BaseEnemy';
 import { Player } from '../Player';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { spawnAcidSplash, spawnProjectileTrail, spawnProjectileImpact } from '../../effects/Particles';
 
 export class SpitterEnemy extends BaseEnemy {
@@ -37,7 +38,7 @@ export class SpitterEnemy extends BaseEnemy {
   protected doAttack(): void {
     if (!this.active || !this.isActive || this.health <= 0) return;
 
-    (this.scene as any).gameAudio?.playFireball?.();
+    getSceneAudio(this.scene)?.playFireball?.();
 
     // Telegraph: flash green briefly before shooting
     this.setTint(0x88ffaa);
@@ -101,7 +102,7 @@ export class SpitterEnemy extends BaseEnemy {
 
   protected die(): void {
     spawnAcidSplash(this.scene, this.x, this.y);
-    (this.scene as any).gameAudio?.playEnemyDeath();
+    getSceneAudio(this.scene)?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x224422);

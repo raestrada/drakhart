@@ -14,7 +14,7 @@ import { loadGame, saveGame } from '../systems/SaveSystem';
 import { spawnHitParticles, spawnDeathExplosion, spawnProjectileImpact } from '../effects/Particles';
 import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilters';
 import { WeatherSystem } from '../systems/WeatherSystem';
-import { BaseLevelScene } from './BaseLevelScene';
+import { BaseLevelScene, getSceneAudio } from './BaseLevelScene';
 import { SaveAltar } from '../entities/SaveAltar';
 import { EchoFragment } from '../entities/EchoFragment';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
@@ -48,7 +48,6 @@ interface WaveDef {
 }
 
 export class GameScene3 extends BaseLevelScene {
-  public gameAudio!: GameAudio;
   private player!: Player;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private enemies!: Phaser.Physics.Arcade.Group;
@@ -154,12 +153,12 @@ export class GameScene3 extends BaseLevelScene {
     this.gameAudio.playAmbientZone(3);
 
     this.events.once('shutdown', () => {
-      this.gameAudio.stopBGM();
-      this.gameAudio.stopAmbient();
+      this.gameAudio?.stopBGM();
+      this.gameAudio?.stopAmbient();
     });
     this.events.once('destroy', () => {
-      this.gameAudio.stopBGM();
-      this.gameAudio.stopAmbient();
+      this.gameAudio?.stopBGM();
+      this.gameAudio?.stopAmbient();
     });
 
     this.terrainGen = new TerrainGenerator(this);
@@ -195,7 +194,7 @@ export class GameScene3 extends BaseLevelScene {
 
     if (this.pendingCardsToCollect && this.pendingCardsToCollect.length > 0) {
       this.pendingCardsToCollect.forEach((cardId) => {
-        this.tarotSystem.collect(cardId, null as any);
+        this.tarotSystem.collect(cardId, null);
       });
     }
 
@@ -1710,7 +1709,7 @@ class LaserGate extends Phaser.GameObjects.Container {
     if (this.activeBeam && (!this.nodeTop.active || !this.nodeBottom.active)) {
       this.activeBeam = false;
       this.beam.destroy();
-      (this.scene as any).gameAudio?.playDestruction();
+      getSceneAudio(this.scene)?.playDestruction();
     }
   }
 }
@@ -2009,7 +2008,7 @@ class DriftMine extends Phaser.Physics.Arcade.Sprite {
   }
 
   public explode() {
-    (this.scene as any).gameAudio?.playDestruction();
+    getSceneAudio(this.scene)?.playDestruction();
     
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.player.x, this.player.y);
     if (dist < 80) {

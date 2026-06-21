@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from './Player';
 import { saveGame } from '../systems/SaveSystem';
 import { t } from '../i18n';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 
 export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
   private promptText: Phaser.GameObjects.Text;
@@ -192,9 +193,9 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     });
 
     // Play dramatic religious prayer BGM sweep — stop altar BGM first
-    (this.scene as any).gameAudio?.stopSacredAltarBGM?.();
-    (this.scene as any).gameAudio?.stopBGM?.();
-    (this.scene as any).gameAudio?.playChoirSave?.();
+    getSceneAudio(this.scene)?.stopSacredAltarBGM?.();
+    getSceneAudio(this.scene)?.stopBGM?.();
+    getSceneAudio(this.scene)?.playChoirSave?.();
 
     // Disable player controls & force kneeling pose at altar center
     player.setInputEnabled(false);
@@ -316,8 +317,8 @@ export class SaveAltar extends Phaser.Physics.Arcade.Sprite {
     this.contractAltarLight();
 
     // Stop choir audio and resume sacred altar BGM
-    (this.scene as any).gameAudio?.stopChoirSave?.();
-    (this.scene as any).gameAudio?.playSacredAltarBGM?.();
+    getSceneAudio(this.scene)?.stopChoirSave?.();
+    getSceneAudio(this.scene)?.playSacredAltarBGM?.();
 
     // Fade out light beam
     if (this.lightBeam) {

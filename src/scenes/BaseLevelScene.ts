@@ -1,9 +1,14 @@
 import Phaser from 'phaser';
+import type { GameAudio } from '../systems/GameAudio';
+
+export function getSceneAudio(scene: Phaser.Scene): GameAudio | null {
+  return (scene as BaseLevelScene).gameAudio ?? null;
+}
 
 export class BaseLevelScene extends Phaser.Scene {
   public currentBiome: 'forest' | 'refinery' | 'gorge' | 'foundry' | undefined;
   protected parallaxLayers: Phaser.GameObjects.TileSprite[] = [];
-  protected gameAudio: any = null;
+  public gameAudio: GameAudio | null = null;
   private emberRainTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor(key: string | Phaser.Types.Scenes.SettingsConfig) {

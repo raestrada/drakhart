@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Player } from '../Player';
+import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { distanceBetween } from '../../utils/helpers';
 import { spawnDamageNumber, DamageType } from '../../effects/DamageNumbers';
 
@@ -75,7 +76,7 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     this.setAlpha(0);
     this.setScale(this.scaleX * 0.4, this.scaleY * 0.4);
 
-    (this.scene as any).gameAudio?.playSpawnIn?.();
+    getSceneAudio(this.scene)?.playSpawnIn?.();
 
     const ring = this.scene.add.graphics();
     ring.lineStyle(1.5, 0x9944ff, 0.6);
@@ -233,12 +234,12 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     if (this.health <= 0) {
       this.die();
     } else {
-      (this.scene as any).gameAudio?.playEnemyHit();
+      getSceneAudio(this.scene)?.playEnemyHit();
     }
   }
 
   protected die(): void {
-    (this.scene as any).gameAudio?.playEnemyDeath();
+    getSceneAudio(this.scene)?.playEnemyDeath();
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x333333);

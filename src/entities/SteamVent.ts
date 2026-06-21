@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from './Player';
 import { FormState } from '../systems/FormStateMachine';
+import { getSceneAudio } from '../scenes/BaseLevelScene';
 
 export class SteamVent extends Phaser.Physics.Arcade.Sprite {
   private lastDamageTime = 0;
@@ -43,7 +44,7 @@ export class SteamVent extends Phaser.Physics.Arcade.Sprite {
       if (time - this.lastDamageTime > 500) {
         this.lastDamageTime = time;
         player.takeDamage(10, player.x < this.x ? -1 : 1);
-        (this.scene as any).gameAudio?.playDamage?.();
+        getSceneAudio(this.scene)?.playDamage?.();
       }
     }
   }

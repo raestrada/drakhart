@@ -3,7 +3,7 @@ import { Player } from '../entities/Player';
 export class TarotSystem {
   private collected: Set<string> = new Set();
 
-  collect(cardId: string, player: Player): void {
+  collect(cardId: string, _player: Player | null = null): void {
     this.collected.add(cardId);
 
     // Apply permanent effects

@@ -10,7 +10,7 @@ class DreadnoughtCannon extends BaseEnemy {
   private fireTimer = 0;
   private hpBar: Phaser.GameObjects.Rectangle | null = null;
   private hpFill: Phaser.GameObjects.Rectangle | null = null;
-  private glowLight: any = null;
+  private glowLight: Phaser.GameObjects.Light | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, isTop: boolean, boss: DreadnoughtBoss, player: Player) {
     super(scene, x, y, 'enemy-mecha', player, {
@@ -142,7 +142,7 @@ export class DreadnoughtBoss extends BaseEnemy {
   private fireTimer = 0;
   private fixedX: number;
   private fixedY: number;
-  private coreLight: any = null;
+  private coreLight: Phaser.GameObjects.Light | null = null;
   private bossHpBar: Phaser.GameObjects.Rectangle | null = null;
   private bossHpFill: Phaser.GameObjects.Rectangle | null = null;
 

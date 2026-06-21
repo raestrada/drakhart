@@ -33,4 +33,8 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     },
   },
   scene: [BootScene, GameScene, GameScene2, GameScene3, GameScene4, UIScene, TransitionScene12, TransitionScene23, TransitionScene34, TransitionScene45, PauseScene, TarotCollectionScene, ManualScene],
+  render: {
+    batchSize: 4096,
+    maxTextures: 16,
+  },
 };
