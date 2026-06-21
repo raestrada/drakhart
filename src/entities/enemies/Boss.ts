@@ -9,18 +9,18 @@ import { getSceneAudio } from '../../scenes/BaseLevelScene';
 type BossPhase = 'phase1' | 'phase2' | 'dead';
 
 export class Boss extends BaseEnemy {
-  private phase: BossPhase = 'phase1';
+  protected phase: BossPhase = 'phase1';
   private bossPhase1Health = 180;
   private bossPhase2Health = 120;
-  private totalMaxHealth = this.bossPhase1Health + this.bossPhase2Health;
+  protected totalMaxHealth = this.bossPhase1Health + this.bossPhase2Health;
   private moveDirection = 1;
   private moveTimer = 0;
   private fireTimer = 0;
   private bossBullets: Phaser.Physics.Arcade.Group;
-  private nameText: Phaser.GameObjects.Text | null = null;
-  private healthBarBg: Phaser.GameObjects.Rectangle | null = null;
-  private healthBarFill: Phaser.GameObjects.Rectangle | null = null;
-  private bossActive = false;
+  protected nameText: Phaser.GameObjects.Text | null = null;
+  protected healthBarBg: Phaser.GameObjects.Rectangle | null = null;
+  protected healthBarFill: Phaser.GameObjects.Rectangle | null = null;
+  protected bossActive = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, 'boss', player, {

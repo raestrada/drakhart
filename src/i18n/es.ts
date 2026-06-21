@@ -74,5 +74,13 @@ export const es: typeof en = {
     foundryP1: 'FASE 1 — ROMPE EL ESCUDO EN FORMA MECHA',
     foundryP2: 'FASE 2 — PERSIGUE EN VUELO DE DRAGÓN',
     foundryP3: 'FASE 3 — LUCHA A PIE COMO GUERRERO',
+    gatekeeperName: 'GUARDIÁN IMPERIAL',
+    soldierName: 'PILOTO IMPERIAL',
+  },
+  zones: {
+    ashenWoods: 'BOSQUE DE CENIZAS',
+    industrialWasteland: 'PÁRAMO INDUSTRIAL',
+    ashenGorge: 'DESFILADERO DE CENIZA',
+    foundryGates: 'LAS PUERTAS DE LA FUNDICIÓN',
   },
 };

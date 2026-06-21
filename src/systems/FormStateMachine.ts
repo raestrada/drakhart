@@ -215,17 +215,32 @@ export class FormStateMachine {
     });
   }
 
+  private getRealBodyBottom(body: Phaser.Physics.Arcade.Body): number {
+    const sprite = this.player;
+    return sprite.y - (sprite.displayOriginY - body.offset.y) * sprite.scaleY + body.height;
+  }
+
+  private syncBodyPosition(body: Phaser.Physics.Arcade.Body): void {
+    const sprite = this.player;
+    body.x = sprite.x - sprite.displayOriginX + body.offset.x * sprite.scaleX;
+    body.y = sprite.y - sprite.displayOriginY + body.offset.y * sprite.scaleY;
+  }
+
   private enterMecha(): void {
     this.currentState = FormState.MECHA;
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const oldBottom = this.getRealBodyBottom(body);
+
     this.player.setTexture('player-mecha');
     this.player.setScale(1.4);
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const oldBottom = body.bottom;
+    body.updateFromGameObject();
     body.setSize(48, 76);
     body.setOffset(40, 52);
-    body.updateFromGameObject();
-    this.player.y -= (body.bottom - oldBottom);
-    body.updateFromGameObject();
+    
+    const newBottom = this.getRealBodyBottom(body);
+    this.player.y -= (newBottom - oldBottom);
+    this.syncBodyPosition(body);
+
     body.allowGravity = true;
 
     this.scene.cameras.main.zoomTo(
@@ -255,16 +270,20 @@ export class FormStateMachine {
 
   public enterDragon(): void {
     this.currentState = FormState.DRAGON;
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const oldBottom = this.getRealBodyBottom(body);
+
     this.player.setTexture('player-dragon');
     this.player.setScale(1.45);
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    body.updateFromGameObject();
     body.allowGravity = false;
-    const oldBottom = body.bottom;
     body.setSize(84, 60);
     body.setOffset(6, 6);
-    body.updateFromGameObject();
-    this.player.y -= (body.bottom - oldBottom);
-    body.updateFromGameObject();
+
+    const newBottom = this.getRealBodyBottom(body);
+    this.player.y -= (newBottom - oldBottom);
+    this.syncBodyPosition(body);
+
     this.flightSystem.activate();
     getSceneAudio(this.scene)?.setDragonActive(true);
 
@@ -283,17 +302,21 @@ export class FormStateMachine {
   private startRevert(): void {
     this.currentState = FormState.EXHAUSTED;
     getSceneAudio(this.scene)?.setDragonActive(false);
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const oldBottom = this.getRealBodyBottom(body);
+
     this.player.setTexture('player-human');
     getSceneAudio(this.scene)?.playRevert();
     this.player.setScale(0.8);
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    body.updateFromGameObject();
     body.allowGravity = true;
-    const oldBottom = body.bottom;
     body.setSize(36, 60);
     body.setOffset(30, 36);
-    body.updateFromGameObject();
-    this.player.y -= (body.bottom - oldBottom);
-    body.updateFromGameObject();
+
+    const newBottom = this.getRealBodyBottom(body);
+    this.player.y -= (newBottom - oldBottom);
+    this.syncBodyPosition(body);
+
     this.flightSystem.deactivate();
 
     this.scene.cameras.main.zoomTo(

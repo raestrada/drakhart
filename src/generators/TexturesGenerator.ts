@@ -75,6 +75,7 @@ export class TexturesGenerator {
     this.drawSpitterEnemy();
     this.drawLeaperEnemy();
     this.drawBoss();
+    this.drawSoldierBoss();
     this.drawTerrainTextures();
 
     // Level 2 Refinery Tiles
@@ -697,13 +698,13 @@ export class TexturesGenerator {
     const bFootX = 16 - ls;
     const bFootY = 35;
 
-    g.lineStyle(4, 0x0f121a); // joint backing
+    g.lineStyle(4, 0x374151); // joint backing
     g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
-    g.lineStyle(3, 0x19212e); // thigh/shin
+    g.lineStyle(3, 0x9ca3af); // thigh/shin
     g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
-    g.fillStyle(0x0f121a); g.fillCircle(bKneeX, bKneeY, 1.8);
+    g.fillStyle(0x374151); g.fillCircle(bKneeX, bKneeY, 1.8);
     // foot claw
-    g.fillStyle(0x131922); g.fillRect(bFootX - 3, bFootY - 1, 6, 2);
+    g.fillStyle(0x4b5563); g.fillRect(bFootX - 3, bFootY - 1, 6, 2);
 
     // === 2. Thruster Flame (Left side, pointing backward) ===
     if (isCharging) {
@@ -724,7 +725,7 @@ export class TexturesGenerator {
 
     // === 3. Main Torso / Chassis (Side-view, facing right) ===
     // Main armor block
-    g.fillStyle(0x18202b);
+    g.fillStyle(0xd1d5db); // silver
     g.beginPath();
     g.moveTo(10, 10 + b);
     g.lineTo(34, 10 + b);
@@ -734,7 +735,7 @@ export class TexturesGenerator {
     g.fillPath();
 
     // Side flank plates
-    g.fillStyle(0x141b24);
+    g.fillStyle(0x9ca3af); // steel
     g.beginPath();
     g.moveTo(10, 10 + b);
     g.lineTo(26, 10 + b);
@@ -744,12 +745,12 @@ export class TexturesGenerator {
     g.fillPath();
 
     // Highlights (metallic edges)
-    g.fillStyle(0x32435c);
+    g.fillStyle(0xffffff);
     g.fillRect(11, 10 + b, 22, 2); // top edge highlight
     g.beginPath(); g.moveTo(10, 10 + b); g.lineTo(12, 24 + b); g.lineTo(13, 24 + b); g.lineTo(11, 10 + b); g.closePath(); g.fillPath();
 
     // Sloped cockpit/face plate at the front (right side)
-    g.fillStyle(0x0e131b);
+    g.fillStyle(0x4b5563);
     g.beginPath();
     g.moveTo(28, 11 + b);
     g.lineTo(34, 11 + b);
@@ -761,29 +762,29 @@ export class TexturesGenerator {
     // Menacing visor slit (glowing red)
     g.fillStyle(0x6b0a0a); // dark red back
     g.fillRect(29, 13 + b, 5, 3);
-    g.fillStyle(0xcc1111); // bright red
+    g.fillStyle(0xff3366); // bright pink/red
     g.fillRect(29, 14 + b, 5, 1);
     g.fillStyle(0xffaa66); // optic sensor glow
     g.fillRect(32, 14 + b, 1, 1);
 
     // Central core bezel (Energist core on side)
-    this.circ(g, 18, 17 + b, 4, 0x8a7015);
-    this.circ(g, 18, 17 + b, 3, 0x0f121a);
-    this.circ(g, 18, 17 + b, 2, 0xcc2200);
-    this.circ(g, 18, 17 + b, 1, 0xff8800);
+    this.circ(g, 18, 17 + b, 4, 0xeccc68);
+    this.circ(g, 18, 17 + b, 3, 0x000000);
+    this.circ(g, 18, 17 + b, 2, 0xff1e00);
+    this.circ(g, 18, 17 + b, 1, 0xffffff);
 
     // === 4. Mounted Weapons (Top-mounted) ===
     // Back shoulder missile pod
-    g.fillStyle(0x131922); g.fillRect(11, 4 + b, 10, 7);
-    g.fillStyle(0x283548); g.fillRect(12, 5 + b, 8, 5);
+    g.fillStyle(0x4b5563); g.fillRect(11, 4 + b, 10, 7);
+    g.fillStyle(0x9ca3af); g.fillRect(12, 5 + b, 8, 5);
     // Missile tips (front-facing right)
-    g.fillStyle(0x07090d); g.fillRect(18, 6 + b, 2, 3);
+    g.fillStyle(0x374151); g.fillRect(18, 6 + b, 2, 3);
     g.fillStyle(0xff3300); g.fillRect(19, 7 + b, 1, 1);
 
     // Main heavy shoulder auto-cannon (protrudes far forward to the right)
-    g.fillStyle(0x131922); g.fillRect(22, 6 + b, 8, 5);
-    g.fillStyle(0x1b2430); g.fillRect(28, 7 + b, 14, 3); // long barrel
-    g.fillStyle(0x0f131a); g.fillRect(41, 6 + b, 2, 5); // muzzle cap
+    g.fillStyle(0x4b5563); g.fillRect(22, 6 + b, 8, 5);
+    g.fillStyle(0x9ca3af); g.fillRect(28, 7 + b, 14, 3); // long barrel
+    g.fillStyle(0x374151); g.fillRect(41, 6 + b, 2, 5); // muzzle cap
     // Muzzle heat glow tip
     g.fillStyle(0xff8800); g.fillRect(42, 8 + b, 1, 1);
 
@@ -795,25 +796,25 @@ export class TexturesGenerator {
     const fFootX = 28 + ls;
     const fFootY = 35;
 
-    g.lineStyle(5, 0x0f121a); // joint backing
+    g.lineStyle(5, 0x374151); // joint backing
     g.beginPath(); g.moveTo(fHipX, fHipY); g.lineTo(fKneeX, fKneeY); g.lineTo(fFootX, fFootY); g.strokePath();
-    g.lineStyle(4, 0x232e40); // thigh/shin
+    g.lineStyle(4, 0xe5e7eb); // thigh/shin (bright silver)
     g.beginPath(); g.moveTo(fHipX, fHipY); g.lineTo(fKneeX, fKneeY); g.lineTo(fFootX, fFootY); g.strokePath();
-    g.lineStyle(2, 0x32435c); // thigh highlight
+    g.lineStyle(2, 0xffffff); // thigh highlight
     g.beginPath(); g.moveTo(fHipX, fHipY + 1); g.lineTo(fKneeX - 1, fKneeY - 1); g.strokePath();
 
-    this.circ(g, fKneeX, fKneeY, 2.2, 0x8a7015); // gold knee cap
-    this.circ(g, fKneeX, fKneeY, 1.0, 0x0f121a);
+    this.circ(g, fKneeX, fKneeY, 2.2, 0xeccc68); // gold knee cap
+    this.circ(g, fKneeX, fKneeY, 1.0, 0x4b5563);
 
     // Heavy foot claw
-    g.fillStyle(0x131922); g.fillRect(fFootX - 4, fFootY - 1, 8, 2);
-    g.fillStyle(0x8a7015); g.fillRect(fFootX + 2, fFootY - 1, 2, 1); // gold front claw
+    g.fillStyle(0x4b5563); g.fillRect(fFootX - 4, fFootY - 1, 8, 2);
+    g.fillStyle(0xeccc68); g.fillRect(fFootX + 2, fFootY - 1, 2, 1); // gold front claw
 
     // === 6. Gold Trim & Details ===
-    g.fillStyle(0x8a7015);
+    g.fillStyle(0xeccc68);
     g.fillRect(13, 9 + b, 18, 1); // gold trim line
     // Rivets
-    g.fillStyle(0x07090d);
+    g.fillStyle(0x374151);
     g.fillRect(14, 13 + b, 1, 1);
     g.fillRect(23, 13 + b, 1, 1);
 
@@ -833,7 +834,7 @@ export class TexturesGenerator {
     const dx = 16;
     const dy = 8;
 
-    // --- 1. Background Leg (slender dark jointed leg) ---
+    // --- 1. Background Leg (slender steel jointed leg) ---
     const bHipX = 42 + dx;
     const bHipY = 56 + dy + b;
     const bKneeX = 30 + dx - ls * 0.5;
@@ -841,19 +842,19 @@ export class TexturesGenerator {
     const bFootX = 38 + dx - ls;
     const bFootY = 96 + dy;
 
-    g.lineStyle(8, 0x0a0d14);
+    g.lineStyle(8, 0x374151);
     g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
-    g.lineStyle(5, 0x141b24);
+    g.lineStyle(5, 0x9ca3af);
     g.beginPath(); g.moveTo(bHipX, bHipY); g.lineTo(bKneeX, bKneeY); g.lineTo(bFootX, bFootY); g.strokePath();
-    this.circ(g, bKneeX, bKneeY, 3, 0x0a0d14);
-    g.fillStyle(0x0e131b); g.fillRect(bFootX - 6, bFootY - 2, 12, 4);
+    this.circ(g, bKneeX, bKneeY, 3, 0x374151);
+    g.fillStyle(0x4b5563); g.fillRect(bFootX - 6, bFootY - 2, 12, 4);
 
     // --- 2. Spine Gears (Clockwork detail at back of chassis) ---
     const rot = (ls * 10) * Math.PI / 180;
-    const gearColor = 0x8a7015;
+    const gearColor = 0xeccc68; // bright gold
     const gearX = 36 + dx;
     const gearY = 32 + dy + b;
-    this.circ(g, gearX, gearY, 10, 0x151c22);
+    this.circ(g, gearX, gearY, 10, 0x374151);
     this.circ(g, gearX, gearY, 8, gearColor);
     g.lineStyle(3, gearColor);
     for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
@@ -863,10 +864,10 @@ export class TexturesGenerator {
       g.lineTo(gearX + Math.cos(ta) * 12, gearY + Math.sin(ta) * 12);
       g.strokePath();
     }
-    this.circ(g, gearX, gearY, 3, 0x0a0d14);
+    this.circ(g, gearX, gearY, 3, 0x374151);
 
     // --- 3. Main Torso / Heavy Chassis ---
-    g.fillStyle(0x1a222d);
+    g.fillStyle(0xd1d5db); // silver
     g.beginPath();
     g.moveTo(30 + dx, 22 + dy + b);
     g.lineTo(76 + dx, 22 + dy + b);
@@ -874,7 +875,7 @@ export class TexturesGenerator {
     g.lineTo(32 + dx, 58 + dy + b);
     g.closePath(); g.fillPath();
 
-    g.fillStyle(0x131922);
+    g.fillStyle(0x9ca3af); // steel
     g.beginPath();
     g.moveTo(34 + dx, 26 + dy + b);
     g.lineTo(58 + dx, 26 + dy + b);
@@ -882,7 +883,7 @@ export class TexturesGenerator {
     g.lineTo(36 + dx, 54 + dy + b);
     g.closePath(); g.fillPath();
 
-    g.fillStyle(0x2f3c4e);
+    g.fillStyle(0xffffff); // highlight
     g.fillRect(32 + dx, 22 + dy + b, 42, 3);
 
     // Visor Sensor
@@ -1768,30 +1769,30 @@ export class TexturesGenerator {
     g.closePath();
     g.fillPath();
 
-    // 2. Main metal fuselage (dark steel, elongated boxy capsule)
-    g.fillStyle(0x2f3542);
+    // 2. Main metal fuselage (bright steel, elongated boxy capsule)
+    g.fillStyle(0xd1d5db);
     g.fillRoundedRect(6, 8, 18, 14, 2);
 
     // Upper structural plating
-    g.fillStyle(0x57606f);
+    g.fillStyle(0x9ca3af);
     g.fillRoundedRect(8, 9, 12, 3, 1);
 
     // 3. Side stabilization wing/propeller on top
-    g.fillStyle(0x747d8c);
+    g.fillStyle(0x4b5563);
     g.fillRect(12, 4, 6, 2);
-    g.fillStyle(0xa4b0be);
+    g.fillStyle(0xe5e7eb);
     g.fillRect(9, 2, 12, 2); // rotor blade
 
     // 4. Front optical targeting sensor/visor (facing right)
     g.fillStyle(0x000000);
     g.fillRect(21, 11, 4, 7); // visor frame
-    g.fillStyle(0xff1e00);
+    g.fillStyle(0xff3366);
     g.fillRect(22, 12, 2, 5); // glowing red camera lens
     g.fillStyle(0xffffff);
     g.fillCircle(23, 13.5, 0.5); // reflection glint
 
     // 5. Mechanical panel rivet details
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x4b5563);
     g.fillCircle(10, 18, 1);
     g.fillCircle(16, 18, 1);
 
@@ -1803,42 +1804,42 @@ export class TexturesGenerator {
 
     // 1. Jointed mechanical bipedal leg (side-view chicken leg)
     // Hip joint
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x4b5563);
     g.fillCircle(12, 21, 2);
     // Thigh
-    g.lineStyle(2, 0x57606f);
+    g.lineStyle(2, 0x9ca3af);
     g.beginPath();
     g.moveTo(12, 21);
     g.lineTo(8, 26);
     g.strokePath();
     // Shin
-    g.lineStyle(2, 0x57606f);
+    g.lineStyle(2, 0x9ca3af);
     g.beginPath();
     g.moveTo(8, 26);
     g.lineTo(14, 32);
     g.strokePath();
     // Foot plate
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x4b5563);
     g.fillRect(10, 31, 6, 2);
 
-    // 2. Torso (boxy dark iron, facing right)
-    g.fillStyle(0x2f3542);
+    // 2. Torso (boxy bright steel, facing right)
+    g.fillStyle(0xd1d5db);
     g.fillRoundedRect(7, 6, 15, 15, 2);
     
     // Front visor targeting slit (facing right)
     g.fillStyle(0x000000);
     g.fillRect(16, 9, 6, 3);
-    g.fillStyle(0xff1e00);
+    g.fillStyle(0xff3366);
     g.fillRect(17, 10, 5, 1.2); // red sensor slit
 
     // Back exhaust vents
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x4b5563);
     g.fillRect(5, 8, 2, 4);
 
     // 3. Spiky drill/pike weapon protruding forward
-    g.fillStyle(0x747d8c);
+    g.fillStyle(0x9ca3af);
     g.fillRect(18, 14, 6, 3);
-    g.fillStyle(0xa4b0be);
+    g.fillStyle(0xe5e7eb);
     g.beginPath();
     g.moveTo(24, 13);
     g.lineTo(31, 15);
@@ -1847,9 +1848,9 @@ export class TexturesGenerator {
     g.fillPath();
 
     // 4. Heavy Shield on the front-right (protects front)
-    g.fillStyle(0x57606f); // dark metal shield plate
+    g.fillStyle(0xe5e7eb); // bright aluminum/silver shield plate
     g.fillRect(23, 2, 6, 28);
-    g.lineStyle(1, 0x8899aa); // shield bevel highlight
+    g.lineStyle(1, 0xffffff); // shield bevel highlight
     g.strokeRect(23, 2, 6, 28);
 
     // Hazard warning stripes on the shield
@@ -1874,41 +1875,41 @@ export class TexturesGenerator {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
 
     // 1. Tank tracks base (facing right, bottom layer)
-    g.fillStyle(0x1e272e); // black rubber/steel tracks casing
+    g.fillStyle(0x4b5563); // steel tracks casing
     g.fillRoundedRect(4, 25, 24, 7, 2.5);
 
     // Track wheel bolts inside
-    g.fillStyle(0x57606f);
+    g.fillStyle(0x9ca3af);
     g.fillCircle(8, 28, 2);
     g.fillCircle(16, 28, 2);
     g.fillCircle(24, 28, 2);
 
-    // 2. Main chassis (industrial military green, boxy)
-    g.fillStyle(0x383b2a);
+    // 2. Main chassis (bright silver/steel, boxy)
+    g.fillStyle(0xd1d5db);
     g.fillRect(6, 12, 16, 13);
     
     // Armored panel trim
-    g.lineStyle(1, 0x5c5e4f);
+    g.lineStyle(1, 0xffffff);
     g.strokeRect(6, 12, 16, 13);
 
     // Rivet dots on chassis panel
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x4b5563);
     g.fillCircle(9, 15, 0.8);
     g.fillCircle(9, 21, 0.8);
 
     // 3. Physical mortar gun barrel mounted on top (angled up-right)
-    g.lineStyle(5, 0x57606f); // dark steel thick barrel
+    g.lineStyle(5, 0x9ca3af); // steel barrel
     g.beginPath();
     g.moveTo(12, 12);
     g.lineTo(25, 5);
     g.strokePath();
 
     // Open barrel muzzle (facing right)
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x4b5563);
     g.fillCircle(25, 5, 2);
 
     // 4. Optical targeting lens/scope on the barrel
-    g.fillStyle(0xff7700);
+    g.fillStyle(0xff0055); // bright magenta lens
     g.fillCircle(18, 9, 2);
     g.fillStyle(0xffff00);
     g.fillCircle(18, 9, 0.8);
@@ -1978,81 +1979,165 @@ export class TexturesGenerator {
   // ═══ BOSS 128×128 ═══
   private drawBoss(): void {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
-    // tail (left)
-    this.rect(g, 0, 70, 30, 10, 3, 0x110a14);
-    this.tri(g, 4, 54, 0, 46, 8, 64, 0x442244);
-    this.tri(g, 8, 52, 2, 44, 10, 62, 0x442244);
-    // back leg
-    this.rect(g, 40, 78, 14, 28, 3, 0x1a0a20);
-    this.rect(g, 42, 82, 10, 22, 2, 0x2a1133);
-    g.fillStyle(0x663355); g.fillCircle(46, 104, 5);
-    // body
-    this.rect(g, 28, 52, 66, 42, 5, 0x110a14);
-    this.rect(g, 32, 56, 58, 34, 4, 0x1a0f22);
-    this.rect(g, 36, 60, 50, 5, 2, 0x2a1533);
-    this.rect(g, 38, 68, 46, 5, 2, 0x331840);
-    // core
-    g.fillStyle(0x000000); g.fillCircle(60, 74, 12);
-    g.fillStyle(0xff1166, 0.2); g.fillCircle(60, 74, 10);
-    g.fillStyle(0xff2266); g.fillCircle(60, 74, 7);
-    g.fillStyle(0xff4488); g.fillCircle(60, 74, 4);
-    g.fillStyle(0xffaacc); g.fillCircle(60, 74, 2);
-    g.fillStyle(0xffffff); g.fillCircle(60, 73, 0.8);
-    // front leg
-    this.rect(g, 74, 78, 14, 28, 3, 0x1a0f22);
-    this.rect(g, 76, 82, 10, 22, 2, 0x221133);
-    g.fillStyle(0x663355); g.fillCircle(80, 104, 5);
-    // neck
-    this.rect(g, 78, 38, 24, 22, 4, 0x110a14);
-    this.rect(g, 80, 42, 20, 16, 3, 0x1a0f22);
-    // head (right side)
-    this.rect(g, 92, 14, 36, 32, 6, 0x110a14);
-    this.rect(g, 96, 18, 28, 26, 4, 0x1a0f22);
-    this.rect(g, 114, 24, 14, 12, 3, 0x2a1533);
-    this.rect(g, 115, 26, 12, 8, 2, 0x1a0f22);
-    // crown
-    for (let i = 0; i < 8; i++) {
-      const sx = 98 + i * 4;
-      g.fillStyle(0x331133); g.fillTriangle(sx, 0, sx + 2, 12, sx + 5, 2);
-    }
-    // eyes
-    g.fillStyle(0x000000); g.fillCircle(102, 22, 4);
-    g.fillStyle(0xff2288); g.fillCircle(102, 22, 3);
-    g.fillStyle(0xffffff); g.fillCircle(103, 22, 0.8);
-    g.fillStyle(0x000000); g.fillCircle(114, 22, 4);
-    g.fillStyle(0xff2288); g.fillCircle(114, 22, 3);
-    g.fillStyle(0xffffff); g.fillCircle(115, 22, 0.8);
-    // arms
-    this.rect(g, 14, 66, 12, 32, 3, 0x1a0a20);
-    this.rect(g, 16, 70, 8, 26, 2, 0x2a1133);
-    g.fillStyle(0x551144); g.fillTriangle(10, 96, 16, 98, 13, 108);
-    g.fillStyle(0x551144); g.fillTriangle(20, 96, 26, 98, 23, 108);
+    const P = this.P;
 
-    // ── Corruption Details ──
-    // Core corruption veins
-    g.fillStyle(0xff1166, 0.25);
-    g.fillCircle(60, 74, 14);
-    // Energy tendrils spreading from core
-    g.lineStyle(1.5, 0xff2266, 0.35);
-    g.beginPath(); g.moveTo(60, 62); g.lineTo(55, 55); g.strokePath();
-    g.beginPath(); g.moveTo(60, 62); g.lineTo(72, 58); g.strokePath();
-    g.beginPath(); g.moveTo(60, 86); g.lineTo(54, 95); g.strokePath();
-    // Cracked armor lines
-    g.lineStyle(1, 0x442244, 0.6);
-    g.beginPath(); g.moveTo(32, 60); g.lineTo(40, 68); g.strokePath();
-    g.beginPath(); g.moveTo(88, 56); g.lineTo(80, 65); g.strokePath();
-    // Crown corruption — extra dark spikes
-    g.fillStyle(0x220011, 0.5);
-    for (let i = 0; i < 4; i++) {
-      const sx = 94 + i * 7;
-      g.fillTriangle(sx, -3, sx + 2, 8, sx + 4, 0);
-    }
-    // Eye glow bleed
-    g.fillStyle(0xff2288, 0.15);
-    g.fillCircle(102, 22, 6);
-    g.fillCircle(114, 22, 6);
+    // 1. Head/Cockpit (Right/Center top)
+    // Atlas cockpit is nestled inside a heavy armored neck collar
+    this.rect(g, 50, 16, 28, 16, 4, 0x4a5568); // Armored collar
+    this.rect(g, 52, 20, 24, 10, 2, 0x718096); // Inner head
+    // Glowing red visor (horizontal)
+    g.fillStyle(0xff0055);
+    g.fillRect(56, 22, 16, 4);
+    g.fillStyle(0xffffff, 0.8);
+    g.fillRect(60, 23, 8, 2); // Highlight
+
+    // 2. Torso (Giant blocky chassis)
+    this.rect(g, 32, 32, 64, 48, 6, 0x334155); // Outer frame (charcoal steel)
+    this.rect(g, 36, 36, 56, 40, 4, 0xd1d5db); // Inner armor plates (aluminum/silver)
+    
+    // Diagonal structural support plates (Atlas heavy look)
+    g.fillStyle(0x9ca3af);
+    g.beginPath();
+    g.moveTo(36, 36); g.lineTo(48, 36); g.lineTo(36, 60);
+    g.closePath(); g.fillPath();
+    g.beginPath();
+    g.moveTo(92, 36); g.lineTo(80, 36); g.lineTo(92, 60);
+    g.closePath(); g.fillPath();
+
+    // 3. Reactor Core (Center of the chest)
+    const coreX = 64;
+    const coreY = 56;
+    g.fillStyle(0x000000); g.fillCircle(coreX, coreY, 15);
+    g.fillStyle(0xff1166, 0.4); g.fillCircle(coreX, coreY, 13);
+    g.fillStyle(0xff0055); g.fillCircle(coreX, coreY, 10);
+    g.fillStyle(0xff4488); g.fillCircle(coreX, coreY, 7);
+    g.fillStyle(0xffffff); g.fillCircle(coreX, coreY, 4);
+
+    // 4. Heavy Shoulder Pauldrons (Left & Right)
+    this.rect(g, 16, 28, 20, 20, 4, 0x4a5568); // Left shoulder
+    this.rect(g, 18, 30, 16, 16, 2, 0xa0aec0);
+    this.rect(g, 92, 28, 20, 20, 4, 0x4a5568); // Right shoulder
+    this.rect(g, 94, 30, 16, 16, 2, 0xa0aec0);
+
+    // Missile launcher tubes grid on shoulders
+    g.fillStyle(0x1e293b);
+    g.fillRect(20, 34, 12, 8);
+    g.fillRect(96, 34, 12, 8);
+    g.fillStyle(0xff3300); // red missile tips
+    g.fillCircle(23, 38, 1.5); g.fillCircle(29, 38, 1.5);
+    g.fillCircle(99, 38, 1.5); g.fillCircle(105, 38, 1.5);
+
+    // 5. Heavy Arms with weapon barrels
+    // Left Arm
+    this.rect(g, 18, 48, 12, 20, 2, 0x718096); // Upper arm
+    g.fillStyle(0xd39e00); g.fillCircle(24, 68, 4); // Elbow joint
+    this.rect(g, 14, 68, 16, 24, 3, 0x4a5568); // Lower arm/weapon pod
+    g.fillStyle(0x1e293b); g.fillRect(18, 92, 8, 10); // Heavy gun barrel
+    // Right Arm
+    this.rect(g, 98, 48, 12, 20, 2, 0x718096); // Upper arm
+    g.fillStyle(0xd39e00); g.fillCircle(104, 68, 4); // Elbow joint
+    this.rect(g, 98, 68, 16, 24, 3, 0x4a5568); // Lower arm/weapon pod
+    g.fillStyle(0x1e293b); g.fillRect(102, 92, 8, 10); // Heavy gun barrel
+
+    // 6. Heavy boxy Legs (with knee guards)
+    // Left Leg
+    this.rect(g, 38, 80, 16, 20, 3, 0x718096); // Thigh
+    this.rect(g, 36, 96, 20, 6, 1, 0xd39e00); // Gold Knee joint guard
+    this.rect(g, 38, 102, 16, 18, 2, 0x4a5568); // Calf
+    this.rect(g, 34, 120, 22, 8, 2, 0xd1d5db); // Foot Sabaton
+    // Right Leg
+    this.rect(g, 74, 80, 16, 20, 3, 0x718096); // Thigh
+    this.rect(g, 72, 96, 20, 6, 1, 0xd39e00); // Gold Knee joint guard
+    this.rect(g, 74, 102, 16, 18, 2, 0x4a5568); // Calf
+    this.rect(g, 72, 120, 22, 8, 2, 0xd1d5db); // Foot Sabaton
+
+    // 7. Core pulse energy details
+    g.fillStyle(0xff1166, 0.3);
+    g.fillCircle(coreX, coreY, 17);
+    g.lineStyle(1.5, 0xff2266, 0.7);
+    // energy lines flowing into the arms/shoulders
+    g.beginPath(); g.moveTo(coreX - 10, coreY); g.lineTo(34, coreY); g.strokePath();
+    g.beginPath(); g.moveTo(coreX + 10, coreY); g.lineTo(94, coreY); g.strokePath();
 
     this.tex(g, 'boss', 128, 128);
+  }
+
+  private drawSoldierBoss(): void {
+    const g = this.scene.make.graphics({ x: 0, y: 0 });
+    const P = this.P;
+    
+    // Shift offset: dx = 24, dy = 24 (96x96 canvas)
+    const dx = 24;
+    const dy = 24;
+
+    // Cape (Officer's mantle behind)
+    g.fillStyle(0xcc1122); // Imperial red
+    g.beginPath();
+    g.moveTo(16 + dx, 24 + dy);
+    g.lineTo(10 + dx, 60 + dy);
+    g.lineTo(24 + dx, 60 + dy);
+    g.closePath();
+    g.fillPath();
+
+    // Body/Torso Armor
+    g.fillStyle(0x4f5d73); // Dark steel armor base
+    g.fillRect(20 + dx, 24 + dy, 16, 22);
+
+    g.fillStyle(0x992233); // Red chestplate highlights
+    g.fillRect(22 + dx, 26 + dy, 12, 10);
+
+    // Belt and buckle
+    g.fillStyle(0x1a1a1a);
+    g.fillRect(19 + dx, 46 + dy, 18, 4);
+    g.fillStyle(0xd39e00); // Gold buckle
+    g.fillRect(26 + dx, 45 + dy, 4, 6);
+
+    // Left Arm (holding weapon forward)
+    g.lineStyle(4, 0x4f5d73);
+    g.beginPath();
+    g.moveTo(22 + dx, 28 + dy);
+    g.lineTo(14 + dx, 36 + dy);
+    g.strokePath();
+    // Weapon/Rifle
+    g.fillStyle(0x222222);
+    g.fillRect(2 + dx, 34 + dy, 14, 5); // Rifle body
+    g.fillStyle(0x888888);
+    g.fillRect(0 + dx, 35 + dy, 6, 2); // Barrel tip
+    g.fillStyle(0x00d2d3); // Glowing cyan laser sight
+    g.fillRect(12 + dx, 32 + dy, 2, 2);
+
+    // Right Arm (resting down)
+    g.lineStyle(3, 0x3a4556);
+    g.beginPath();
+    g.moveTo(34 + dx, 28 + dy);
+    g.lineTo(38 + dx, 40 + dy);
+    g.strokePath();
+
+    // Legs (standing stance)
+    // Left Leg
+    g.lineStyle(4, 0x222222);
+    g.beginPath();
+    g.moveTo(23 + dx, 48 + dy);
+    g.lineTo(21 + dx, 68 + dy);
+    g.strokePath();
+    // Right Leg
+    g.lineStyle(4, 0x222222);
+    g.beginPath();
+    g.moveTo(33 + dx, 48 + dy);
+    g.lineTo(35 + dx, 68 + dy);
+    g.strokePath();
+
+    // Helmet & Visor
+    this.circ(g, 28 + dx, 16 + dy, 8, 0x4f5d73); // Helmet dome
+    this.rect(g, 24 + dx, 12 + dy, 8, 2, 0.5, 0xd39e00); // Golden crest trim
+    
+    // Visor: glowing cyan slit
+    g.fillStyle(0x00d2d3);
+    g.fillRect(24 + dx, 15 + dy, 7, 2);
+    g.fillStyle(0x00ffff, 0.4);
+    g.fillRect(23 + dx, 14 + dy, 9, 4); // glow bleed
+
+    this.tex(g, 'boss-soldier', 96, 96);
   }
 
   // ═══ TERRAIN TEXTURES ═══
@@ -4359,7 +4444,7 @@ export class TexturesGenerator {
 
     // 1. enemy-seeker-drone (32x32) - Iron Empire scout drone
     // Octagonal boxy body
-    g.fillStyle(0x2f3542);
+    g.fillStyle(0xd1d5db);
     g.beginPath();
     g.moveTo(10, 2); g.lineTo(22, 2);
     g.lineTo(30, 10); g.lineTo(30, 22);
@@ -4369,34 +4454,34 @@ export class TexturesGenerator {
     g.fillPath();
 
     // Rivets
-    g.fillStyle(0x0f141d);
+    g.fillStyle(0x718096);
     g.fillRect(10, 4, 2, 2);
     g.fillRect(20, 4, 2, 2);
     g.fillRect(26, 10, 2, 2);
     g.fillRect(26, 20, 2, 2);
 
     // Glowing red center sensor
-    g.fillStyle(0xff4757); g.fillRect(8, 12, 16, 8);
+    g.fillStyle(0xff1e00); g.fillRect(8, 12, 16, 8);
     g.fillStyle(0xffffff); g.fillRect(14, 14, 4, 4);
 
     // Back stabilizer fins / side plates
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0x9ca3af);
     g.fillRect(0, 12, 2, 8);
     g.fillRect(30, 12, 2, 8);
     this.tex(g, 'enemy-seeker-drone', 32, 32);
 
     // 2. enemy-mine-dropper (40x40) - crane mecha drone
-    g.fillStyle(0x2f3542); g.fillRect(6, 6, 28, 20); // main box body
-    g.fillStyle(0x1e272e); g.fillRect(2, 12, 4, 12); // left thruster
+    g.fillStyle(0xd1d5db); g.fillRect(6, 6, 28, 20); // main box body
+    g.fillStyle(0x9ca3af); g.fillRect(2, 12, 4, 12); // left thruster
     g.fillRect(34, 12, 4, 12); // right thruster
     // yellow flame sparks under thrusters
     g.fillStyle(0xffa502); g.fillRect(3, 24, 2, 6); g.fillRect(35, 24, 2, 6);
     // bottom deployment clamp/arm
     g.fillStyle(0x747d8c); g.fillRect(14, 26, 12, 8);
-    g.fillStyle(0x57606f); g.fillRect(12, 34, 4, 6); g.fillRect(24, 34, 4, 6);
+    g.fillStyle(0x4b5563); g.fillRect(12, 34, 4, 6); g.fillRect(24, 34, 4, 6);
     // hazard stripe panel
     g.fillStyle(0xeccc68); g.fillRect(10, 10, 20, 8);
-    g.fillStyle(0x2f3542);
+    g.fillStyle(0x4b5563);
     g.beginPath();
     g.moveTo(10, 10); g.lineTo(14, 10); g.lineTo(10, 18); g.closePath(); g.fillPath();
     g.beginPath();
@@ -4406,28 +4491,34 @@ export class TexturesGenerator {
     this.tex(g, 'enemy-mine-dropper', 40, 40);
 
     // 3. enemy-gunship (64x48) - heavy militarized jet fighter
-    g.fillStyle(0x2f3542); // main body
+    g.fillStyle(0xd1d5db); // main body (silver)
     g.fillRect(16, 8, 32, 32);
     // cockpit / glowing visor
-    g.fillStyle(0xff3838); g.fillRect(12, 16, 6, 16);
+    g.fillStyle(0xff3366); g.fillRect(12, 16, 6, 16);
     g.fillStyle(0xffffff); g.fillRect(12, 22, 2, 4);
 
+    // central reactor core (Dragon Core) on the gunship main body
+    g.fillStyle(0x000000); g.fillCircle(32, 24, 7);
+    g.fillStyle(0xff3300); g.fillCircle(32, 24, 5);
+    g.fillStyle(0xffaa00); g.fillCircle(32, 24, 3);
+    g.fillStyle(0xffffff); g.fillCircle(32, 24, 1.2);
+
     // wings
-    g.fillStyle(0x1e272e);
+    g.fillStyle(0xe5e7eb); // bright aluminum
     g.beginPath();
     g.moveTo(32, 8); g.lineTo(56, 0); g.lineTo(44, 24); g.closePath(); g.fillPath();
     g.beginPath();
     g.moveTo(32, 40); g.lineTo(56, 48); g.lineTo(44, 24); g.closePath(); g.fillPath();
 
     // engine thrusters on the back
-    g.fillStyle(0x57606f);
+    g.fillStyle(0x4b5563); // steel
     g.fillRect(48, 12, 12, 8);
     g.fillRect(48, 28, 12, 8);
     g.fillStyle(0xff7f50); // fire exhaust
     g.fillRect(60, 14, 4, 4); g.fillRect(60, 30, 4, 4);
 
     // bottom cannons
-    g.fillStyle(0x747d8c);
+    g.fillStyle(0x9ca3af); // steel
     g.fillRect(8, 30, 10, 4);
     g.fillRect(8, 14, 10, 4);
     this.tex(g, 'enemy-gunship', 64, 48);

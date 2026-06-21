@@ -21,27 +21,44 @@ import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilter
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON, ENEMY_SEARCHLIGHT } from '../utils/constants';
 import { t } from '../i18n';
-import { spawnImmuneText } from '../effects/DamageNumbers';
+import { spawnImmuneText, spawnDamageNumber } from '../effects/DamageNumbers';
+import { HITSTOP } from '../systems/HitstopSystem';
 
 class Gatekeeper extends Boss {
   public gatePhase: 'armor' | 'flight' | 'duel' = 'armor';
   private gateFireTimer = 0;
   private spotlight: Phaser.GameObjects.Light | null = null;
+  private coreLight: Phaser.GameObjects.Light | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, player);
     this.health = 900;
     this.maxHealth = 900;
+    this.totalMaxHealth = 900; // Update total health for screenspace HUD
     this.setScale(2.5);
-    this.setTint(0x886644);
+    this.setTint(0xffffff); // Neutral white to fully show the bright silver/steel texture
     this.setAlpha(1);
     this.setDepth(15);
+
+    if (this.nameText) {
+      this.nameText.setText(t('boss.gatekeeperName'));
+    }
 
     if (scene.lights && scene.lights.active) {
       this.spotlight = scene.lights.addConeLight(
         x, y - 40, ENEMY_SEARCHLIGHT.RADIUS * 1.4, 0xff3322, ENEMY_SEARCHLIGHT.INTENSITY * 1.3,
         0, ENEMY_SEARCHLIGHT.INNER_ANGLE, ENEMY_SEARCHLIGHT.OUTER_ANGLE * 0.8, ENEMY_SEARCHLIGHT.Z + 10
       );
+      this.coreLight = scene.lights.addLight(x - 10, y + 25, 140, 0xff0055, 2.0);
+      scene.tweens.add({
+        targets: this.coreLight,
+        intensity: { from: 1.2, to: 2.8 },
+        radius: { from: 100, to: 180 },
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
     }
 
     // Health bar
@@ -63,6 +80,11 @@ class Gatekeeper extends Boss {
       this.spotlight.setConeRotation(Math.atan2(sdy, sdx));
     }
 
+    if (this.coreLight) {
+      this.coreLight.x = this.x - 10;
+      this.coreLight.y = this.y + 25;
+    }
+
     if (this.gatePhase === 'armor') {
       body.setVelocityX(Math.sin(time * 0.001) * 40);
       if (time - this.gateFireTimer > 1800) { this.gateFireTimer = time; this.fireSpread(3, 180); }
@@ -72,17 +94,37 @@ class Gatekeeper extends Boss {
       body.setVelocityX(Math.sin(time * 0.0015) * 60);
       if (time - this.gateFireTimer > 1200) { this.gateFireTimer = time; this.fireSpread(5, 250); }
     } else {
+      // duel phase (Imperial Soldier on foot)
       body.allowGravity = true;
-      body.setVelocityX(Math.sin(time * 0.002) * 30);
-      if (time - this.gateFireTimer > 2200) { this.gateFireTimer = time; this.fireSpread(2, 140); }
+
+      // Face the player
+      const dirToPlayer = this.player.x < this.x ? -1 : 1;
+      this.setFlipX(dirToPlayer < 0);
+
+      // Run towards player or position defensively
+      const dist = Math.abs(this.player.x - this.x);
+      if (dist > 160) {
+        body.setVelocityX(dirToPlayer * 110);
+      } else if (dist < 80) {
+        body.setVelocityX(-dirToPlayer * 60); // Back away slightly if too close
+      } else {
+        body.setVelocityX(0); // Aim and shoot
+      }
+
+      // Shoot fast energy laser beams
+      if (time - this.gateFireTimer > 1300) {
+        this.gateFireTimer = time;
+        this.shootLaserAtPlayer(dirToPlayer);
+      }
     }
 
     // Update health bar
     const barBg = this.getData('barBg') as Phaser.GameObjects.Rectangle;
     const barFill = this.getData('barFill') as Phaser.GameObjects.Rectangle;
+    const barOffsetY = this.gatePhase === 'duel' ? -45 : -100;
     if (barBg && barFill) {
-      barBg.setPosition(this.x, this.y - 100);
-      barFill.setPosition(this.x - 100, this.y - 100);
+      barBg.setPosition(this.x, this.y + barOffsetY);
+      barFill.setPosition(this.x - 100, this.y + barOffsetY);
       barFill.width = 200 * Math.max(0, this.health / this.maxHealth);
     }
   }
@@ -103,8 +145,33 @@ class Gatekeeper extends Boss {
     }
   }
 
+  private shootLaserAtPlayer(dir: number): void {
+    const spawnX = this.x + dir * 20;
+    const spawnY = this.y - 12;
+    const bullet = this.scene.physics.add.sprite(spawnX, spawnY, 'bullet-fire');
+    bullet.setTint(0x00ffff); // High tech cyan laser
+    bullet.setScale(0.5);
+    bullet.setBlendMode(Phaser.BlendModes.ADD);
+    (bullet.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+    bullet.setVelocity(dir * 500, 0);
+
+    this.scene.physics.add.overlap(this.player, bullet, () => {
+      if (!bullet.active) return;
+      bullet.destroy();
+      this.player.takeDamage(this.attackDamage * 0.4, dir);
+    });
+
+    this.scene.time.delayedCall(1500, () => { if (bullet.active) bullet.destroy(); });
+  }
+
   takeDamage(amount: number): void {
     if (this.health <= 0) return;
+
+    // Hit cooldown check (enforce 400ms i-frames like normal enemies)
+    const now = this.scene.time.now;
+    if (now - this.lastDamageTime < this.damageCooldown) return;
+    this.lastDamageTime = now;
+
     const ps = this.player.formMachine.state;
 
     // Phase immunity checks
@@ -120,12 +187,19 @@ class Gatekeeper extends Boss {
     }
 
     this.health -= amount;
+
+    // Spawn damage numbers, apply hitstop freeze, play hit sound, and set white hit flash
+    spawnDamageNumber(this.scene, this.x, this.y - 40, amount, 'physical');
+    this.player.combatSystem.hitstop.freeze(HITSTOP.BOSS_HIT.duration, HITSTOP.BOSS_HIT.intensity);
+    getSceneAudio(this.scene)?.playEnemyHit();
+
     this.setTint(0xffffff);
     this.scene.time.delayedCall(80, () => { if (this.active) this.restoreTint(); });
 
     if (this.health <= 600 && this.gatePhase === 'armor') {
       this.gatePhase = 'flight';
-      this.setTint(0x4488cc);
+      this.setTint(0x00ffff);
+      if (this.coreLight) this.coreLight.setColor(0x00ffff);
       this.scene.cameras.main.shake(600, 0.01);
       this.scene.cameras.main.flash(300, 100, 150, 255);
       this.showPhaseText(t('boss.foundryP2'));
@@ -134,12 +208,49 @@ class Gatekeeper extends Boss {
       body.allowGravity = false;
     } else if (this.health <= 300 && this.gatePhase === 'flight') {
       this.gatePhase = 'duel';
-      this.setTint(0xcc4444);
-      this.scene.cameras.main.shake(400, 0.015);
-      this.scene.cameras.main.flash(300, 255, 100, 50);
+      this.setTint(0xffffff); // Remove tint to show normal soldier texture
+      
+      // Visual pilot ejection details
+      const scene = this.scene;
+      const ejectX = this.x;
+      const ejectY = this.y;
+      if (scene) {
+        for (let i = 0; i < 6; i++) {
+          scene.time.delayedCall(i * 100, () => {
+            if (!scene || !scene.sys || !scene.sys.isActive()) return;
+            spawnDeathExplosion(scene, ejectX + Phaser.Math.Between(-30, 30), ejectY + Phaser.Math.Between(-30, 30));
+          });
+        }
+      }
+
+      // Remove spotlight and core light
+      if (this.spotlight && this.scene.lights) {
+        this.scene.lights.removeLight(this.spotlight);
+        this.spotlight = null;
+      }
+      if (this.coreLight && this.scene.lights) {
+        this.scene.lights.removeLight(this.coreLight);
+        this.coreLight = null;
+      }
+
+      // Eject pilot / Change texture to soldier
+      this.setTexture('boss-soldier');
+      this.setScale(1.0);
+
       const body = this.body as Phaser.Physics.Arcade.Body;
       body.allowGravity = true;
-      body.setVelocityY(-100);
+      body.updateFromGameObject();
+      body.setSize(36, 60);
+      body.setOffset(30, 36);
+      body.setVelocityY(-150); // Eject pop-up jump
+
+      if (this.nameText) {
+        this.nameText.setText(t('boss.soldierName'));
+        this.nameText.setColor('#ff3333');
+      }
+
+      this.scene.cameras.main.shake(400, 0.015);
+      this.scene.cameras.main.flash(300, 255, 100, 50);
       this.showPhaseText(t('boss.foundryP3'));
     }
 
@@ -147,17 +258,17 @@ class Gatekeeper extends Boss {
   }
 
   private restoreTint(): void {
-    if (this.gatePhase === 'armor') this.setTint(0x886644);
-    else if (this.gatePhase === 'flight') this.setTint(0x4488cc);
-    else this.setTint(0xcc4444);
+    if (this.gatePhase === 'armor') this.setTint(0xffffff);
+    else if (this.gatePhase === 'flight') this.setTint(0x00ffff);
+    else this.setTint(0xffffff);
   }
 
   private showPhaseText(msg: string): void {
     const cam = this.scene.cameras.main;
-    const t = this.scene.add.text(cam.width / 2, cam.height * 0.25, msg, {
+    const tText = this.scene.add.text(cam.width / 2, cam.height * 0.25, msg, {
       fontSize: '18px', fontFamily: 'monospace', color: '#ff6600', stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
-    this.scene.tweens.add({ targets: t, alpha: { from: 0, to: 1 }, duration: 200, yoyo: true, hold: 1500, onComplete: () => t.destroy() });
+    this.scene.tweens.add({ targets: tText, alpha: { from: 0, to: 1 }, duration: 200, yoyo: true, hold: 1500, onComplete: () => tText.destroy() });
   }
 
   protected die(): void {
@@ -165,20 +276,42 @@ class Gatekeeper extends Boss {
       this.scene.lights.removeLight(this.spotlight);
       this.spotlight = null;
     }
+    if (this.coreLight && this.scene.lights) {
+      this.scene.lights.removeLight(this.coreLight);
+      this.coreLight = null;
+    }
     this.isActive = false;
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     const barBg = this.getData('barBg') as Phaser.GameObjects.Rectangle;
     const barFill = this.getData('barFill') as Phaser.GameObjects.Rectangle;
     if (barBg) barBg.destroy();
     if (barFill) barFill.destroy();
-    this.scene.cameras.main.shake(1200, 0.02);
-    this.scene.cameras.main.flash(800, 255, 200, 0);
-    for (let i = 0; i < 10; i++) {
-      this.scene.time.delayedCall(i * 200, () => {
-        spawnDeathExplosion(this.scene, this.x + Phaser.Math.Between(-60, 60), this.y + Phaser.Math.Between(-60, 60));
-      });
+
+    const scene = this.scene;
+    const deathX = this.x;
+    const deathY = this.y;
+
+    if (scene) {
+      scene.cameras.main.shake(1200, 0.02);
+      scene.cameras.main.flash(800, 255, 200, 0);
+      for (let i = 0; i < 10; i++) {
+        scene.time.delayedCall(i * 200, () => {
+          if (!scene || !scene.sys || !scene.sys.isActive()) return;
+          spawnDeathExplosion(scene, deathX + Phaser.Math.Between(-20, 20), deathY + Phaser.Math.Between(-20, 20));
+        });
+      }
+      scene.tweens.add({ targets: this, alpha: 0, scaleX: 1.5, scaleY: 1.5, duration: 1500, onComplete: () => this.destroy() });
+    } else {
+      this.destroy();
     }
-    this.scene.tweens.add({ targets: this, alpha: 0, scaleX: 3, scaleY: 3, duration: 2000, onComplete: () => this.destroy() });
+  }
+
+  destroy(fromScene?: boolean): void {
+    if (this.coreLight && this.scene?.lights) {
+      this.scene.lights.removeLight(this.coreLight);
+      this.coreLight = null;
+    }
+    super.destroy(fromScene);
   }
 }
 
@@ -209,7 +342,7 @@ export class GameScene4 extends BaseLevelScene {
   private demoEnded = false;
 
   private readonly WORLD_W = 15000;
-  private readonly WORLD_H = 1000;
+  private readonly WORLD_H = 1400;
 
   constructor() { super('GameScene4'); }
 
@@ -374,19 +507,21 @@ export class GameScene4 extends BaseLevelScene {
     this.terrainGen.generateGroundSegment(this.platforms, 3700, groundY, 500, 'refinery', 5);
     this.terrainGen.generateGroundSegment(this.platforms, 4600, groundY, 400, 'refinery', 6);
 
-    // Continuous lava river at the very bottom (y=984, height 32)
-    const lavaRiver = this.add.tileSprite(2250, 984, 4500, 32, 'tile-refinery-lava');
+    // Continuous lava river at the very bottom (del grosor que tenia antes, y=1284, height 232)
+    const lavaHeight = 232;
+    const lavaY = this.WORLD_H - lavaHeight / 2; // 1284
+    const lavaRiver = this.add.tileSprite(2250, lavaY, 4500, lavaHeight, 'tile-refinery-lava');
     this.physics.add.existing(lavaRiver, true);
     lavaRiver.setDepth(4);
     lavaRiver.setTint(0xff6622);
     this.lavaHazards.add(lavaRiver);
 
-    (lavaRiver.body as Phaser.Physics.Arcade.StaticBody).setSize(4500, 48);
+    (lavaRiver.body as Phaser.Physics.Arcade.StaticBody).setSize(4500, lavaHeight);
 
     // Pulse lights along the bottom of the canyon
     if (this.lights) {
       for (let lx = 500; lx < 4500; lx += 1000) {
-        const l = this.lights.addLight(lx, 940, 600, 0xff3300, 0.8);
+        const l = this.lights.addLight(lx, this.WORLD_H - lavaHeight - 40, 600, 0xff3300, 0.8);
         this.tweens.add({
           targets: l,
           intensity: { from: 0.5, to: 0.9 },
@@ -408,7 +543,7 @@ export class GameScene4 extends BaseLevelScene {
     }
 
     // Single large particle emitter for rising embers across Section A
-    this.add.particles(2250, 970, 'px-lava-bubble', {
+    this.add.particles(2250, this.WORLD_H - lavaHeight, 'px-lava-bubble', {
       x: { min: -2250, max: 2250 },
       y: 0,
       speedY: { min: -100, max: -30 },
@@ -420,11 +555,31 @@ export class GameScene4 extends BaseLevelScene {
       frequency: 150,
     }).setDepth(5);
 
-    // Random floating platforms inside the gaps at y=880 (like Episode I / III Mustafar/Naboo shafts)
-    const floatingRocks = [800, 1700, 2500, 3500, 4400];
-    floatingRocks.forEach((x, i) => {
-      this.terrainGen.generatePlatform(this.platforms, x - 40, 880 + Math.sin(i) * 10, 80, 'refinery');
-    });
+    // Staggered floating platforms inside the gaps at varying depths (Naboo reactor/Mustafar style)
+    // Gap 1 (600 - 1000)
+    this.terrainGen.generatePlatform(this.platforms, 680, 880, 80, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 840, 980, 80, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 760, 1080, 64, 'refinery');
+
+    // Gap 2 (1500 - 1900)
+    this.terrainGen.generatePlatform(this.platforms, 1760, 890, 80, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 1600, 1000, 64, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 1720, 1090, 80, 'refinery');
+
+    // Gap 3 (2300 - 2700)
+    this.terrainGen.generatePlatform(this.platforms, 2380, 910, 64, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 2520, 1020, 80, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 2440, 1100, 64, 'refinery');
+
+    // Gap 4 (3300 - 3700)
+    this.terrainGen.generatePlatform(this.platforms, 3560, 890, 80, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 3400, 990, 64, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 3520, 1080, 80, 'refinery');
+
+    // Gap 5 (4200 - 4600)
+    this.terrainGen.generatePlatform(this.platforms, 4280, 900, 64, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 4420, 1010, 80, 'refinery');
+    this.terrainGen.generatePlatform(this.platforms, 4340, 1090, 64, 'refinery');
 
     // Main upper floating platforms for Section A
     [400, 800, 1300, 1700, 2200, 2500, 3100, 3400, 4000, 4400].forEach((x, i) => {

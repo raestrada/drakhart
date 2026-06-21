@@ -5,6 +5,7 @@ import { GameAudio } from '../systems/GameAudio';
 import { TarotSystem } from '../systems/TarotSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { CAMERA_ZOOM_HUMAN, CAMERA_LERP } from '../utils/constants';
+import { t } from '../i18n';
 
 export class TransitionScene12 extends Phaser.Scene {
   public gameAudio!: GameAudio;
@@ -65,7 +66,7 @@ export class TransitionScene12 extends Phaser.Scene {
     this.terrainGen.generateGroundSegment(this.platforms, 0, groundY, W - 260, 'forest', 10);
     this.terrainGen.generateGroundSegment(this.platforms, W - 260, groundY, 260, 'refinery', 11);
 
-    this.drawFactoryEntrance(W, groundY);
+    this.drawWastelandEntrance(W, groundY);
 
     // Tarot
     this.tarotSystem = new TarotSystem();
@@ -109,44 +110,76 @@ export class TransitionScene12 extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, W, H);
   }
 
-  private drawFactoryEntrance(W: number, groundY: number): void {
+  private drawWastelandEntrance(W: number, groundY: number): void {
     const gateX = W - 350;
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x151d25, 1);
-    g.fillRect(gateX, 350, W - gateX, 400);
-    g.fillStyle(0x1c2834, 0.6);
-    g.fillRect(gateX + 10, 360, W - gateX - 20, 380);
-    g.fillStyle(0x0d1218, 0.5);
-    for (let sy = 380; sy < 780; sy += 40) g.fillRect(gateX, sy, W - gateX, 2);
-    g.fillRect(gateX + 100, 350, 4, 450);
-    g.fillRect(gateX + 250, 350, 4, 450);
+    
+    // Draw rusted background piping and scaffolding
+    g.lineStyle(8, 0x221a15, 1); // Thick pipe
+    g.beginPath();
+    g.moveTo(gateX - 50, 480);
+    g.lineTo(W, 420);
+    g.strokePath();
 
-    const doorW = 140, doorH = 260, doorX = gateX + 30, doorY = groundY - doorH;
-    g.fillStyle(0x0a0e13, 1);
-    g.fillRect(doorX, doorY, doorW, doorH);
-    g.lineStyle(4, 0x3a4a5a, 1);
-    g.strokeRect(doorX, doorY, doorW, doorH);
-    g.fillStyle(0xe8b830, 1);
-    g.fillRect(doorX - 15, doorY, 15, doorH);
-    g.fillStyle(0x1c2834, 1);
-    for (let sy = doorY; sy < doorY + doorH; sy += 24) {
-      g.beginPath(); g.moveTo(doorX - 15, sy); g.lineTo(doorX, sy + 12); g.lineTo(doorX, sy + 24); g.lineTo(doorX - 15, sy + 12); g.closePath(); g.fillPath();
+    g.lineStyle(6, 0x1c1512, 1); // Rusted structural support beams
+    g.beginPath();
+    g.moveTo(gateX + 50, groundY);
+    g.lineTo(gateX + 50, 320);
+    g.lineTo(W, 300);
+    g.strokePath();
+
+    // Cross trusses
+    g.lineStyle(3, 0x2a1d17, 0.8);
+    for (let y = 350; y < groundY; y += 80) {
+      g.beginPath();
+      g.moveTo(gateX + 50, y);
+      g.lineTo(W, y + 40);
+      g.moveTo(W, y);
+      g.lineTo(gateX + 50, y + 40);
+      g.strokePath();
     }
-    g.fillStyle(0x2a3a4a, 0.7);
-    g.fillRect(gateX + 200, 380, 16, 400);
-    g.fillStyle(0x1a2530, 0.8);
-    for (let py = 400; py < 760; py += 80) g.fillRect(gateX + 196, py, 24, 10);
-    g.fillStyle(0x2a3540, 0.6);
-    g.fillRect(gateX + 230, 420, 10, 350);
 
-    const lightX = gateX + 180;
-    g.fillStyle(0x1a1010, 1);
-    g.fillCircle(lightX, 400, 10);
-    g.fillStyle(0xff3322, 1);
-    g.fillCircle(lightX, 400, 6);
-    g.lineStyle(2, 0xff5566, 0.5);
-    g.strokeCircle(lightX, 400, 10);
-    this.add.pointlight(lightX, 400, 0xff2211, 60, 0.5).setDepth(-9);
+    // Broken chain-link fence
+    g.lineStyle(1.5, 0x2e201a, 0.7);
+    const fenceY = groundY - 180;
+    for (let fx = gateX - 40; fx < gateX + 120; fx += 16) {
+      g.beginPath();
+      g.moveTo(fx, groundY);
+      g.lineTo(fx + 24, fenceY);
+      g.moveTo(fx + 24, groundY);
+      g.lineTo(fx, fenceY);
+      g.strokePath();
+    }
+
+    // Rusted warning hazard sign (slightly crooked)
+    const signX = gateX - 80, signY = groundY - 140;
+    g.fillStyle(0x4a1a0c, 1); // Sign border/back
+    g.fillRect(signX - 2, signY - 2, 64, 44);
+    g.fillStyle(0xd49b25, 1); // Yellowed rusted face
+    g.fillRect(signX, signY, 60, 40);
+    
+    // Hazard stripes
+    g.fillStyle(0x1d1510, 0.85);
+    for (let sx = 0; sx < 60; sx += 15) {
+      g.beginPath();
+      g.moveTo(signX + sx, signY);
+      g.lineTo(signX + sx + 10, signY);
+      g.lineTo(signX + sx, signY + 40);
+      g.lineTo(signX + sx - 10, signY + 40);
+      g.closePath();
+      g.fillPath();
+    }
+
+    // Blinking warning light on a rusted post
+    const lightX = gateX - 50, lightY = groundY - 220;
+    g.lineStyle(4, 0x221a15, 1); // Post
+    g.beginPath(); g.moveTo(lightX, groundY); g.lineTo(lightX, lightY); g.strokePath();
+    
+    g.fillStyle(0x1a1210, 1);
+    g.fillCircle(lightX, lightY, 10);
+    g.fillStyle(0xff7700, 1); // Orange warning light
+    g.fillCircle(lightX, lightY, 6);
+    this.add.pointlight(lightX, lightY, 0xff8800, 60, 0.5).setDepth(-9);
   }
 
   update(time: number, delta: number): void {
@@ -167,7 +200,7 @@ export class TransitionScene12 extends Phaser.Scene {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('ASHEN WOODS', '#886644', () => {
+    this.showZoneTransition(t('zones.ashenWoods'), '#886644', () => {
       this.scene.start('GameScene', { startPos: { x: 7800, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: this.player.formMachine.isMechaUnlocked(), dragonUnlocked: this.player.formMachine.isDragonUnlocked() });
     });
   }
@@ -176,7 +209,7 @@ export class TransitionScene12 extends Phaser.Scene {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('SMELTING REFINERY', '#ff6622', () => {
+    this.showZoneTransition(t('zones.industrialWasteland'), '#ff6622', () => {
       this.scene.start('GameScene2', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: this.player.formMachine.isMechaUnlocked(), dragonUnlocked: this.player.formMachine.isDragonUnlocked() });
     });
   }

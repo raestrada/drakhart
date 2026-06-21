@@ -5,6 +5,7 @@ import { GameAudio } from '../systems/GameAudio';
 import { TarotSystem } from '../systems/TarotSystem';
 import { TerrainGenerator } from '../generators/TerrainGenerator';
 import { CAMERA_LERP } from '../utils/constants';
+import { t } from '../i18n';
 
 export class TransitionScene34 extends Phaser.Scene {
   public gameAudio!: GameAudio;
@@ -140,7 +141,7 @@ export class TransitionScene34 extends Phaser.Scene {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('ASHEN GORGE', '#9933cc', () => {
+    this.showZoneTransition(t('zones.ashenGorge'), '#9933cc', () => {
       this.scene.start('GameScene3', { startPos: { x: 7800, y: 400 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     });
   }
@@ -149,7 +150,7 @@ export class TransitionScene34 extends Phaser.Scene {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('THE FOUNDRY GATES', '#ff6622', () => {
+    this.showZoneTransition(t('zones.foundryGates'), '#ff6622', () => {
       this.scene.start('GameScene4', { startPos: { x: 150, y: 650 }, cardsCollected: this.tarotSystem.collectedCards, mechaUnlocked: true, dragonUnlocked: true });
     });
   }

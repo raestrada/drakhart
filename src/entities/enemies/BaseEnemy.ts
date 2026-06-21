@@ -25,8 +25,8 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   protected slowTimer = 0;
   protected slowMultiplier = 1.0;
 
-  private lastDamageTime = 0;
-  private readonly damageCooldown = 400;
+  protected lastDamageTime = 0;
+  protected readonly damageCooldown = 400;
 
   // Health bar UI
   protected hpBarBg: Phaser.GameObjects.Rectangle | null = null;

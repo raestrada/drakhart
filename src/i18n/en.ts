@@ -72,5 +72,13 @@ export const en = {
     foundryP1: 'PHASE 1 — SHATTER SHIELD AS MECHA',
     foundryP2: 'PHASE 2 — PURSUE IN DRAGON FLIGHT',
     foundryP3: 'PHASE 3 — FIGHT ON FOOT AS WARRIOR',
+    gatekeeperName: 'IMPERIAL GATEKEEPER',
+    soldierName: 'IMPERIAL PILOT',
+  },
+  zones: {
+    ashenWoods: 'ASHEN WOODS',
+    industrialWasteland: 'INDUSTRIAL WASTELAND',
+    ashenGorge: 'ASHEN GORGE',
+    foundryGates: 'THE FOUNDRY GATES',
   },
 };

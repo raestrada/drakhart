@@ -25,7 +25,7 @@ class DreadnoughtCannon extends BaseEnemy {
     this.isTop = isTop;
     this.boss = boss;
     this.setScale(2.5);
-    this.setTint(isTop ? 0xff3333 : 0x3399ff);
+    this.setTint(isTop ? 0xff5555 : 0x55bcff);
     this.setDepth(boss.depth + 10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setImmovable(true);
@@ -38,11 +38,11 @@ class DreadnoughtCannon extends BaseEnemy {
 
     // Pulsing glow light
     if (scene.lights) {
-      this.glowLight = scene.lights.addLight(x, y, 100, isTop ? 0xff3333 : 0x3399ff, 0.8);
+      this.glowLight = scene.lights.addLight(x, y, 140, isTop ? 0xff5555 : 0x55bcff, 1.8);
       scene.tweens.add({
         targets: this.glowLight,
-        intensity: { from: 0.5, to: 1.2 },
-        radius: { from: 70, to: 110 },
+        intensity: { from: 1.0, to: 2.2 },
+        radius: { from: 100, to: 160 },
         duration: 600,
         yoyo: true,
         repeat: -1,
@@ -162,17 +162,17 @@ export class DreadnoughtBoss extends BaseEnemy {
 
     this.setScale(5.0);
     this.setAlpha(1);
-    this.setTint(0xaabbcc, 0x667788, 0x334455, 0x8899aa);
+    this.setTint(0xffffff); // Neutral white to fully show the bright silver/steel texture
     this.setDepth(10);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     (this.body as Phaser.Physics.Arcade.Body).setSize(40, 40);
     (this.body as Phaser.Physics.Arcade.Body).enable = false; // Shielded: no collision
 
     this.bossHpBar = scene.add.rectangle(x, y - 80, 200, 8, 0x000000, 0.8).setDepth(20);
-    this.bossHpFill = scene.add.rectangle(x - 100, y - 80, 200, 8, 0x8899aa)
+    this.bossHpFill = scene.add.rectangle(x - 100, y - 80, 200, 8, 0xff0055)
       .setOrigin(0, 0.5).setDepth(21).setVisible(false);
 
-    applyGlow(this, 0xff1166, 4, 0, 4, false, 12, 30);
+    applyGlow(this, 0xff0055, 4, 0, 4, false, 12, 30);
   }
 
   public activate(): void {
@@ -196,7 +196,7 @@ export class DreadnoughtBoss extends BaseEnemy {
     if (this.cannonsActive <= 0 && this.phase === 'shielded') {
       this.phase = 'vulnerable';
       this.setAlpha(1);
-      this.setTint(0xff5500);
+      this.setTint(0xffaa00);
       (this.body as Phaser.Physics.Arcade.Body).enable = true; // Now hittable!
       this.scene.cameras.main.flash(500, 255, 100, 0);
       this.scene.cameras.main.shake(800, 0.02);
@@ -212,11 +212,11 @@ export class DreadnoughtBoss extends BaseEnemy {
       });
 
       if (this.scene.lights) {
-        this.coreLight = this.scene.lights.addLight(this.x, this.y, 250, 0xff6600, 2.0);
+        this.coreLight = this.scene.lights.addLight(this.x, this.y, 250, 0xff3300, 3.0);
         this.scene.tweens.add({
           targets: this.coreLight,
-          intensity: { from: 1.5, to: 3.0 },
-          radius: { from: 180, to: 280 },
+          intensity: { from: 2.0, to: 4.0 },
+          radius: { from: 200, to: 320 },
           duration: 400,
           yoyo: true,
           repeat: -1,
@@ -255,7 +255,7 @@ export class DreadnoughtBoss extends BaseEnemy {
 
     this.setTint(0xffffff);
     this.scene.time.delayedCall(80, () => {
-      if (this.active && this.phase === 'vulnerable') this.setTint(0xff7700);
+      if (this.active && this.phase === 'vulnerable') this.setTint(0xffaa00);
     });
   }
 
@@ -322,26 +322,33 @@ export class DreadnoughtBoss extends BaseEnemy {
     (this.body as Phaser.Physics.Arcade.Body).enable = false;
     this.setTint(0x222222);
 
-    this.scene.cameras.main.shake(2000, 0.03);
-    this.scene.cameras.main.flash(1000, 255, 50, 0);
+    const scene = this.scene;
+    const deathX = this.x;
+    const deathY = this.y;
 
-    for (let i = 0; i < 15; i++) {
-      this.scene.time.delayedCall(i * 150, () => {
-        spawnDeathExplosion(this.scene, this.x + Phaser.Math.Between(-100, 100), this.y + Phaser.Math.Between(-100, 100));
-      });
-    }
-
-    this.scene.tweens.add({
-      targets: this,
-      alpha: 0,
-      scaleX: 3,
-      scaleY: 3,
-      duration: 2500,
-      ease: 'Quad.easeIn',
-      onComplete: () => {
-        this.destroy();
+    if (scene) {
+      scene.cameras.main.shake(2000, 0.03);
+      scene.cameras.main.flash(1000, 255, 50, 0);
+      for (let i = 0; i < 15; i++) {
+        scene.time.delayedCall(i * 150, () => {
+          if (!scene || !scene.sys || !scene.sys.isActive()) return;
+          spawnDeathExplosion(scene, deathX + Phaser.Math.Between(-100, 100), deathY + Phaser.Math.Between(-100, 100));
+        });
       }
-    });
+      scene.tweens.add({
+        targets: this,
+        alpha: 0,
+        scaleX: 3,
+        scaleY: 3,
+        duration: 2500,
+        ease: 'Quad.easeIn',
+        onComplete: () => {
+          this.destroy();
+        }
+      });
+    } else {
+      this.destroy();
+    }
   }
 
   destroy(fromScene?: boolean): void {
