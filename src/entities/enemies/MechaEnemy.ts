@@ -5,6 +5,7 @@ import { FormState } from '../../systems/FormStateMachine';
 import { spawnHitParticles, spawnMetalSparks, spawnOilSmoke } from '../../effects/Particles';
 import { ENEMY_SEARCHLIGHT } from '../../utils/constants';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
+import type { DamageType } from '../../effects/DamageNumbers';
 
 export class MechaEnemy extends BaseEnemy {
   private chargeCooldown = false;
@@ -41,6 +42,9 @@ export class MechaEnemy extends BaseEnemy {
     (this.body as Phaser.Physics.Arcade.Body).setSize(44, 30);
     (this.body as Phaser.Physics.Arcade.Body).setOffset(2, 6);
 
+    this.knockbackResistance = 0.25;
+    this.baseHitstun = 0;
+
     if (scene.lights && scene.lights.active) {
       this.searchLight = scene.lights.addConeLight(
         this.x, this.y - 10, ENEMY_SEARCHLIGHT.RADIUS, 0xffaa33, ENEMY_SEARCHLIGHT.INTENSITY,
@@ -72,7 +76,7 @@ export class MechaEnemy extends BaseEnemy {
     }
   }
 
-  takeDamage(amount: number): void {
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
     if (this.health <= 0) return;
 
     const playerState = this.player.formMachine.state;
@@ -99,7 +103,7 @@ export class MechaEnemy extends BaseEnemy {
       return;
     }
 
-    super.takeDamage(amount);
+    super.takeDamage(amount, source, knockbackDir);
   }
 
   protected doAttack(): void {

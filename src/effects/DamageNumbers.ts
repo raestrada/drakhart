@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { COMBO_MULTIPLIER } from '../utils/constants';
 
 const TEXT_STYLE_BASE: Phaser.Types.GameObjects.Text.TextStyle = {
   fontSize: '16px',
@@ -22,6 +23,12 @@ const TYPE_COLORS: Record<DamageType, string> = {
   crit: '#ffdd00',
 };
 
+export function getComboMultiplier(): number {
+  if (comboCount >= COMBO_MULTIPLIER.TIER3_THRESHOLD) return COMBO_MULTIPLIER.TIER3;
+  if (comboCount >= COMBO_MULTIPLIER.TIER2_THRESHOLD) return COMBO_MULTIPLIER.TIER2;
+  return COMBO_MULTIPLIER.TIER1;
+}
+
 export function spawnDamageNumber(
   scene: Phaser.Scene,
   x: number,
@@ -30,7 +37,7 @@ export function spawnDamageNumber(
   damageType: DamageType = 'physical',
   heavy: boolean = false
 ): void {
-  const isCrit = damageType === 'crit' || amount >= 50;
+  const isCrit = damageType === 'crit';
   const color = isCrit ? TYPE_COLORS.crit : (TYPE_COLORS[damageType] || TYPE_COLORS.physical);
   const fontSize = heavy ? '22px' : (isCrit ? '20px' : '16px');
   const riseY = heavy ? 55 : (isCrit ? 50 : 40);

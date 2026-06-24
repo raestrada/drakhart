@@ -1,5 +1,12 @@
 # DRAKHART — RPG Tarot Progression
 
+> **UPDATED** — the campaign is now 24 zones with **18 tarot cards** (not 10 across
+> 16 zones). 5 cards are wired (Magician, Chariot, Tower, Strength, Star). See the
+> 18-card distribution table in `docs/zone-design-guide.md` §5 for the authoritative
+> plan. The card catalog below remains valid for lore + effect design; locations
+> will be reassigned to the 24-zone layout. No duplicates (the Zone 4 Strength
+> duplicate was removed).
+
 ## The War Echoes System
 
 "War Echoes" are tarot cards scattered across the Shattered Continent. Each card is imprinted with the dying will of a dragon or the final thought of a fallen Warden. Collecting a card permanently enhances one of the three forms.

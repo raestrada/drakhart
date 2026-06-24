@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { Player } from '../Player';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { distanceBetween } from '../../utils/helpers';
-import { spawnDamageNumber, DamageType } from '../../effects/DamageNumbers';
+import { spawnDamageNumber, DamageType, getComboMultiplier, resetCombo } from '../../effects/DamageNumbers';
 import { spawnHitParticles } from '../../effects/Particles';
+import { KNOCKBACK_BASE, KNOCKBACK_DAMAGE_SCALE, HITSTUN_BASE } from '../../utils/constants';
 
 export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
   public health: number;
@@ -27,6 +28,10 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
   protected lastDamageTime = 0;
   protected readonly damageCooldown = 400;
+
+  protected hitstunTimer = 0;
+  protected baseHitstun = HITSTUN_BASE;
+  protected knockbackResistance = 1.0;
 
   // Health bar UI
   protected hpBarBg: Phaser.GameObjects.Rectangle | null = null;
@@ -159,6 +164,12 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
 
     if (!this.active || !this.isActive || this.health <= 0) return;
 
+    if (this.hitstunTimer > 0) {
+      this.hitstunTimer -= delta;
+      this.updateHealthBar(delta);
+      return;
+    }
+
     if (this.slowTimer > 0) {
       this.slowTimer -= delta;
       if (this.slowTimer <= 0) {
@@ -216,21 +227,34 @@ export class BaseEnemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  takeDamage(amount: number): void {
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
     if (this.health <= 0) return;
 
     const now = this.scene.time.now;
     if (now - this.lastDamageTime < this.damageCooldown) return;
     this.lastDamageTime = now;
 
+    const finalDamage = Math.round(amount * getComboMultiplier());
     this.prevHealthForChip = this.health;
-    this.health -= amount;
+    this.health -= finalDamage;
     this.showHealthBar();
-    spawnDamageNumber(this.scene, this.x, this.y - 20, amount, 'physical');
+    spawnDamageNumber(this.scene, this.x, this.y - 20, finalDamage, source);
     this.setTint(0xff0000);
     this.scene.time.delayedCall(80, () => {
       if (this.active) this.clearTint();
     });
+
+    if (this.baseHitstun > 0) {
+      this.hitstunTimer = this.baseHitstun + finalDamage * 0.3;
+    }
+
+    if (knockbackDir !== 0 && this.knockbackResistance > 0) {
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      if (body) {
+        const kb = (KNOCKBACK_BASE + finalDamage * KNOCKBACK_DAMAGE_SCALE) / this.knockbackResistance;
+        body.setVelocityX(knockbackDir * kb);
+      }
+    }
 
     if (this.health <= 0) {
       this.die();

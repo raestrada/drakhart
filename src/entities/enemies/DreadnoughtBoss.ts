@@ -4,6 +4,7 @@ import { Player } from '../Player';
 import { spawnDeathExplosion } from '../../effects/Particles';
 import { applyGlow } from '../../effects/CameraFilters';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
+import type { DamageType } from '../../effects/DamageNumbers';
 
 class DreadnoughtCannon extends BaseEnemy {
   public isTop: boolean;
@@ -243,7 +244,7 @@ export class DreadnoughtBoss extends BaseEnemy {
     }
   }
 
-  takeDamage(amount: number, knockDir: number = 0): void {
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
     if (this.phase === 'shielded') {
       // Bullets pass through — no spark, no damage, no pierce consumed
       return;
@@ -251,7 +252,7 @@ export class DreadnoughtBoss extends BaseEnemy {
 
     if (this.phase !== 'vulnerable') return;
 
-    super.takeDamage(amount);
+    super.takeDamage(amount, source, knockbackDir);
 
     this.setTint(0xffffff);
     this.scene.time.delayedCall(80, () => {

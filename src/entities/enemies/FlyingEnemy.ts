@@ -9,18 +9,36 @@ import { getSceneAudio } from '../../scenes/BaseLevelScene';
 export class FlyingEnemy extends BaseEnemy {
   private searchLight: Phaser.GameObjects.Light | null = null;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    player: Player,
+    config?: {
+      health?: number;
+      speed?: number;
+      detectRange?: number;
+      attackRange?: number;
+      damage?: number;
+      attackCooldown?: number;
+      patrolMinX?: number;
+      patrolMaxX?: number;
+    }
+  ) {
     super(scene, x, y, 'enemy-sentry', player, {
-      health: 20,
-      speed: 80,
-      detectRange: 380,
-      attackRange: 280,
-      damage: 10,
-      attackCooldown: 1800,
+      health: config?.health ?? 20,
+      speed: config?.speed ?? 80,
+      detectRange: config?.detectRange ?? 380,
+      attackRange: config?.attackRange ?? 280,
+      damage: config?.damage ?? 10,
+      attackCooldown: config?.attackCooldown ?? 1800,
+      patrolMinX: config?.patrolMinX,
+      patrolMaxX: config?.patrolMaxX,
     });
 
     scene.physics.add.existing(this);
     (this.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+    this.knockbackResistance = 1.5;
 
     if (scene.lights && scene.lights.active) {
       this.searchLight = scene.lights.addConeLight(

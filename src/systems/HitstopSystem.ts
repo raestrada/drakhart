@@ -45,4 +45,5 @@ export const HITSTOP = {
   EXPLOSION:      { duration: 100, intensity: 0.015 },
   TRANSFORM:      { duration: 180, intensity: 0.012 },
   DEATH:          { duration: 200, intensity: 0.020 },
+  DRAGON_SHOT:    { duration: 25,  intensity: 0.0015 },
 };

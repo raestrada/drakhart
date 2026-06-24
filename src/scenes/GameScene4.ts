@@ -21,7 +21,7 @@ import { applyBiomePostFX, setVignetteFromPlayer } from '../effects/CameraFilter
 import { WeatherSystem } from '../systems/WeatherSystem';
 import { CAMERA_LERP, CAMERA_ZOOM_HUMAN, CAMERA_ZOOM_DRAGON, ENEMY_SEARCHLIGHT } from '../utils/constants';
 import { t } from '../i18n';
-import { spawnImmuneText, spawnDamageNumber } from '../effects/DamageNumbers';
+import { spawnImmuneText, spawnDamageNumber, DamageType } from '../effects/DamageNumbers';
 import { HITSTOP } from '../systems/HitstopSystem';
 
 class Gatekeeper extends Boss {
@@ -32,9 +32,9 @@ class Gatekeeper extends Boss {
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, player);
-    this.health = 900;
-    this.maxHealth = 900;
-    this.totalMaxHealth = 900; // Update total health for screenspace HUD
+    this.health = 750;
+    this.maxHealth = 750;
+    this.totalMaxHealth = 750; // Update total health for screenspace HUD
     this.setScale(2.5);
     this.setTint(0xffffff); // Neutral white to fully show the bright silver/steel texture
     this.setAlpha(1);
@@ -164,7 +164,7 @@ class Gatekeeper extends Boss {
     this.scene.time.delayedCall(1500, () => { if (bullet.active) bullet.destroy(); });
   }
 
-  takeDamage(amount: number): void {
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
     if (this.health <= 0) return;
 
     // Hit cooldown check (enforce 400ms i-frames like normal enemies)
@@ -189,7 +189,7 @@ class Gatekeeper extends Boss {
     this.health -= amount;
 
     // Spawn damage numbers, apply hitstop freeze, play hit sound, and set white hit flash
-    spawnDamageNumber(this.scene, this.x, this.y - 40, amount, 'physical');
+    spawnDamageNumber(this.scene, this.x, this.y - 40, amount, source);
     this.player.combatSystem.hitstop.freeze(HITSTOP.BOSS_HIT.duration, HITSTOP.BOSS_HIT.intensity);
     getSceneAudio(this.scene)?.playEnemyHit();
 
@@ -702,16 +702,11 @@ export class GameScene4 extends BaseLevelScene {
   }
 
   private createTarotCards(): void {
-    const strengthCard = new TarotCard(this, 5200, 738, 'strength');
-    strengthCard.setDepth(1);
+    // Star — dragon energy regen (Zone 4 sky section reward).
+    // Strength is intentionally NOT placed here: it is the Zone 2 reward (no duplicates).
     const starCard = new TarotCard(this, 2600, 380, 'star');
     starCard.setDepth(1);
 
-    this.physics.add.overlap(this.player, strengthCard, () => {
-      strengthCard.collect(this.player);
-      this.tarotSystem.collect('strength', this.player);
-      this.gameAudio?.playCardCollect();
-    });
     this.physics.add.overlap(this.player, starCard, () => {
       starCard.collect(this.player);
       this.tarotSystem.collect('star', this.player);
@@ -796,7 +791,9 @@ export class GameScene4 extends BaseLevelScene {
         b.setData('pierce', pierce);
         if (pierce <= 0) b.disableBody(true, true);
 
-        target.takeDamage(this.player.combatSystem.getFireDamage());
+        const kbDir = b.x < target.x ? -1 : 1;
+        target.takeDamage(this.player.combatSystem.getFireDamageForBullet(b), 'fire', kbDir);
+        this.player.combatSystem.hitstop.freeze(this.player.combatSystem.getDragonShotHitstop().duration, this.player.combatSystem.getDragonShotHitstop().intensity);
         spawnHitParticles(this, target.x, target.y);
       }
     );
@@ -941,7 +938,9 @@ export class GameScene4 extends BaseLevelScene {
       const e = enemy as BaseEnemy;
       if (!e.active || e.health <= 0 || !e.body) return;
       if (Phaser.Geom.Intersects.RectangleToRectangle(slashBounds, e.getBounds())) {
-        e.takeDamage(this.player.combatSystem.getSwordDamage());
+        const isMecha = this.player.formMachine.state === FormState.MECHA;
+        const kbDir = this.player.facingRight ? 1 : -1;
+        e.takeDamage(this.player.combatSystem.getSwordDamage(), isMecha ? 'mecha' : 'physical', kbDir);
         spawnHitParticles(this, e.x, e.y);
       }
     });

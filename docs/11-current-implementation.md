@@ -1,146 +1,93 @@
 # DRAKHART — Current Implementation Status
 
+> **Updated** to reflect the 4-zone campaign + data-driven zone system.
+> The earlier "single 3,200px zone / 22 files" status was obsolete.
+
 ## Overview
 
-This document reflects the state of the codebase as of the prototype phase. The game currently has a single continuous zone (3,200px) with all three forms functional, basic enemies, one boss, and placeholder visuals generated procedurally.
+The game has **4 fully playable zones** connected by 4 transition-hub scenes,
+with a 5th-zone stub. All three forms (Human, Mecha, Dragon) are functional
+across a tutorial arc (one form per zone + a mixer exam). A **data-driven zone
+system** (`src/zones/`) is in place for building zones 5-24. See
+`docs/zone-design-guide.md` for the design plan and `AGENTS.md` for the full
+project structure.
 
-## Files Inventory (22 TypeScript files)
+## Zone Flow
 
 ```
-src/
-├── main.ts                        ✓ Phaser bootstrap
-├── config.ts                      ✓ GameConfig (1920×1080, Arcade physics)
-├── i18n/
-│   ├── index.ts                   ✓ TextManager singleton
-│   ├── en.ts                      ✓ English strings
-│   └── es.ts                      ✓ Spanish strings
-├── scenes/
-│   ├── BootScene.ts               ✓ Title screen + procedural texture generation
-│   ├── GameScene.ts               ✓ Level, collisions, enemies, boss
-│   └── UIScene.ts                 ✓ HUD (health, energy, transform indicator)
-├── entities/
-│   ├── Player.ts                  ✓ Player with 3 forms, animations, game feel
-│   ├── DragonCore.ts              ✓ Pickup → unlock Mecha
-│   ├── Barricade.ts               ✓ Destructible wall
-│   └── enemies/
-│       ├── BaseEnemy.ts           ✓ Abstract enemy (patrol, detect, chase, attack)
-│       ├── FlyingEnemy.ts         ✓ Aerial enemy for shmup
-│       └── Boss.ts                ✓ Multi-phase boss with UI
-├── systems/
-│   ├── FormStateMachine.ts        ✓ HUMAN → MECHA → DRAGON → EXHAUSTED
-│   ├── FlightSystem.ts            ✓ Dragon free-flight physics
-│   ├── EnergySystem.ts            ✓ Resource pool
-│   └── CombatSystem.ts            ✓ Sword, claymore, fire breath
-├── effects/
-│   ├── Particles.ts               ✓ Manual particle bursts
-│   └── ScreenEffects.ts           ✓ Camera shake, flash
-└── utils/
-    ├── constants.ts               ✓ All tuning values
-    └── helpers.ts                 ✓ clamp, lerp, distanceBetween
+Zone 1 (GameScene)      forest   "Ashen Woods"         10000×800   HUMAN → unlock MECHA
+  ↕ TransitionScene12
+Zone 2 (GameScene2)     refinery "Industrial Wasteland" 8000×800   MECHA forced → unlock DRAGON
+  ↕ TransitionScene23   (forward requires DRAGON)
+Zone 3 (GameScene3)     gorge    "Ashen Gorge"         18000×800   DRAGON forced (shmup)
+  ↕ TransitionScene34
+Zone 4 (GameScene4)     foundry  "The Foundry Gates"   15000×1400  mixer → Gatekeeper boss
+  ↕ TransitionScene45   → "ZONE 5 — COMING SOON" (stub → BootScene)
 ```
 
 ## Implemented Features
 
-### ✅ Core Mechanics
-- Three forms: Human, Mecha, Dragon
-- Form state machine with TRANSFORMING and EXHAUSTED states
-- Transformation animations (camera shake, flash, particles)
-- Cooldown on revert (2.5s)
-- Physical barrier: low ceiling tunnel blocks Mecha
+### Core Mechanics
+- Three forms: Human, Mecha, Dragon — state machine (`HUMAN | TRANSFORMING | MECHA | DRAGON | EXHAUSTED`).
+- Transformation: HUMAN→MECHA (400ms, requires Dragon Core), MECHA→DRAGON (800ms, requires Sky Core), revert on energy depletion (cooldown 2.5s).
+- Form gating via geometry: low ceilings block Mecha, heat/lava force Mecha, shmup corridors force Dragon.
+- Energy pool: drains while dragon/mecha, regens while human/grounded-dragon.
+- Mecha heat system: overheat shutdown at 100 (3s lockout).
 
-### ✅ Combat
-- Human sword: 25 dmg, 56 range, 320ms cooldown
-- Mecha claymore: 75 dmg, 88 range, 650ms cooldown
-- Dragon fire breath: 8 dmg, rapid fire, 110ms cooldown
-- Sword hit detection (geometric rectangle intersection)
-- Fire bullet detection (physics overlap)
-- ADD blend mode on all attack visuals
-- Hit particles (sparks on impact)
+### Combat
+- Human sword: 25 dmg, 80 range, 320ms cooldown.
+- Mecha claymore: 75 dmg (×1.5 with Strength), 125 range, 650ms cooldown, +15 heat/swing.
+- Dragon fire breath: 20 dmg, 200ms cooldown, 1.5 energy/shot, pierce 2 (3-way with Tower).
+- Hitstop, screen shake, particles, damage numbers.
 
-### ✅ Enemies
-- BaseEnemy: patrol, detect (220px), chase, attack on cooldown
-- FlyingEnemy: aerial movement, shoot projectiles
-- Boss: 2 phases, UI health bar, projectile patterns, movement bobbing
+### Enemies (9 types + 6 inline shmup)
+- BaseEnemy, LeaperEnemy, SpitterEnemy, ShieldEnemy, FlyingEnemy, MechaEnemy — all accept shared `EnemyConfig`.
+- EliteMecha (Zone 2 mini-boss, 650hp, stagger-vulnerable).
+- DreadnoughtBoss (Zone 3, cannons + core), Gatekeeper (Zone 4, 750hp, multi-phase).
+- Inline shmup classes in GameScene3: SkyHunter, SeekerDrone, MineDropper, HeavyGunship, HomingMissile, DriftMine (to be extracted).
 
-### ✅ Level
-- Continuous 3,200px world
-- Tile-based platforms (ground + thin platforms)
-- One-way platforms (pass through from below)
-- Barricades (1000 HP, breakable by Mecha)
-- Dragon Core pickup at x=1320
-- Boss at x=2500
-- Parallax backgrounds (mountains, forest, ruins)
-- Vignette overlay
-- Ambient ember particles
+### Zone System (new)
+- `src/zones/types.ts` — `ZoneConfig` + all sub-specs (the contract).
+- `src/zones/EnemyRegistry.ts` — central catalog + `spawn()` with tier scaling.
+- `src/zones/DifficultyDirector.ts` — 4-tier curve (×1.0 / ×1.3 / ×1.7 / ×2.2).
+- `src/zones/ZoneBuilder.ts` — world bounds + enemy spawning from config.
+- `src/zones/data/zone01-04.ts` — declared designs (source of truth for the 4 built zones).
 
-### ✅ Player Game Feel
-- Jump buffer (100ms)
-- Coyote time (80ms)
-- Variable jump height
-- Mecha hover (1.5s max)
-- Landing squash/stretch
-- Afterimages on dash
-- Visor glow effect
-- Shadow under player (scales with height)
-- Idle animation (2 frames, breathing)
-- Walk animation (2 frames, leg stride)
-- Dragon animation (2 frames, wing flap)
+### Progression
+- Dragon Core (Zone 1) → unlock Mecha. Sky Core (Zone 2) → unlock Dragon.
+- 5 tarot cards wired: Magician (double jump), Chariot (mecha speed), Tower (3-way fire), Strength (mecha dmg), Star (energy regen). 18 planned.
+- EchoFragments: 3 placed (indices 0-2); 24 planned, final boss gated at 18.
+- SaveSystem persists cards/unlocks/position/scene.
 
-### ✅ UI / HUD
-- Health bar (animated)
-- Energy bar (animated)
-- Form indicator with core dot
-- Controls display (bottom bar)
-- Dragon Core hint system (proximity-based)
-- Intro text with fade
-- Boss health bar
+### Presentation
+- Parallax backgrounds, biome postFX, vignette, ember rain, weather.
+- Procedural placeholder textures (BootScene).
+- i18n (en/es), auto-detected.
+- Audio: GameAudio, DynamicMusicSystem, AudioMute.
+- Gamepad support, DevPanel cheats.
 
-### ✅ i18n
-- English (source of truth)
-- Spanish (complete translation)
-- Auto-detect browser language
-- All user-facing strings use `t('key')` — no hardcoded strings
+## Calibration (AA pass)
 
-## Partially Implemented / Needs Work
+| Mechanic | Value |
+|----------|-------|
+| Barricade | 150 hp, 75 dmg threshold (2+ mecha hits) |
+| Dragon fire | 200ms cd, 1.5 energy/shot |
+| Dragon flight drain | 16/s up, 7/s horizontal |
+| Zone 3 depletion | revert + 30 dmg (no instakill) |
+| Zone 2 heat | −5 HP/s human |
+| EliteMecha | 650 hp |
+| Gatekeeper | 750 hp |
 
-### 🔶 Three-Form Progression
-- **Mecha form**: Basic implementation. Needs heat system, charged attack, proper mecha sprite, unique animations
-- **Dragon form**: Flight works. Needs Sky Core pickup, forced-scroll shmup mode, proper shmup enemy waves
-- **Form unlock flow**: Only Dragon Core implemented (unlocks Mecha). Sky Core not yet implemented.
+## What's Not Done Yet
 
-### 🔶 Level Design
-- Current: 1 zone, 3,200px (prototype only)
-- Needs: 6 zones, 35,000px total
-- Zone-specific mechanics not yet implemented (lava, wind, magnetism)
+- Zones 5-24 (use the data-driven system — see `docs/zone-design-guide.md`).
+- Scene migration to `ZoneBuilder`/`EnemyRegistry` (zones 1-4 still spawn inline).
+- Shmup enemy class extraction from GameScene3.
+- 13 unwired tarots; EchoFragment index collisions (Zone 4 reuses 0,1).
+- Zone 4 Section A rebalance (9 trivial flyers vs arriving dragon).
 
-### 🔶 RPG Tarot System
-- Not implemented. Needs card pickup entities, effects system, save/load, HUD display
+## Manual Testing
 
-### 🔶 Shmup Mode
-- Forced scroll exists in concept but not implemented
-- Camera lock, auto-scroll, wave spawning needed
-
-### 🔶 Audio
-- No audio implemented
-
-### 🔶 Save System
-- Not implemented
-
-## Known Issues / Technical Debt
-
-1. **Dragon Core pickup**: Currently placed at x=1320 in the prototype zone. Needs to be repositioned for the full 6-zone map.
-2. **Enemy spawn positions**: Hardcoded coordinates. Needs data-driven spawn system.
-3. **Hardcoded text positions**: UI text uses pixel coordinates. Needs responsive positioning for different resolutions.
-4. **Static body creation**: Platform tiles are created individually. For large worlds, a tiled approach via Tiled editor would be more efficient.
-5. **Sprite generation**: All sprites are procedural. For final art, all `generateTexture` calls should be replaced with `this.load.image()`.
-
-## What the Current Build Can Do
-
-1. Start game, see title screen
-2. Press ENTER to start
-3. Walk right, jump on platforms, climb staircase
-4. Find Dragon Core → unlock Mecha (press C)
-5. Transform to Mecha, break barricades
-6. Transform to Dragon, fly freely
-7. Reach boss area → boss activates, 2-phase fight
-8. Defeat boss → prototype complete message
+- `npm run dev` → play the full 4-zone arc end to end.
+- `npm run build` → type-check after any change.
+- No unit tests yet.

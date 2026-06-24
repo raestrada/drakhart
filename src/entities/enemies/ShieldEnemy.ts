@@ -4,6 +4,7 @@ import { Player } from '../Player';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { FormState } from '../../systems/FormStateMachine';
 import { spawnMetalSparks } from '../../effects/Particles';
+import type { DamageType } from '../../effects/DamageNumbers';
 
 export class ShieldEnemy extends BaseEnemy {
   constructor(
@@ -32,9 +33,11 @@ export class ShieldEnemy extends BaseEnemy {
       patrolMinX: config?.patrolMinX,
       patrolMaxX: config?.patrolMaxX,
     });
+    this.knockbackResistance = 0.6;
+    this.baseHitstun = 60;
   }
 
-  takeDamage(amount: number): void {
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
     if (this.health <= 0) return;
 
     const isFacingLeft = this.flipX;
@@ -59,7 +62,7 @@ export class ShieldEnemy extends BaseEnemy {
       return;
     }
 
-    super.takeDamage(amount);
+    super.takeDamage(amount, source, knockbackDir);
   }
 
   protected doAttack(): void {

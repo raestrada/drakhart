@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 import { spawnImmuneText } from '../effects/DamageNumbers';
 import { getSceneAudio } from '../scenes/BaseLevelScene';
 import { t } from '../i18n';
+import { BARRICADE_HEALTH, BARRICADE_DAMAGE_THRESHOLD } from '../utils/constants';
 
 export class Barricade extends Phaser.Physics.Arcade.Sprite {
-  public health = 75;
+  public health = BARRICADE_HEALTH;
   public alive = true;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -16,8 +17,8 @@ export class Barricade extends Phaser.Physics.Arcade.Sprite {
   takeDamage(amount: number): boolean {
     if (!this.alive) return false;
 
-    // Gate: only Mecha claymore deals >= 75 damage and can shatter it
-    if (amount < 75) {
+    // Gate: only Mecha claymore deals >= threshold damage and can shatter it
+    if (amount < BARRICADE_DAMAGE_THRESHOLD) {
       // Immune! Spawn sparks and "IMMUNE" text
       this.spawnImmuneEffects();
       return false;

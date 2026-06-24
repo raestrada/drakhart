@@ -19,7 +19,9 @@ import {
   FIRE_LIFETIME,
   FIRE_COOLDOWN,
   FIRE_BREATH_CONE,
+  FIRE_FALLOFF_END,
 } from '../utils/constants';
+import { DamageType } from '../effects/DamageNumbers';
 
 export class CombatSystem {
   private scene: Phaser.Scene;
@@ -280,6 +282,7 @@ export class CombatSystem {
     bullet.setFlipX(false);
     bullet.setBlendMode(Phaser.BlendModes.ADD);
     bullet.setData('pierce', 2);
+    bullet.setData('spawnTime', this.scene.time.now);
 
     applyGlow(bullet, 0xff4400, 2, 0, 1.5, false, 6, 10);
 
@@ -342,6 +345,18 @@ export class CombatSystem {
 
   getFireDamage(): number {
     return FIRE_DAMAGE;
+  }
+
+  getFireDamageForBullet(bullet: Phaser.Physics.Arcade.Sprite): number {
+    const spawnTime = bullet.getData('spawnTime') as number;
+    if (!spawnTime) return FIRE_DAMAGE;
+    const elapsed = this.scene.time.now - spawnTime;
+    const ratio = Math.min(1, elapsed / FIRE_LIFETIME);
+    return Math.round(FIRE_DAMAGE * (1 - (1 - FIRE_FALLOFF_END) * ratio));
+  }
+
+  getDragonShotHitstop(): { duration: number; intensity: number } {
+    return HITSTOP.DRAGON_SHOT;
   }
 
   update(): void {

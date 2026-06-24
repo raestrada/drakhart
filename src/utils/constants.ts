@@ -19,9 +19,10 @@ export const PLAYER_DRAGON_ACCELERATION = 1100;
 export const PLAYER_DRAGON_DAMPING = 0.92;
 
 export const ENERGY_MAX = 100;
-export const ENERGY_DRAIN_FLYING = 12;
-export const ENERGY_DRAIN_MECHA = 4;
-export const ENERGY_DRAIN_SHOOT = 0.3;
+export const ENERGY_DRAIN_FLYING = 16;
+export const ENERGY_DRAIN_FLYING_HORIZONTAL = 7;
+export const ENERGY_DRAIN_MECHA = 5;
+export const ENERGY_DRAIN_SHOOT = 1.5;
 export const ENERGY_DRAIN_DAMAGED = 12;
 export const ENERGY_REGEN_HUMAN = 7;
 export const ENERGY_REGEN_GROUNDED = 14;
@@ -39,7 +40,7 @@ export const MECHA_SWORD_COOLDOWN = 650;
 export const FIRE_DAMAGE = 20;
 export const FIRE_SPEED = 700;
 export const FIRE_LIFETIME = 1200;
-export const FIRE_COOLDOWN = 80;
+export const FIRE_COOLDOWN = 200;
 
 export const PLAYER_MAX_HEALTH = 100;
 export const INVINCIBILITY_DURATION = 600;
@@ -70,7 +71,11 @@ export const CAMERA_ZOOM_DRAGON = 1.4;
 export const CAMERA_ZOOM_DURATION = 600;
 
 export const TRANSFORM_DURATION = 800;
+export const TRANSFORM_DURATION_MECHA = 400;
 export const TRANSFORM_COOLDOWN_DURATION = 2500;
+
+export const BARRICADE_HEALTH = 150;
+export const BARRICADE_DAMAGE_THRESHOLD = 75;
 
 export const SHAKE = {
   LIGHT_HIT:     { intensity: 0.003, duration: 80 },
@@ -95,7 +100,26 @@ export const HITSTOP = {
   BOSS_HIT:       { duration: 100, intensity: 0.010 },
   EXPLOSION:      { duration: 100, intensity: 0.015 },
   DEATH:          { duration: 200, intensity: 0.020 },
+  DRAGON_SHOT:    { duration: 25,  intensity: 0.0015 },
 } as const;
+
+export const COMBO_MULTIPLIER = {
+  TIER1: 1.0,
+  TIER2: 1.2,
+  TIER3: 1.5,
+  TIER2_THRESHOLD: 3,
+  TIER3_THRESHOLD: 6,
+} as const;
+
+export const CRIT_MULT = 1.5;
+export const CRIT_FALL_SPEED = 120;
+
+export const FIRE_FALLOFF_END = 0.7;
+
+export const KNOCKBACK_BASE = 80;
+export const KNOCKBACK_DAMAGE_SCALE = 0.6;
+
+export const HITSTUN_BASE = 100;
 
 export const DAMAGE_NUMBER = {
   DURATION: 900,

@@ -6,6 +6,7 @@ import { spawnHitParticles, spawnDeathExplosion } from '../../effects/Particles'
 import { t } from '../../i18n';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
 import { HITSTOP } from '../../systems/HitstopSystem';
+import type { DamageType } from '../../effects/DamageNumbers';
 
 export class EliteMecha extends BaseEnemy {
   private stompCooldown = false;
@@ -19,7 +20,7 @@ export class EliteMecha extends BaseEnemy {
 
   constructor(scene: Phaser.Scene, x: number, y: number, player: Player) {
     super(scene, x, y, 'elite-mecha', player, {
-      health: 1200,
+      health: 650,
       speed: 40,
       detectRange: 480,
       attackRange: 180,
@@ -34,6 +35,8 @@ export class EliteMecha extends BaseEnemy {
     body.setOffset(34, 50);
 
     this.setDepth(15);
+    this.knockbackResistance = 0;
+    this.baseHitstun = 0;
 
     this.createFloatingUI();
     this.createCoreIndicator();
@@ -139,7 +142,7 @@ export class EliteMecha extends BaseEnemy {
     }
   }
 
-  takeDamage(amount: number): void {
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
     if (this.health <= 0) return;
 
     if (amount >= 9000) {
@@ -185,7 +188,7 @@ export class EliteMecha extends BaseEnemy {
     }
 
     const damage = this.staggerVulnerable ? amount * 2 : amount;
-    super.takeDamage(damage);
+    super.takeDamage(damage, source, knockbackDir);
   }
 
   protected doAttack(): void {

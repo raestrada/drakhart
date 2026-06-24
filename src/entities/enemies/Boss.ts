@@ -5,6 +5,7 @@ import { t } from '../../i18n';
 import { spawnDeathExplosion, spawnProjectileTrail } from '../../effects/Particles';
 import { HITSTOP } from '../../systems/HitstopSystem';
 import { getSceneAudio } from '../../scenes/BaseLevelScene';
+import type { DamageType } from '../../effects/DamageNumbers';
 
 type BossPhase = 'phase1' | 'phase2' | 'dead';
 
@@ -161,8 +162,8 @@ export class Boss extends BaseEnemy {
     });
   }
 
-  takeDamage(amount: number): void {
-    super.takeDamage(amount);
+  takeDamage(amount: number, source: DamageType = 'physical', knockbackDir: number = 0): void {
+    super.takeDamage(amount, source, knockbackDir);
     this.player.combatSystem.hitstop.freeze(HITSTOP.BOSS_HIT.duration, HITSTOP.BOSS_HIT.intensity);
 
     if (

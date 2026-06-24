@@ -334,7 +334,7 @@ export class GameScene2 extends BaseLevelScene {
     this.terrainGen.generateGroundSegment(this.platforms, 6280, groundY, 1720, 'refinery', 14);
 
     // Organic platforms
-    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 7180,560,96, 7250,525,80, 7350,500,256].forEach((_,i,arr) => {
+    [400,490,128, 900,480,96, 1700,490,128, 2400,480,96, 3300,495,128, 4100,480,96, 4900,490,128, 5700,485,96, 7100,620,96, 7250,560,80, 7380,500,256].forEach((_,i,arr) => {
       if (i%3===0) this.terrainGen.generatePlatform(this.platforms, arr[i], arr[i+1], arr[i+2], 'refinery');
     });
 
@@ -421,7 +421,7 @@ export class GameScene2 extends BaseLevelScene {
     });
 
     // The Flight Core (SkyCore) Altar
-    this.skyCore = new SkyCore(this, 7478, 480);
+    this.skyCore = new SkyCore(this, 7478, 460);
   }
 
   private createPlayer(): void {
@@ -560,7 +560,9 @@ export class GameScene2 extends BaseLevelScene {
         if (!b.active) return;
         b.disableBody(true, true);
         const enemy = _enemy as BaseEnemy;
-        enemy.takeDamage(this.player.combatSystem.getFireDamage());
+        const kbDir = b.x < enemy.x ? -1 : 1;
+        enemy.takeDamage(this.player.combatSystem.getFireDamageForBullet(b), 'fire', kbDir);
+        this.player.combatSystem.hitstop.freeze(this.player.combatSystem.getDragonShotHitstop().duration, this.player.combatSystem.getDragonShotHitstop().intensity);
         spawnHitParticles(this, enemy.x, enemy.y);
       }
     );
@@ -643,8 +645,8 @@ export class GameScene2 extends BaseLevelScene {
         this.heatWarningText.setText(t('story.extremeHeat') || 'EXTREME HEAT: WARRIOR BURNS - FIND ENERGY');
         this.heatWarningText.setAlpha(0.6 + Math.sin(time * 0.01) * 0.4);
 
-        // Health drain: 8 HP per second
-        this.player.health -= 8 * (delta / 1000);
+        // Health drain: 5 HP per second (calibrated AA — punishing but fair)
+        this.player.health -= 5 * (delta / 1000);
 
         if (time - this.lastHeatDamageSoundTime > 700) {
           this.lastHeatDamageSoundTime = time;
@@ -721,7 +723,9 @@ export class GameScene2 extends BaseLevelScene {
       if (!e.active || e.health <= 0) return;
 
       if (Phaser.Geom.Intersects.RectangleToRectangle(slashBounds, e.getBounds())) {
-        e.takeDamage(this.player.combatSystem.getSwordDamage());
+        const isMecha = this.player.formMachine.state === FormState.MECHA;
+        const kbDir = this.player.facingRight ? 1 : -1;
+        e.takeDamage(this.player.combatSystem.getSwordDamage(), isMecha ? 'mecha' : 'physical', kbDir);
         spawnHitParticles(this, e.x, e.y);
       }
     });

@@ -35,6 +35,7 @@ export class LeaperEnemy extends BaseEnemy {
       patrolMinX: config?.patrolMinX,
       patrolMaxX: config?.patrolMaxX,
     });
+    this.knockbackResistance = 1.2;
   }
 
   preUpdate(time: number, delta: number): void {

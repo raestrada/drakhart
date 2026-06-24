@@ -5,6 +5,7 @@ import { FlightSystem } from './FlightSystem';
 import { HeatSystem } from './HeatSystem';
 import {
   TRANSFORM_DURATION,
+  TRANSFORM_DURATION_MECHA,
   TRANSFORM_COOLDOWN_DURATION,
   CAMERA_ZOOM_DRAGON,
   CAMERA_ZOOM_MECHA,
@@ -203,13 +204,13 @@ export class FormStateMachine {
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
 
-    this.scene.cameras.main.shake(400, SHAKE.TRANSFORM.intensity);
-    playFlash(this.scene, 400, 255, 255, 255);
+    this.scene.cameras.main.shake(TRANSFORM_DURATION_MECHA, SHAKE.TRANSFORM.intensity);
+    playFlash(this.scene, TRANSFORM_DURATION_MECHA, 255, 255, 255);
     this.player.combatSystem.hitstop.freeze(HITSTOP.TRANSFORM.duration, HITSTOP.TRANSFORM.intensity);
 
     this.startVortexStream(0xff0066); // Crimson Mecha core vortex
 
-    this.scene.time.delayedCall(400, () => {
+    this.scene.time.delayedCall(TRANSFORM_DURATION_MECHA, () => {
       this.stopVortexStream();
       this.enterMecha();
     });
@@ -220,12 +221,6 @@ export class FormStateMachine {
     return sprite.y - (sprite.displayOriginY - body.offset.y) * sprite.scaleY + body.height;
   }
 
-  private syncBodyPosition(body: Phaser.Physics.Arcade.Body): void {
-    const sprite = this.player;
-    body.x = sprite.x - sprite.displayOriginX + body.offset.x * sprite.scaleX;
-    body.y = sprite.y - sprite.displayOriginY + body.offset.y * sprite.scaleY;
-  }
-
   private enterMecha(): void {
     this.currentState = FormState.MECHA;
     const body = this.player.body as Phaser.Physics.Arcade.Body;
@@ -233,15 +228,19 @@ export class FormStateMachine {
 
     this.player.setTexture('player-mecha');
     this.player.setScale(1.4);
-    body.updateFromGameObject();
     body.setSize(48, 76);
     body.setOffset(40, 52);
-    
+    body.updateFromGameObject();
+
     const newBottom = this.getRealBodyBottom(body);
     this.player.y -= (newBottom - oldBottom);
-    this.syncBodyPosition(body);
-
+    body.updateFromGameObject();
+    body.y -= 2;
+    body.setVelocity(0, 0);
     body.allowGravity = true;
+
+    const platforms = (this.scene as any).platforms;
+    if (platforms) this.scene.physics.world.collide(this.player, platforms);
 
     this.scene.cameras.main.zoomTo(
       CAMERA_ZOOM_MECHA,
@@ -275,14 +274,15 @@ export class FormStateMachine {
 
     this.player.setTexture('player-dragon');
     this.player.setScale(1.45);
-    body.updateFromGameObject();
     body.allowGravity = false;
     body.setSize(84, 60);
     body.setOffset(6, 6);
+    body.updateFromGameObject();
 
     const newBottom = this.getRealBodyBottom(body);
     this.player.y -= (newBottom - oldBottom);
-    this.syncBodyPosition(body);
+    body.updateFromGameObject();
+    body.setVelocity(0, 0);
 
     this.flightSystem.activate();
     getSceneAudio(this.scene)?.setDragonActive(true);
@@ -308,14 +308,19 @@ export class FormStateMachine {
     this.player.setTexture('player-human');
     getSceneAudio(this.scene)?.playRevert();
     this.player.setScale(0.8);
-    body.updateFromGameObject();
     body.allowGravity = true;
     body.setSize(36, 60);
     body.setOffset(30, 36);
+    body.updateFromGameObject();
 
     const newBottom = this.getRealBodyBottom(body);
     this.player.y -= (newBottom - oldBottom);
-    this.syncBodyPosition(body);
+    body.updateFromGameObject();
+    body.y -= 2;
+    body.setVelocity(0, 0);
+
+    const platforms = (this.scene as any).platforms;
+    if (platforms) this.scene.physics.world.collide(this.player, platforms);
 
     this.flightSystem.deactivate();
 
@@ -358,8 +363,11 @@ export class FormStateMachine {
       this.energySystem.isDepleted()
     ) {
       if (this.scene.scene.key === 'GameScene3') {
+        // Shmup corridor: revert with a health penalty instead of an instant kill.
+        // Keeps tension without a hard fail-state wall.
         if (this.player.alive) {
-          this.player.takeDamage(100, 0);
+          this.startRevert();
+          this.player.takeDamage(30, 0);
         }
       } else {
         this.startRevert();

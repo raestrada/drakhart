@@ -1,5 +1,17 @@
 # DRAKHART — World Map & Zone Design
 
+> **SUPERSEDED — read `docs/zone-design-guide.md` for the authoritative plan.**
+>
+> The campaign is now **24 zones** (not 16), paced at 6-8 min each, built via the
+> data-driven `src/zones/` system. The 16-zone concept below remains useful as
+> thematic inspiration, but the zone count, numbering, pacing, tarot economy, and
+> form-gating rules in `zone-design-guide.md` take precedence where they conflict.
+>
+> **4 zones are built** (the tutorial arc): Zone 1 Ashen Woods (HUMAN→MECHA),
+> Zone 2 Industrial Wasteland (MECHA→DRAGON), Zone 3 Ashen Gorge (DRAGON shmup),
+> Zone 4 The Foundry Gates (mixer + Gatekeeper boss). These map roughly to the
+> H1 / M5 / D9 / F14 roles below, but use the data-driven `ZoneConfig` system.
+
 ## Overview
 
 **16 zones total**: 4 Human/Platformer, 4 Mecha/Heavy Combat, 4 Dragon/Shmup, 3 Final Gauntlet, 1 Secret.

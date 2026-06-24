@@ -2,6 +2,7 @@ import { Player } from '../entities/Player';
 import {
   ENERGY_MAX,
   ENERGY_DRAIN_FLYING,
+  ENERGY_DRAIN_FLYING_HORIZONTAL,
   ENERGY_DRAIN_MECHA,
   ENERGY_DRAIN_SHOOT,
   ENERGY_DRAIN_DAMAGED,
@@ -72,7 +73,7 @@ export class EnergySystem {
           this.current + ENERGY_REGEN_GROUNDED * dt * starMultiplier
         );
       } else {
-        const drain = isFlyingUp ? ENERGY_DRAIN_FLYING : (ENERGY_DRAIN_FLYING * 0.4);
+        const drain = isFlyingUp ? ENERGY_DRAIN_FLYING : ENERGY_DRAIN_FLYING_HORIZONTAL;
         this.current = Math.max(0, this.current - drain * dt);
       }
     }

@@ -12,6 +12,12 @@ export class FlightSystem {
   private vx = 0;
   private vy = 0;
   private flyingUp = false;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wKey!: Phaser.Input.Keyboard.Key;
+  private aKey!: Phaser.Input.Keyboard.Key;
+  private sKey!: Phaser.Input.Keyboard.Key;
+  private dKey!: Phaser.Input.Keyboard.Key;
+  private keysBound = false;
 
   constructor(player: Player) {
     this.player = player;
@@ -21,7 +27,19 @@ export class FlightSystem {
     return this.active;
   }
 
+  private ensureKeys(): void {
+    if (this.keysBound) return;
+    const kb = this.player.scene.input.keyboard!;
+    this.cursors = kb.createCursorKeys();
+    this.wKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    this.aKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.sKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    this.dKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    this.keysBound = true;
+  }
+
   activate(): void {
+    this.ensureKeys();
     this.active = true;
     this.vx = 0;
     this.vy = 0;
@@ -40,19 +58,13 @@ export class FlightSystem {
 
   update(delta: number): void {
     if (!this.active) return;
+    this.ensureKeys();
 
     const dt = delta / 1000;
-    const kb = this.player.scene.input.keyboard!;
-    const cursors = kb.createCursorKeys();
-    const wKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-    const aKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-    const sKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-    const dKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-
-    const up = cursors.up.isDown || wKey.isDown;
-    const down = cursors.down.isDown || sKey.isDown;
-    const left = cursors.left.isDown || aKey.isDown;
-    const right = cursors.right.isDown || dKey.isDown;
+    const up = this.cursors.up.isDown || this.wKey.isDown;
+    const down = this.cursors.down.isDown || this.sKey.isDown;
+    const left = this.cursors.left.isDown || this.aKey.isDown;
+    const right = this.cursors.right.isDown || this.dKey.isDown;
 
     this.flyingUp = up;
 

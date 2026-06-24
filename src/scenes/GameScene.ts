@@ -1131,8 +1131,8 @@ export class GameScene extends BaseLevelScene {
   }
 
   private createTarotCards(): void {
-    // Chariot — early reward before first thorn gap (Zone 1, x~2500)
-    const chariotCard = new TarotCard(this, 2500, 738, 'chariot');
+    // Chariot — on safe ground before the first thorn gap (Zone 1, x~2200)
+    const chariotCard = new TarotCard(this, 2200, 738, 'chariot');
     chariotCard.setDepth(1);
 
     // Tower — ruin rooftop in Section 3 (Zone 1, x~4800)
@@ -1240,8 +1240,11 @@ export class GameScene extends BaseLevelScene {
         const b = _bullet as Phaser.Physics.Arcade.Sprite;
         if (!b.active) return;
         b.disableBody(true, true);
-        (_enemy as BaseEnemy).takeDamage(this.player.combatSystem.getFireDamage());
-        spawnHitParticles(this, (_enemy as BaseEnemy).x, (_enemy as BaseEnemy).y);
+        const enemy = _enemy as BaseEnemy;
+        const kbDir = b.x < enemy.x ? -1 : 1;
+        enemy.takeDamage(this.player.combatSystem.getFireDamageForBullet(b), 'fire', kbDir);
+        this.player.combatSystem.hitstop.freeze(this.player.combatSystem.getDragonShotHitstop().duration, this.player.combatSystem.getDragonShotHitstop().intensity);
+        spawnHitParticles(this, enemy.x, enemy.y);
       }
     );
 
@@ -2060,7 +2063,9 @@ export class GameScene extends BaseLevelScene {
       if (!e.active || e.health <= 0) return;
 
       if (Phaser.Geom.Intersects.RectangleToRectangle(slashBounds, e.getBounds())) {
-        e.takeDamage(this.player.combatSystem.getSwordDamage());
+        const isMecha = this.player.formMachine.state === FormState.MECHA;
+        const kbDir = this.player.facingRight ? 1 : -1;
+        e.takeDamage(this.player.combatSystem.getSwordDamage(), isMecha ? 'mecha' : 'physical', kbDir);
         spawnHitParticles(this, e.x, e.y);
       }
     });

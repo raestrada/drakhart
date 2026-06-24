@@ -23,7 +23,7 @@ import { getSceneAudio } from '../scenes/BaseLevelScene';
 import { GamepadSystem } from '../systems/GamepadSystem';
 import { spawnLandingDust, spawnHoverThrust, spawnDragonExhaust, spawnHitParticles } from '../effects/Particles';
 import { applyGlow } from '../effects/CameraFilters';
-import { spawnDamageNumber } from '../effects/DamageNumbers';
+import { spawnDamageNumber, resetCombo } from '../effects/DamageNumbers';
 
 const DRAGON_FRAME_MS = 220;
 
@@ -73,6 +73,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private visorLight: Phaser.GameObjects.Light | null = null;
   private glowFilter: Phaser.Filters.Glow | null = null;
   private visorTrailTimer = 0;
+  private dragonCoreLight: Phaser.GameObjects.Light | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player-human');
@@ -611,8 +612,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (state === FormState.DRAGON) {
       this.visorGlow.setVisible(false);
       if (this.visorLight) this.visorLight.setIntensity(0);
+      if (this.glowFilter) this.glowFilter.outerStrength = 6;
+      if (this.scene.lights && this.scene.lights.active) {
+        if (!this.dragonCoreLight) {
+          this.dragonCoreLight = this.scene.lights.addLight(this.x, this.y, 140, 0xff5500, 2.0);
+        }
+        this.dragonCoreLight.x = this.x;
+        this.dragonCoreLight.y = this.y;
+      }
       return;
     }
+    if (this.dragonCoreLight && this.scene.lights) {
+      this.scene.lights.removeLight(this.dragonCoreLight);
+      this.dragonCoreLight = null;
+    }
+    if (this.glowFilter) this.glowFilter.outerStrength = 2;
     this.visorGlow.setVisible(true);
     const dir = this.facingRight ? 1 : -1;
     let lx = this.x;
@@ -853,6 +867,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       : [0xffaa00, 0xcc3300];
 
     spawnDragonExhaust(this.scene, px, py, tint);
+
+    if (this.scene.lights && this.scene.lights.active) {
+      const thrusterLight = this.scene.lights.addLight(px, py, 100, 0xff5500, 1.5);
+      this.scene.tweens.add({
+        targets: thrusterLight,
+        intensity: 0,
+        radius: 40,
+        duration: 250,
+        ease: 'Sine.easeOut',
+        onComplete: () => this.scene.lights!.removeLight(thrusterLight),
+      });
+    }
   }
 
   takeDamage(amount: number, knockbackDir: number): void {
@@ -861,6 +887,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.health -= amount;
     getSceneAudio(this.scene)?.playDamage();
     this.isInvincible = true;
+    resetCombo();
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const isMecha = this.formMachine.state === FormState.MECHA;
@@ -876,7 +903,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.formMachine.heat.addHeat(8);
     }
 
-    this.scene.cameras.main.shake(120, isMecha ? 0.002 : 0.004);
+    this.scene.cameras.main.shake(SHAKE.PLAYER_DAMAGE.duration, isMecha ? SHAKE.PLAYER_DAMAGE.intensity * 0.5 : SHAKE.PLAYER_DAMAGE.intensity);
 
     if (this.glowFilter) {
       this.glowFilter.color = 0xff1100;
@@ -1018,6 +1045,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.visorGlow) this.visorGlow.destroy();
     if (this.visorLight && this.scene && this.scene.lights) {
       this.scene.lights.removeLight(this.visorLight);
+    }
+    if (this.dragonCoreLight && this.scene && this.scene.lights) {
+      this.scene.lights.removeLight(this.dragonCoreLight);
+      this.dragonCoreLight = null;
     }
     super.destroy(fromScene);
   }

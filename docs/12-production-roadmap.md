@@ -1,5 +1,12 @@
 # DRAKHART — Production Roadmap
 
+> **UPDATED** — the campaign is now **24 zones** built via the data-driven
+> `src/zones/` system (not the 16-zone / H/M/D/F layout below). **4 zones are
+> complete** (the tutorial arc: Zones 1-4) + an AA calibration pass. The phase
+> structure below is retained for reference; zone numbering and the build order
+> should follow `docs/zone-design-guide.md`. Current next step: wire scenes to
+> `ZoneBuilder`/`EnemyRegistry`, then build zones 5-24.
+
 ## Phase 0: Foundation ✅ COMPLETE
 
 **Duration**: Completed

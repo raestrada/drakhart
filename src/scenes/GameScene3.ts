@@ -489,9 +489,10 @@ export class GameScene3 extends BaseLevelScene {
         if (pierce <= 0) b.disableBody(true, true);
 
         if (typeof (target as any).takeDamage === 'function') {
-          (target as any).takeDamage(this.player.combatSystem.getFireDamage());
+          const kbDir = b.x < (target as any).x ? -1 : 1;
+          (target as any).takeDamage(this.player.combatSystem.getFireDamageForBullet(b), 'fire', kbDir);
         } else if (target.getData('hp') !== undefined) {
-          const hp = (target.getData('hp') as number) - this.player.combatSystem.getFireDamage();
+          const hp = (target.getData('hp') as number) - this.player.combatSystem.getFireDamageForBullet(b);
           if (hp <= 0) {
             target.destroy();
           } else {
@@ -527,27 +528,8 @@ export class GameScene3 extends BaseLevelScene {
   }
 
   private createTarotCards(): void {
-    // Star — early shmup, helps dragon energy
-    const starCard = new TarotCard(this, 4500, 350, 'star');
-    starCard.setDepth(1);
-    (starCard.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-
-    // Tower — before dense waves, gives 3-way fire
-    const towerCard = new TarotCard(this, 9500, 400, 'tower');
-    towerCard.setDepth(1);
-    (towerCard.body as Phaser.Physics.Arcade.Body).allowGravity = false;
-
-    this.physics.add.overlap(this.player, starCard, () => {
-      starCard.collect(this.player);
-      this.tarotSystem.collect('star', this.player);
-      this.gameAudio?.playCardCollect();
-    });
-
-    this.physics.add.overlap(this.player, towerCard, () => {
-      towerCard.collect(this.player);
-      this.tarotSystem.collect('tower', this.player);
-      this.gameAudio?.playCardCollect();
-    });
+    // No tarots in Zone 3 — Star is the Zone 4 reward, Tower is the Zone 1 reward.
+    // Duplicates were removed to follow the "no duplicates" economy rule.
   }
 
   private createVignette(): void {
@@ -908,7 +890,9 @@ export class GameScene3 extends BaseLevelScene {
       if (!e.active || e.health <= 0) return;
 
       if (Phaser.Geom.Intersects.RectangleToRectangle(slashBounds, e.getBounds())) {
-        e.takeDamage(this.player.combatSystem.getSwordDamage());
+        const isMecha = this.player.formMachine.state === FormState.MECHA;
+        const kbDir = this.player.facingRight ? 1 : -1;
+        e.takeDamage(this.player.combatSystem.getSwordDamage(), isMecha ? 'mecha' : 'physical', kbDir);
         spawnHitParticles(this, e.x, e.y);
       }
     });
@@ -1503,7 +1487,7 @@ export class GameScene3 extends BaseLevelScene {
     // Since it's a shmup, these represent volcanic ejecta and rubble floating in the gorge
     const count = 35;
     for (let i = 0; i < count; i++) {
-      const rx = Phaser.Math.Between(100, LEVEL_WIDTH - 200);
+      const rx = Phaser.Math.Between(100, 18000 - 200);
       const ry = Phaser.Math.Between(100, LEVEL_HEIGHT - 100);
       const texture = Math.random() > 0.5 ? 'prop-debris-1' : 'prop-debris-2';
       
