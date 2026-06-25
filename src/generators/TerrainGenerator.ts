@@ -12,7 +12,7 @@ export class TerrainGenerator {
     startX: number,
     baseY: number,
     width: number,
-    biome: 'forest' | 'refinery' | 'gorge' = 'forest',
+    biome: 'forest' | 'refinery' | 'gorge' | 'amazon' = 'forest',
     seed = 42
   ): void {
     const rng = new Phaser.Math.RandomDataGenerator(['terrain', seed.toString()]);
@@ -106,6 +106,50 @@ export class TerrainGenerator {
       for (let rx = startX + 30; rx < startX + width; rx += rng.between(60, 100)) {
         g.fillCircle(rx, points[Math.floor((rx-startX)/step)]?.y + 4 || baseY, 2);
       }
+    } else if (biome === 'amazon') {
+      // Deep jungle earth — dark loam with moss and bioluminescent flecks
+      g.fillStyle(0x0f1a12, 1);
+      g.beginPath();
+      g.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) g.lineTo(points[i].x, points[i].y);
+      g.lineTo(startX + width, baseY + height);
+      g.lineTo(startX, baseY + height);
+      g.closePath();
+      g.fillPath();
+
+      // Surface moss highlight (emerald)
+      g.fillStyle(0x1a3a22, 0.6);
+      g.beginPath();
+      g.moveTo(points[0].x, points[0].y + 3);
+      for (let i = 1; i < points.length; i++) g.lineTo(points[i].x, points[i].y + 3);
+      g.lineTo(startX + width, baseY + height);
+      g.lineTo(startX, baseY + height);
+      g.closePath();
+      g.fillPath();
+
+      // Moss tufts on the surface
+      g.fillStyle(0x2a5a32, 0.35);
+      for (const p of points) {
+        g.fillRect(p.x - 2, p.y - 3, rng.between(3, 7), rng.between(3, 9));
+      }
+
+      // Bioluminescent cyan flecks
+      g.fillStyle(0x33ffcc, 0.25);
+      for (let i = 0; i < 8; i++) {
+        const fx = rng.between(startX + 20, startX + width - 20);
+        const fy = baseY + rng.between(8, 48);
+        g.fillCircle(fx, fy, rng.between(1, 2));
+      }
+
+      // Root tendrils
+      g.fillStyle(0x1a2410, 0.5);
+      for (let rx = startX + 10; rx < startX + width; rx += rng.between(40, 70)) {
+        g.fillRect(rx, baseY + rng.between(20, 44), rng.between(3, 6), rng.between(8, 20));
+      }
+
+      // Bottom dark fade
+      g.fillStyle(0x050a06, 0.55);
+      g.fillRect(startX, baseY + height - 16, width, 16);
     } else {
       // Gorge — dark purple rock
       g.fillStyle(0x201820, 1);
@@ -141,9 +185,10 @@ export class TerrainGenerator {
     x: number,
     y: number,
     width: number,
-    biome: 'forest' | 'refinery' | 'gorge' = 'forest'
+    biome: 'forest' | 'refinery' | 'gorge' | 'amazon' = 'forest'
   ): void {
     const h = 14;
+    const rng = new Phaser.Math.RandomDataGenerator(['platform', `${x}.${y}`]);
     const points: { x: number; y: number }[] = [];
 
     // Irregular top
@@ -161,7 +206,7 @@ export class TerrainGenerator {
     const g = this.scene.add.graphics();
     g.setDepth(5);
 
-    const baseColor = biome === 'refinery' ? 0x2a3540 : 0x201c18;
+    const baseColor = biome === 'refinery' ? 0x2a3540 : (biome === 'amazon' ? 0x14241a : 0x201c18);
     g.fillStyle(baseColor, 1);
     g.beginPath();
     g.moveTo(points[0].x, points[0].y);
@@ -172,8 +217,16 @@ export class TerrainGenerator {
     g.fillPath();
 
     // Top highlight
-    g.fillStyle(biome === 'refinery' ? 0x3a4550 : 0x2a241e, 0.4);
+    g.fillStyle(biome === 'refinery' ? 0x3a4550 : (biome === 'amazon' ? 0x2a5a3a : 0x2a241e), 0.4);
     g.fillRect(x + 4, y + 2, width - 8, h - 4);
+
+    // Bioluminescent moss dots on amazon surface
+    if (biome === 'amazon') {
+      g.fillStyle(0x33ffcc, 0.5);
+      for (let ex = x + 6; ex < x + width; ex += rng.between(18, 30)) {
+        g.fillCircle(ex, y + 2, 0.8);
+      }
+    }
 
     // Edge dots
     g.fillStyle(baseColor, 0.3);

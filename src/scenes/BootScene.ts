@@ -24,6 +24,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-gorge-walls-raw', `assets/bg_gorge_walls.png?${v}`);
     this.load.image('bg-gorge-structures-raw', `assets/bg_gorge_structures.png?${v}`);
     this.load.image('bg-gorge-reactor-raw', `assets/bg_gorge_reactor.png?${v}`);
+    this.load.image('bg-jungle-moon-raw', `assets/bg_jungle_moon_raw.png?${v}`);
+    this.load.image('bg-jungle-landmark-raw', `assets/bg_jungle_landmark_raw.png?${v}`);
+    this.load.image('bg-ruins-eclipse-raw', `assets/bg_ruins_eclipse_raw.png?${v}`);
+    this.load.image('bg-ruins-landmark-raw', `assets/bg_ruins_landmark_raw.png?${v}`);
     this.load.image('title-splash', `marketing/drakhart_splash.png`);
     this.load.image('cinematic-gem-1', `assets/cinematic_gem_1.png`);
     this.load.image('cinematic-gem-2', `assets/cinematic_gem_2.png`);
@@ -34,6 +38,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('cinematic-boss-1', `assets/cinematic_boss_1.png`);
     this.load.image('cinematic-boss-2', `assets/cinematic_boss_2.png`);
     this.load.image('cinematic-boss-3', `assets/cinematic_boss_3.png`);
+    this.load.image('cinematic-resistance-1', `assets/cinematic_resistance_1.png`);
+    this.load.image('cinematic-resistance-2', `assets/cinematic_resistance_2.png`);
+    this.load.image('cinematic-resistance-3', `assets/cinematic_resistance_3.png`);
   }
 
   create(): void {
@@ -183,6 +190,8 @@ export class BootScene extends Phaser.Scene {
       { name: 'Iron Arteries', file: 'Iron_Arteries', desc: 'Level 2 — Smelting Refinery' },
       { name: 'Orbit Unbound', file: 'Orbit_Unbound', desc: 'Level 3 — Ashen Gorge' },
       { name: 'Below the Hammer', file: 'Below_the_Hammer', desc: 'Level 4 — The Foundry Gates' },
+      { name: 'Steel Beneath the Leaf', file: 'Steel_Beneath_the_Leaf', desc: 'Level 5 — The Hunt' },
+      { name: 'Spiritus Draconis', file: 'Spiritus_Draconis', desc: 'Level 6 — The Reforging' },
       { name: 'The Last Steeple', file: 'The_Last_Steeple', desc: 'Boss — Dreadnought' },
       { name: 'Silentium Draconis', file: 'Silentium_Draconis', desc: 'Sacred Altar — Dragon Core' },
       { name: 'Vigil of the Fallen King', file: 'Vigil_of_the_Fallen_King', desc: 'Title Theme — Main Menu' },

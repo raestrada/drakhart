@@ -6,7 +6,7 @@ export function getSceneAudio(scene: Phaser.Scene): GameAudio | null {
 }
 
 export class BaseLevelScene extends Phaser.Scene {
-  public currentBiome: 'forest' | 'refinery' | 'gorge' | 'foundry' | undefined;
+  public currentBiome: 'forest' | 'refinery' | 'gorge' | 'foundry' | 'amazon' | undefined;
   protected parallaxLayers: Phaser.GameObjects.TileSprite[] = [];
   public gameAudio: GameAudio | null = null;
   private emberRainTimer: Phaser.Time.TimerEvent | null = null;

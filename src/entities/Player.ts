@@ -16,6 +16,10 @@ import {
   INVINCIBILITY_DURATION,
   VISOR_CONE,
   SHAKE,
+  HIGH_PRIESTESS_REGEN_HP,
+  HIGH_PRIESTESS_REGEN_MS,
+  HIGH_PRIESTESS_REGEN_MAX_RATIO,
+  EMPEROR_ARMOR_REDUCTION,
 } from '../utils/constants';
 import { HITSTOP } from '../systems/HitstopSystem';
 import { TarotSystem } from '../systems/TarotSystem';
@@ -73,6 +77,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private visorLight: Phaser.GameObjects.Light | null = null;
   private glowFilter: Phaser.Filters.Glow | null = null;
   private visorTrailTimer = 0;
+  private regenAccumulator = 0;
   private dragonCoreLight: Phaser.GameObjects.Light | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -221,6 +226,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.updateJuice(delta);
     this.updateAura(delta);
+    this.updateTarotRegen(delta);
     this.updateAfterimage(delta);
     this.updateVisorGlowPosition();
     this.updateVisorTrail(delta);
@@ -519,6 +525,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.updateLowHPFeedback(delta);
     this.updateMechaBodySteam(delta);
+  }
+
+  private updateTarotRegen(delta: number): void {
+    if (!this.tarotSystem?.hasHighPriestess()) return;
+    if (this.formMachine.state === FormState.DRAGON) return;
+    if (!this.alive) return;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (!body) return;
+    const grounded = body.blocked.down || body.touching.down;
+    if (!grounded) return;
+    if (this.health >= this.maxHealth * HIGH_PRIESTESS_REGEN_MAX_RATIO) return;
+
+    this.regenAccumulator += delta;
+    if (this.regenAccumulator >= HIGH_PRIESTESS_REGEN_MS) {
+      this.regenAccumulator -= HIGH_PRIESTESS_REGEN_MS;
+      this.health = Math.min(this.maxHealth, this.health + HIGH_PRIESTESS_REGEN_HP);
+    }
   }
 
   private updateLowHPFeedback(delta: number): void {
@@ -883,6 +906,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount: number, knockbackDir: number): void {
     if (this.isInvincible || !this.alive) return;
+
+    // Emperor tarot — mecha armor reduces incoming damage.
+    if (this.formMachine.state === FormState.MECHA && this.tarotSystem?.hasEmperor()) {
+      amount = Math.round(amount * (1 - EMPEROR_ARMOR_REDUCTION));
+    }
 
     this.health -= amount;
     getSceneAudio(this.scene)?.playDamage();

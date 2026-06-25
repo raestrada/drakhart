@@ -7,10 +7,14 @@ const ZONE_TRACKS: Record<string, string> = {
   GameScene2: 'Iron_Arteries',
   GameScene3: 'Orbit_Unbound',
   GameScene4: 'Below_the_Hammer',
+  GameScene5: 'Steel_Beneath_the_Leaf',
+  GameScene6: 'Spiritus_Draconis',
   TransitionScene12: 'Silentium_Draconis',
   TransitionScene23: 'Silentium_Draconis',
   TransitionScene34: 'Silentium_Draconis',
   TransitionScene45: 'Silentium_Draconis',
+  TransitionScene56: 'Silentium_Draconis',
+  TransitionScene67: 'Silentium_Draconis',
 };
 
 const SCENE_BGM_RESTART: Record<string, { level: number; ambientZone: number } | 'altar'> = {
@@ -18,10 +22,14 @@ const SCENE_BGM_RESTART: Record<string, { level: number; ambientZone: number } |
   GameScene2: { level: 2, ambientZone: 2 },
   GameScene3: { level: 3, ambientZone: 3 },
   GameScene4: { level: 5, ambientZone: 2 },
+  GameScene5: { level: 6, ambientZone: 5 },
+  GameScene6: { level: 7, ambientZone: 6 },
   TransitionScene12: 'altar',
   TransitionScene23: 'altar',
   TransitionScene34: 'altar',
   TransitionScene45: 'altar',
+  TransitionScene56: 'altar',
+  TransitionScene67: 'altar',
 };
 
 export class PauseScene extends Phaser.Scene {

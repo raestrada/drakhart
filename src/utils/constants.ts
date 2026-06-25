@@ -44,6 +44,12 @@ export const FIRE_COOLDOWN = 200;
 
 export const PLAYER_MAX_HEALTH = 100;
 export const INVINCIBILITY_DURATION = 600;
+
+export const HIGH_PRIESTESS_REGEN_HP = 2;       // HP per tick
+export const HIGH_PRIESTESS_REGEN_MS = 1000;    // tick interval
+export const HIGH_PRIESTESS_REGEN_MAX_RATIO = 0.99; // stop regen near full
+
+export const EMPEROR_ARMOR_REDUCTION = 0.5; // mecha takes 50% less damage when Emperor tarot is active
 export const KNOCKBACK_FORCE = 180;
 
 export const SENTRY_HEALTH = 40;

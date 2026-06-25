@@ -54,8 +54,9 @@ export class DevPanel {
   private getGameScene(): any {
     const game = (window as any).game;
     if (game && game.scene && game.scene.keys) {
-      for (const key of ['GameScene', 'GameScene2', 'GameScene3', 'GameScene4',
-                          'TransitionScene12', 'TransitionScene23', 'TransitionScene34', 'TransitionScene45']) {
+      for (const key of ['GameScene', 'GameScene2', 'GameScene3', 'GameScene4', 'GameScene5', 'GameScene6',
+                          'TransitionScene12', 'TransitionScene23', 'TransitionScene34', 'TransitionScene45',
+                          'TransitionScene56', 'TransitionScene67']) {
         const scene = game.scene.keys[key];
         if (scene && scene.sys && scene.sys.isActive()) return scene;
       }
@@ -130,6 +131,23 @@ export class DevPanel {
     this.addButton('Altar 2→3 (Trans23)', () => this.teleportToScene('TransitionScene23', 150, 650));
     this.addButton('Altar 3→4 (Trans34)', () => this.teleportToScene('TransitionScene34', 150, 650));
     this.addButton('Altar 4→5 (Trans45)', () => this.teleportToScene('TransitionScene45', 150, 650));
+
+    // --- Zone 5: The Hunt ---
+    this.addButton('L5: Besieged Peaks (Start)', () => this.teleportToScene('GameScene5', 200, 400));
+    this.addButton('L5: Pursuit Mid-Corridor (X:5500)', () => this.teleportToScene('GameScene5', 5500, 360));
+    this.addButton('L5: Pursuer Arena (X:10400)', () => this.teleportToScene('GameScene5', 10100, 400));
+    this.addButton('L5: Emerald Jungle (X:12500)', () => this.teleportToScene('GameScene5', 12500, 650));
+    this.addButton('L5: Resistance Camp (X:15600)', () => this.teleportToScene('GameScene5', 15600, 650));
+
+    // --- Zone 6: The Reforging ---
+    this.addButton('L6: Pilgrim Tunnels (Start)', () => this.teleportToScene('GameScene6', 200, 650));
+    this.addButton('L6: Forging Hall Mecha (X:4200)', () => this.teleportToScene('GameScene6', 4200, 650));
+    this.addButton('L6: Sky Trial Dragon (X:8200)', () => this.teleportToScene('GameScene6', 8200, 360));
+    this.addButton('L6: Warden Arena (X:11800)', () => this.teleportToScene('GameScene6', 11000, 650));
+
+    // --- Transition Hubs Z5·Z6 ---
+    this.addButton('Altar 5→6 (Trans56)', () => this.teleportToScene('TransitionScene56', 150, 650));
+    this.addButton('Altar 6→7 (Trans67)', () => this.teleportToScene('TransitionScene67', 150, 650));
 
     // Section 2: Form & Progression
     this.addSectionHeader('🔄 Form Unlock & Control');

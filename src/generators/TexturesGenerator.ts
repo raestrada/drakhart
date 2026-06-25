@@ -144,6 +144,34 @@ export class TexturesGenerator {
       this.keyOutBlackAndScale('bg-gorge-reactor-raw', 'bg-gorge-reactor', 384, 384);
     }
 
+    // Zone 5 Jungle Moon
+    if (this.scene.textures.exists('bg-jungle-moon-raw')) {
+      this.keyOutBlackAndScale('bg-jungle-moon-raw', 'bg-jungle-moon', 160, 160);
+    } else {
+      this.drawJungleMoonProcedural();
+    }
+
+    // Zone 5 Jungle Landmark
+    if (this.scene.textures.exists('bg-jungle-landmark-raw')) {
+      this.keyOutBlackAndScale('bg-jungle-landmark-raw', 'bg-jungle-landmark', 384, 384);
+    } else {
+      this.drawJungleLandmarkProcedural();
+    }
+
+    // Zone 6 Ruins Eclipse
+    if (this.scene.textures.exists('bg-ruins-eclipse-raw')) {
+      this.keyOutBlackAndScale('bg-ruins-eclipse-raw', 'bg-ruins-eclipse', 160, 160);
+    } else {
+      this.drawRuinsEclipseProcedural();
+    }
+
+    // Zone 6 Ruins Landmark
+    if (this.scene.textures.exists('bg-ruins-landmark-raw')) {
+      this.keyOutBlackAndScale('bg-ruins-landmark-raw', 'bg-ruins-landmark', 384, 384);
+    } else {
+      this.drawRuinsLandmarkProcedural();
+    }
+
     this.drawDragonCore();
     this.drawEnergyPickup();
     this.drawSkyCore();
@@ -157,6 +185,7 @@ export class TexturesGenerator {
     this.drawMoonGlow();
     this.drawForegroundElements();
     this.drawBackgrounds();
+    this.drawAmazonBackgrounds();
     this.drawParticles();
     this.drawZone3Hazards();
     this.drawZone3Enemies();
@@ -2505,6 +2534,68 @@ export class TexturesGenerator {
     this.tex(g, 'bg-castle', 256, 256);
   }
 
+  // ═══ JUNGLE MOON (Zone 5 Fallback) 128×128 ═══
+  private drawJungleMoonProcedural(): void {
+    const g = this.scene.make.graphics({ x: 0, y: 0 });
+    const mx = 64, my = 64;
+    g.fillStyle(0x113311, 0.2);
+    g.fillCircle(mx, my, 60);
+    g.fillStyle(0x114422, 0.4);
+    g.fillCircle(mx, my, 52);
+    g.fillStyle(0x22aa55, 0.8);
+    g.fillCircle(mx, my, 40);
+    g.fillStyle(0x33ff88, 0.9);
+    g.fillCircle(mx, my, 37);
+    g.fillStyle(0x66ffaa, 0.95);
+    g.fillCircle(mx, my, 34);
+    g.fillStyle(0x1a7a3a, 0.5);
+    g.fillCircle(mx - 10, my - 10, 6);
+    g.fillCircle(mx + 12, my + 8, 8);
+    g.fillCircle(mx - 8, my + 15, 4);
+    this.tex(g, 'bg-jungle-moon', 128, 128);
+  }
+
+  // ═══ JUNGLE LANDMARK (Zone 5 Fallback) 256×256 ═══
+  private drawJungleLandmarkProcedural(): void {
+    const g = this.scene.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x08220e, 0.95);
+    g.fillRect(112, 60, 32, 196);
+    g.fillStyle(0x0e3617, 0.8);
+    g.fillRect(120, 60, 16, 196);
+    g.fillStyle(0x08220e, 0.95);
+    g.fillRect(60, 100, 136, 12);
+    g.fillRect(40, 140, 176, 16);
+    g.fillRect(80, 70, 96, 10);
+    this.tex(g, 'bg-jungle-landmark', 256, 256);
+  }
+
+  // ═══ RUINS ECLIPSE (Zone 6 Fallback) 128×128 ═══
+  private drawRuinsEclipseProcedural(): void {
+    const g = this.scene.make.graphics({ x: 0, y: 0 });
+    const mx = 64, my = 64;
+    g.fillStyle(0xff3300, 0.3);
+    g.fillCircle(mx, my, 58);
+    g.fillStyle(0xffaa00, 0.6);
+    g.fillCircle(mx, my, 50);
+    g.fillStyle(0xffcc33, 0.8);
+    g.fillCircle(mx, my, 44);
+    g.fillStyle(0x06040c, 1.0);
+    g.fillCircle(mx, my, 38);
+    this.tex(g, 'bg-ruins-eclipse', 128, 128);
+  }
+
+  // ═══ RUINS LANDMARK (Zone 6 Fallback) 256×256 ═══
+  private drawRuinsLandmarkProcedural(): void {
+    const g = this.scene.make.graphics({ x: 0, y: 0 });
+    g.fillStyle(0x1a1215, 0.95);
+    g.fillRect(116, 20, 24, 236);
+    g.fillRect(90, 200, 76, 16);
+    g.fillRect(122, 216, 12, 40);
+    g.fillStyle(0x2a1e22, 0.8);
+    g.fillRect(122, 40, 12, 160);
+    this.tex(g, 'bg-ruins-landmark', 256, 256);
+  }
+
   // ═══ FOREGROUND ELEMENTS ═══
   private drawForegroundElements(): void {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
@@ -3134,7 +3225,114 @@ export class TexturesGenerator {
     this.scene.textures.addCanvas('bg-mist', canvasMist);
   }
 
-  // ═══ PARTICLES ═══
+  // ═══════════════════════════════════════
+  //  AMAZON JUNGLE BACKGROUND LAYERS (Zone 5 — Emerald Jungle)
+  // ═══════════════════════════════════════
+  private drawAmazonBackgrounds(): void {
+    const g = this.scene.make.graphics({ x: 0, y: 0 });
+
+    // Sky — deep teal-to-emerald gradient
+    for (let y = 0; y < 1200; y++) {
+      const t = y / 1200;
+      const r = Math.floor(6 * (1 - t) + 10 * t);
+      const gr = Math.floor(20 * (1 - t) + 40 * t);
+      const bl = Math.floor(28 * (1 - t) + 30 * t);
+      g.fillStyle((r << 16) | (gr << 8) | bl);
+      g.fillRect(0, y, 960, 1);
+    }
+    // Skittering bioluminescent motes
+    for (let i = 0; i < 80; i++) {
+      const sx = Phaser.Math.Between(0, 959), sy = Phaser.Math.Between(0, 900);
+      g.fillStyle(0x33ffcc, Math.random() * 0.3 + 0.1);
+      g.fillCircle(sx, sy, Phaser.Math.Between(0.6, 1.6));
+    }
+    this.tex(g, 'bg-amazon-sky', 960, 1200);
+
+    // Canopy silhouette — layered jungle tree crowns (960x800)
+    const groundStartY = 120;
+    const groundTotalH = 680;
+    const groundBands = 50;
+    for (let b = 0; b < groundBands; b++) {
+      const bandY = groundStartY + Math.floor(b * (groundTotalH / groundBands));
+      const bandH = Math.ceil(groundTotalH / groundBands);
+      const t = b / groundBands;
+      const r = Math.floor(8 * (1 - t) + 4 * t);
+      const gr = Math.floor(30 * (1 - t) + 14 * t);
+      const bl = Math.floor(22 * (1 - t) + 10 * t);
+      g.fillStyle((r << 16) | (gr << 8) | bl);
+      g.fillRect(0, bandY, 960, bandH);
+    }
+
+    const drawJungleCrown = (tx: number, th: number, tw: number) => {
+      const layers = 3;
+      const layerH = th / layers;
+      for (let l = 0; l < layers; l++) {
+        const scale = 1 - (l * 0.22);
+        const bottomY = 120 - (l * layerH * 0.7);
+        const topY = bottomY - layerH * 1.5;
+        const w = tw * scale;
+        // Shadow side
+        g.fillStyle(0x04120a);
+        g.beginPath();
+        g.moveTo(tx - w / 2, bottomY);
+        g.lineTo(tx, topY);
+        g.lineTo(tx, bottomY);
+        g.closePath();
+        g.fillPath();
+        // Emerald highlight side
+        g.fillStyle(0x0e2e1a);
+        g.beginPath();
+        g.moveTo(tx, bottomY);
+        g.lineTo(tx, topY);
+        g.lineTo(tx + w / 2, bottomY);
+        g.closePath();
+        g.fillPath();
+        // Bioluminescent edge
+        g.fillStyle(0x1f6644);
+        g.beginPath();
+        g.moveTo(tx, topY);
+        g.lineTo(tx + w / 2, bottomY);
+        g.lineTo(tx + w / 4, bottomY);
+        g.lineTo(tx, topY);
+        g.closePath();
+        g.fillPath();
+      }
+      // Trunk
+      g.fillStyle(0x040a06);
+      g.fillRect(tx - 2, 120, 4, 10);
+    };
+    [20, 80, 150, 230, 310, 400, 480, 560, 640, 720, 810, 890].forEach(tx => {
+      const th = Phaser.Math.Between(54, 92), tw = Phaser.Math.Between(14, 26);
+      drawJungleCrown(tx, th, tw);
+    });
+    // Dangling lianas
+    g.fillStyle(0x103a22, 0.5);
+    for (let i = 0; i < 14; i++) {
+      const lx = Phaser.Math.Between(30, 930);
+      const ly = Phaser.Math.Between(120, 200);
+      g.fillRect(lx, ly, 1, Phaser.Math.Between(20, 70));
+    }
+    this.tex(g, 'bg-amazon-canopy', 960, 800);
+
+    // Mist — cyan-tinted drifting fog (960x300)
+    g.clear();
+    for (let y = 0; y < 300; y++) {
+      const edgeFade = Math.sin((y / 300) * Math.PI);
+      const alpha = Math.floor(edgeFade * 60);
+      g.fillStyle(0x224a3a, alpha / 255);
+      g.fillRect(0, y, 960, 1);
+    }
+    // Soft blobs
+    for (let i = 0; i < 40; i++) {
+      const bx = Phaser.Math.Between(0, 959);
+      const by = Phaser.Math.Between(40, 270);
+      g.fillStyle(0x2a6655, 0.06);
+      g.fillCircle(bx, by, Phaser.Math.Between(30, 80));
+    }
+    this.tex(g, 'bg-amazon-mist', 960, 300);
+  }
+
+  // ═══════ PARTICLES ═══════
   private drawParticles(): void {
     const g = this.scene.make.graphics({ x: 0, y: 0 });
     this.circ(g, 4, 4, 3.5, 0xff4400); this.circ(g, 4, 3, 2.5, 0xff6600); this.circ(g, 4, 3, 1.5, 0xffaa00);

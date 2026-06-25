@@ -1,6 +1,6 @@
 import type { FormState } from '../systems/FormStateMachine';
 
-export type Biome = 'forest' | 'refinery' | 'gorge' | 'foundry';
+export type Biome = 'forest' | 'refinery' | 'gorge' | 'foundry' | 'amazon';
 
 export type DifficultyTier = 1 | 2 | 3 | 4;
 
@@ -82,7 +82,7 @@ export interface PickupSpec {
 }
 
 export interface TarotSpec {
-  card: 'magician' | 'chariot' | 'strength' | 'star' | 'tower';
+  card: 'magician' | 'chariot' | 'strength' | 'star' | 'tower' | 'high-priestess' | 'emperor';
   x: number;
   y: number;
 }

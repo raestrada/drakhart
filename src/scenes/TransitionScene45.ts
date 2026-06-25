@@ -175,9 +175,14 @@ export class TransitionScene45 extends Phaser.Scene {
     this.hasTransitioned = true;
     this.player.setVelocity(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
-    this.showZoneTransition('ZONE 5 — COMING SOON', '#ffaa44', () => {
-      // Zone 5 not yet implemented — return to title for now
-      this.scene.start('BootScene');
+    this.showZoneTransition('THE HUNT', '#ff8855', () => {
+      // Zone 5 — The Hunt: dragon pursuit → amazon escape.
+      this.scene.start('GameScene5', {
+        startPos: { x: 150, y: 400 },
+        cardsCollected: this.tarotSystem.collectedCards,
+        mechaUnlocked: true,
+        dragonUnlocked: true,
+      });
     });
   }
 

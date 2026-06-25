@@ -49,6 +49,15 @@ export function applyBiomePostFX(scene: Phaser.Scene, biome: string): void {
       vignette.strength = 0.35;
       vignette.setColor(0x0d0505);
       break;
+    case 'amazon':
+      colorMatrix.colorMatrix.saturate(0.2);
+      colorMatrix.colorMatrix.contrast(0.05);
+      colorMatrix.colorMatrix.brightness(1.05);
+
+      vignette.radius = 1.2;
+      vignette.strength = 0.35;
+      vignette.setColor(0x04140a);
+      break;
   }
 }
 

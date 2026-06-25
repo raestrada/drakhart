@@ -45,6 +45,20 @@ export const TAROT_DEFS: Record<string, TarotDef> = {
     lore: 'He held the line. Alone. For three days.',
     effect: 'Dragon: 3-way fire spread',
   },
+  'high-priestess': {
+    id: 'high-priestess',
+    name: 'The High Priestess',
+    arcana: 'II',
+    lore: 'She knelt to the moss and the old world drank her wounds dry.',
+    effect: 'Warrior: HP regen on the ground',
+  },
+  emperor: {
+    id: 'emperor',
+    name: 'The Emperor',
+    arcana: 'IV',
+    lore: 'He forged himself anew where the old Wardens bled for their craft.',
+    effect: 'Mecha: Take 50% less damage',
+  },
 };
 
 export class TarotCard extends Phaser.Physics.Arcade.Sprite {

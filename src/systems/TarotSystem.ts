@@ -23,6 +23,12 @@ export class TarotSystem {
       case 'tower':
         // 3-way fire spread
         break;
+      case 'high-priestess':
+        // Ground HP regen — handled in Player via hasHighPriestess check
+        break;
+      case 'emperor':
+        // Mecha armor — handled in Player.takeDamage via hasEmperor check
+        break;
     }
   }
 
@@ -57,6 +63,14 @@ export class TarotSystem {
 
   hasTower(): boolean {
     return this.collected.has('tower');
+  }
+
+  hasHighPriestess(): boolean {
+    return this.collected.has('high-priestess');
+  }
+
+  hasEmperor(): boolean {
+    return this.collected.has('emperor');
   }
 
   // Save / Load
